@@ -220,6 +220,7 @@ For questions, issues, or contributions, please:
 
 ---
 
-**Built with ❤️ for chemical research and data analysis**
+**Built with ❤️ for chemical research and data analysis mostly by Jesse Ahlbrecht and by Georg Wuitschik with data provided by Team RoSL 
+Roche Pharma Research and Early Development, Roche Innovation Center Basel**
 
 *This project was developed with the assistance of Cursor AI for enhanced productivity and code quality.* 
