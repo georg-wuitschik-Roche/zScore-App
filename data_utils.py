@@ -56,8 +56,8 @@ else:
     print("Using cloud CSV configuration")
 
 # Google Cloud Storage configuration
-GCS_BUCKET_NAME = "rosl_rpt_storage"
-GCS_FILE_PATH = "zScore/z-Score Peaks with FG.csv"
+GCS_BUCKET_NAME = "zscore_csv_storage"
+GCS_FILE_PATH = "z-Score Peaks with FG.csv"
 
 def download_csv_from_gcs():
     """Download the CSV file from Google Cloud Storage if it doesn't exist locally."""
