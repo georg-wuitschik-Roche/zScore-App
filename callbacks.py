@@ -314,7 +314,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             else:
                 default_min_eln = 5
             
-            default_topn_zscore = 3
+            default_topn_zscore = 5
             default_max_components = 10
             
             # Reset functional groups to defaults
