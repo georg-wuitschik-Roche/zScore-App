@@ -84,6 +84,8 @@ This application is designed for chemists and researchers to analyze experimenta
    - Google Cloud Platform account
    - Google Cloud SDK installed
    - Project with Cloud Run API enabled
+   - Google Cloud Bucket to store the data csv-file and set the name as GCS_BUCKET_NAME in data_util.py
+   - set the path to the csv-file on the Google Cloud bucket as GCS_FILE_PATH in data_util.py
 
 2. **Deploy to Cloud Run:**
    ```bash
