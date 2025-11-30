@@ -308,11 +308,8 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             default_exclude_scaleup = [True]
             default_include_null_categories = [True]
             
-            # Set min ELN based on reaction types
-            if reaction_types and any(rt in ['Buchwald-Hartwig', 'Suzuki-Miyaura'] for rt in reaction_types):
-                default_min_eln = 10
-            else:
-                default_min_eln = 5
+            # Set min ELN to constant value
+            default_min_eln = 5
             
             default_topn_zscore = 5
             default_max_components = 10
@@ -344,16 +341,10 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
                     default_exclude_cui, default_exclude_scaleup, default_include_null_categories, default_min_eln, default_topn_zscore, default_max_components)
         
         elif triggered_id == 'reaction-type-dropdown':
-            # Handle reaction type change - keep reactant types the same, only update min ELN
-            # Update min ELN value based on reaction types
-            if reaction_types and any(rt in ['Buchwald-Hartwig', 'Suzuki-Miyaura'] for rt in reaction_types):
-                new_min_eln = 10
-            else:
-                new_min_eln = 5
-            
+            # Handle reaction type change - keep reactant types the same
             # Keep reactant types unchanged when reaction types change
             return (no_update, current_reactant_types, no_update, no_update,
-                    no_update, no_update, no_update, new_min_eln, no_update, no_update)
+                    no_update, no_update, no_update, no_update, no_update, no_update)
         
         return no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
@@ -369,19 +360,8 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     )
     def _update_min_eln_on_fg_change(fg_a_values, fg_b_values, reaction_types):
         """Update min ELN when functional group selections change."""
-        # Check if any functional group is selected (not just 'All')
-        fg_a_selected = fg_a_values and any(val != 'All' for val in fg_a_values) if fg_a_values else False
-        fg_b_selected = fg_b_values and any(val != 'All' for val in fg_b_values) if fg_b_values else False
-        
-        if fg_a_selected or fg_b_selected:
-            # Any functional group is selected, decrease to 5
-            return 5
-        else:
-            # No specific functional groups selected, use reaction type based defaults
-            if reaction_types and any(rt in ['Buchwald-Hartwig', 'Suzuki-Miyaura'] for rt in reaction_types):
-                return 10
-            else:
-                return 5
+        # Always use 5 as the default min ELN
+        return 5
 
     # ------------------------------------------------------------------
     # Filter panel toggle ----------------------------------------------
@@ -737,8 +717,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             hidden_style = {
                 'display': 'none'
             }
-            return (hidden_style, [], hidden_style, [], 
-                    hidden_style, [], hidden_style, [])
+            return (hidden_style, [], hidden_style, [], hidden_style, [])
         
         # Base style for visible containers
         visible_style = {

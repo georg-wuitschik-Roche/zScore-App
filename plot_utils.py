@@ -88,7 +88,7 @@ def create_color_mapping(category: str, dff) -> Dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentation_mode: bool = False, reaction_type: str = None) -> Tuple[go.Figure, int]:
+def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentation_mode: bool = False, reaction_type: str = None, max_categories: int = None) -> Tuple[go.Figure, int]:
     """Return `(figure, adaptive_height)` for the given dataframe.
 
     Args:
@@ -97,6 +97,7 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
         base_height: Minimum height for the plot
         presentation_mode: Whether to use larger fonts for presentation
         reaction_type: Optional reaction type to include in title (for exports)
+        max_categories: Optional maximum number of categories to display (by median z-Score)
 
     The adaptive height makes sure the plot remains readable even with a
     large number of category values.
@@ -147,6 +148,12 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
     # 1. Ordering
     medians = dff.groupby(y_category)["z-Score"].median().sort_values(ascending=False)
     category_order = medians.index.tolist()
+
+    # 1b. Limit categories if max_categories is specified
+    if max_categories is not None and len(category_order) > max_categories:
+        category_order = category_order[:max_categories]
+        # Filter dataframe to only include the top categories
+        dff = dff[dff[y_category].isin(category_order)]
 
     # 2. Colour mapping (needs to run *before* adaptive height is computed because we call it anyway)
     colour_map = create_color_mapping(y_category, dff)
