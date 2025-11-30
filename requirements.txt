@@ -6,3 +6,4 @@ kaleido>=0.2.0  # Required for exporting plots as images
 gunicorn>=20.0.0  # Required for production deployment with WSGI server
 google-cloud-storage>=2.0.0  # Optional: Only needed for cloud data loading
 requests>=2.25.0  # Required for downloading data from cloud storage
+reportlab>=3.6.0  # Required for generating PDF reports in export_boxplots.py

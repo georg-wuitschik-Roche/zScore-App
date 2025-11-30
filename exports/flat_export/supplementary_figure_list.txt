@@ -1,0 +1,41 @@
+Supplementary Figure 2: Base boxplot for Amide coupling reactions
+Supplementary Figure 3: Coupling Reagent + Additive boxplot for Amide coupling reactions
+Supplementary Figure 4: Solvent boxplot for Amide coupling reactions
+Supplementary Figure 5: Base boxplot for Arylation, acidic C-H reactions
+Supplementary Figure 6: Catalyst boxplot for Arylation, acidic C-H reactions
+Supplementary Figure 7: Ligand boxplot for Arylation, acidic C-H reactions
+Supplementary Figure 8: Solvent boxplot for Arylation, acidic C-H reactions
+Supplementary Figure 9: Base boxplot for Buchwald-Hartwig reactions for Amides reacting with aryl halides
+Supplementary Figure 10: Catalyst boxplot for Buchwald-Hartwig reactions for Amides reacting with aryl halides
+Supplementary Figure 11: Ligand boxplot for Buchwald-Hartwig reactions for Amides reacting with aryl halides
+Supplementary Figure 12: Solvent boxplot for Buchwald-Hartwig reactions for Amides reacting with aryl halides
+Supplementary Figure 13: Base boxplot for Buchwald-Hartwig reactions for ArNH2 reacting with aryl halides
+Supplementary Figure 14: Catalyst boxplot for Buchwald-Hartwig reactions for ArNH2 reacting with aryl halides
+Supplementary Figure 15: Ligand boxplot for Buchwald-Hartwig reactions for ArNH2 reacting with aryl halides
+Supplementary Figure 16: Solvent boxplot for Buchwald-Hartwig reactions for ArNH2 reacting with aryl halides
+Supplementary Figure 17: Catalyst boxplot for Buchwald-Hartwig reactions for ArNHR reacting with aryl halides
+Supplementary Figure 18: Ligand boxplot for Buchwald-Hartwig reactions for ArNHR reacting with aryl halides
+Supplementary Figure 19: Base boxplot for Buchwald-Hartwig reactions for R2NH reacting with aryl halides
+Supplementary Figure 20: Catalyst boxplot for Buchwald-Hartwig reactions for R2NH reacting with aryl halides
+Supplementary Figure 21: Ligand boxplot for Buchwald-Hartwig reactions for R2NH reacting with aryl halides
+Supplementary Figure 22: Solvent boxplot for Buchwald-Hartwig reactions for R2NH reacting with aryl halides
+Supplementary Figure 23: Ligand boxplot for Buchwald-Hartwig reactions for R2NH a-branch reacting with aryl halides
+Supplementary Figure 24: Catalyst boxplot for Buchwald-Hartwig reactions for RNH2 reacting with aryl halides
+Supplementary Figure 25: Ligand boxplot for Buchwald-Hartwig reactions for RNH2 reacting with aryl halides
+Supplementary Figure 26: Base boxplot for Buchwald-Hartwig reactions for RNH2 a-branch reacting with aryl halides
+Supplementary Figure 27: Catalyst boxplot for Buchwald-Hartwig reactions for RNH2 a-branch reacting with aryl halides
+Supplementary Figure 28: Ligand boxplot for Buchwald-Hartwig reactions for RNH2 a-branch reacting with aryl halides
+Supplementary Figure 29: Solvent boxplot for Buchwald-Hartwig reactions for RNH2 a-branch reacting with aryl halides
+Supplementary Figure 30: Catalyst boxplot for CH-Activation reactions
+Supplementary Figure 31: Base boxplot for CN-Coupling reactions
+Supplementary Figure 32: Catalyst boxplot for CN-Coupling reactions
+Supplementary Figure 33: Ligand boxplot for CN-Coupling reactions
+Supplementary Figure 34: Solvent boxplot for CN-Coupling reactions
+Supplementary Figure 35: Base boxplot for CO-Coupling reactions
+Supplementary Figure 36: Catalyst boxplot for CO-Coupling reactions
+Supplementary Figure 37: Ligand boxplot for CO-Coupling reactions
+Supplementary Figure 38: Solvent boxplot for CO-Coupling reactions
+Supplementary Figure 39: Base boxplot for Suzuki-Miyaura reactions for Aryl Groups
+Supplementary Figure 40: Catalyst boxplot for Suzuki-Miyaura reactions for Aryl Groups
+Supplementary Figure 41: Ligand boxplot for Suzuki-Miyaura reactions for Aryl Groups
+Supplementary Figure 42: Solvent boxplot for Suzuki-Miyaura reactions for Aryl Groups

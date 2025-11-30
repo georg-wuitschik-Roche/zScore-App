@@ -254,7 +254,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                 min=1,
                                 max=20,
                                 step=1,
-                                value=10,
+                                value=5,
                                 marks={i: str(i) for i in [1, 5, 10, 15, 20]},
                                 tooltip={"placement": "bottom", "always_visible": True},
                                 persistence=True,
