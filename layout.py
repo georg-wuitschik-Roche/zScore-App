@@ -54,6 +54,12 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
             dcc.Store(id='presentation-mode-store', data=False),
             # Store for interactive tutorial state
             dcc.Store(id='tutorial-store', data={'active': False, 'step': 0}),
+            # Store for user-uploaded dataset (memory storage - no size limit)
+            dcc.Store(id='uploaded-data-store', storage_type='memory'),
+            # Store for upload status messages
+            dcc.Store(id='upload-status-store', storage_type='memory'),
+            # Store for upload error modal visibility
+            dcc.Store(id='upload-error-store', storage_type='memory'),
             # --------------------------------------------------------------
             # 2.1  HEADER – logo & title
             # --------------------------------------------------------------
@@ -68,6 +74,27 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                     html.Div(
                         className="presentation-toggle-container",
                         children=[
+                            # Upload Dataset button with status indicator
+                            html.Div(
+                                className="upload-container",
+                                children=[
+                                    dcc.Upload(
+                                        id='upload-data',
+                                        children=html.Button(
+                                            "Upload Dataset",
+                                            id="upload-btn",
+                                            className="upload-btn"
+                                        ),
+                                        accept='.csv',
+                                        max_size=50 * 1024 * 1024,  # 50MB max
+                                    ),
+                                    html.Div(
+                                        id='upload-status-indicator',
+                                        className='upload-status',
+                                        children=[]
+                                    )
+                                ]
+                            ),
                             html.Button(
                                 "Reset",
                                 id="reset-btn"
@@ -396,7 +423,66 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
             ),
 
             # --------------------------------------------------------------
-            # 2.8  TUTORIAL OVERLAY
+            # 2.8  UPLOAD ERROR MODAL
+            # --------------------------------------------------------------
+            html.Div(
+                id='upload-error-modal',
+                className='upload-error-modal',
+                style={'display': 'none'},
+                children=[
+                    html.Div(
+                        className='upload-error-panel',
+                        children=[
+                            html.Div(
+                                className='upload-error-header',
+                                children=[
+                                    html.H3('Upload Error', style={'margin': '0', 'color': '#dc3545'}),
+                                    html.Button(
+                                        '×',
+                                        id='upload-error-close',
+                                        className='upload-error-close-btn',
+                                        n_clicks=0
+                                    )
+                                ]
+                            ),
+                            html.Div(
+                                id='upload-error-content',
+                                className='upload-error-body',
+                                children=[]
+                            ),
+                            html.Div(
+                                className='upload-error-footer',
+                                children=[
+                                    html.H4('Required Columns:', style={'marginBottom': '8px', 'marginTop': '16px'}),
+                                    html.Code(
+                                        'ELN_ID, PLATENUMBER, Coordinate, AREA_TOTAL_REDUCED, Base, Catalyst, '
+                                        'Solvent, Ligand, Reaction Type, FG A, FG B, FG_sorted, z-Score',
+                                        style={
+                                            'display': 'block', 
+                                            'padding': '12px', 
+                                            'background': '#f5f5f5', 
+                                            'borderRadius': '6px', 
+                                            'fontSize': '12px', 
+                                            'lineHeight': '1.6',
+                                            'whiteSpace': 'pre-wrap',
+                                            'wordBreak': 'break-word'
+                                        }
+                                    ),
+                                    html.Button(
+                                        'Close',
+                                        id='upload-error-close-btn',
+                                        style={'marginTop': '16px', 'width': '100%'},
+                                        n_clicks=0
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            ),
+
+            # --------------------------------------------------------------
+            # 2.9  TUTORIAL OVERLAY
             # --------------------------------------------------------------
             html.Div(
                 id='tutorial-overlay',
