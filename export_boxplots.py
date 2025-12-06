@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import os
+import shutil
 from pathlib import Path
-from typing import List
-import glob
+from typing import List, Optional, Tuple
 
 import pandas as pd
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Image, PageBreak, Spacer
-from reportlab.lib.units import inch
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import Paragraph
-from reportlab.lib.enums import TA_CENTER
+import plotly.graph_objects as go
 
 # Reuse app utilities
 import data_utils as du
@@ -36,10 +30,20 @@ INCLUDE_NULL_CATEGORIES = [True]
 
 
 def ensure_output_dir(path: Path) -> None:
+    """Create directory if it doesn't exist."""
     path.mkdir(parents=True, exist_ok=True)
 
 
+def clean_directory(path: Path, message: Optional[str] = None) -> None:
+    """Remove directory if it exists and print optional message."""
+    if path.exists():
+        if message:
+            print(message)
+        shutil.rmtree(path)
+
+
 def sanitize_filename(name: str) -> str:
+    """Convert a string to a safe filename."""
     return (
         name.replace("/", "-")
         .replace("\\", "-")
@@ -48,213 +52,66 @@ def sanitize_filename(name: str) -> str:
     )
 
 
-def create_flat_export(tree_root: Path, flat_root: Path) -> None:
-    """Create a flat export structure by copying all PNG files to a single directory.
-    
-    Args:
-        tree_root: Path to the tree structure directory
-        flat_root: Path to the flat export directory
-    """
-    # Clean up old flat export first
-    if flat_root.exists():
-        import shutil
-        print(f"Cleaning up existing flat export in {flat_root}")
-        shutil.rmtree(flat_root)
-    
-    ensure_output_dir(flat_root)
-    
-    # Find all PNG files in the tree structure
-    png_files = list(tree_root.glob("**/*.png"))
-    
-    if not png_files:
-        print("No PNG files found to copy to flat export")
-        return
-    
-    print(f"Copying {len(png_files)} PNG files to flat export...")
-    
-    for png_file in png_files:
-        try:
-            # Create a flat filename that includes the full path information
-            # Get the relative path from the tree root
-            rel_path = png_file.relative_to(tree_root)
-            
-            # Convert path separators to underscores and create a flat filename
-            flat_filename = str(rel_path).replace("/", "__").replace("\\", "__")
-            
-            # Copy the file to the flat directory
-            flat_path = flat_root / flat_filename
-            import shutil
-            shutil.copy2(png_file, flat_path)
-            print(f"  Copied: {rel_path} -> {flat_filename}")
-            
-        except Exception as e:
-            print(f"  Error copying {png_file}: {e}")
-            continue
-    
-    print(f"Flat export created with {len(png_files)} files in {flat_root}")
-
-
-def create_supplementary_figure_list(flat_root: Path) -> None:
-    """Create a list of supplementary figures from the flat export files.
-    
-    Args:
-        flat_root: Path to the flat export directory
-    """
-    # Find all PNG files in the flat export directory
-    png_files = list(flat_root.glob("*.png"))
-    
-    if not png_files:
-        print("No PNG files found to create supplementary figure list")
-        return
-    
-    # Sort files alphabetically
-    png_files.sort()
-    
-    # Create the supplementary figure list
-    figure_list = []
-    
-    for i, png_file in enumerate(png_files, start=2):  # Start with number 2
-        filename = png_file.stem  # Remove .png extension
-        
-        # Parse the filename to extract components
-        # Format: [reaction]__boxplot__[reaction]__[category] for most reactions
-        # Format: [reaction]__[functional_group]__boxplot__[category] for Buchwald-Hartwig
-        
-        parts = filename.split("__")
-        
-        if len(parts) >= 3:
-            if parts[0] == "Buchwald-Hartwig" and len(parts) >= 4:
-                # Buchwald-Hartwig format: Buchwald-Hartwig__[functional_group]__boxplot__[category]
-                reaction = "Buchwald-Hartwig"
-                functional_group = parts[1].replace("_", " ")
-                category = parts[3].replace("_", " ")
-                
-                # Create descriptive text
-                description = f"{category} boxplot for {reaction} reactions for {functional_group} reacting with aryl halides"
-            else:
-                # Other reactions format: [reaction]__boxplot__[reaction]__[category]
-                reaction = parts[0].replace("_", " ")
-                category = parts[3].replace("_", " ")
-                
-                # Handle special cases
-                if reaction == "Suzuki-Miyaura":
-                    description = f"{category} boxplot for {reaction} reactions for Aryl Groups"
-                elif reaction == "Amide coupling" and "Coupling Reagent" in category:
-                    description = f"{category} boxplot for {reaction} reactions"
-                else:
-                    description = f"{category} boxplot for {reaction} reactions"
-            
-            figure_list.append(f"Supplementary Figure {i}: {description}")
-        else:
-            # Fallback for unexpected format
-            figure_list.append(f"Supplementary Figure {i}: {filename.replace('_', ' ')}")
-    
-    # Write the list to a text file
-    list_file = flat_root / "supplementary_figure_list.txt"
-    with open(list_file, 'w') as f:
-        for item in figure_list:
-            f.write(item + "\n")
-    
-    print(f"Supplementary figure list created: {list_file}")
-    print(f"Generated {len(figure_list)} figure descriptions")
-    
-    # Also print to console
-    print("\nSupplementary Figure List:")
-    for item in figure_list:
-        print(item)
-
-
-def create_pdf_from_boxplots(output_root: Path) -> None:
-    """Create a PDF document containing all generated boxplot images.
-    
-    Args:
-        output_root: Path to the directory containing boxplot PNG files
-    """
-    # Find all PNG files in the output directory and subdirectories
-    png_files = list(output_root.glob("**/*.png"))
-    
-    if not png_files:
-        print("No PNG files found to include in PDF")
-        return
-    
-    # Sort files for consistent ordering
-    png_files.sort()
-    
-    # Create PDF filename
-    pdf_path = output_root / "all_boxplots.pdf"
-    
-    # Create PDF document
-    doc = SimpleDocTemplate(str(pdf_path), pagesize=A4)
-    story = []
-    
-    # Get styles
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
-        alignment=TA_CENTER,
-        textColor='#1d1d1f'
+def apply_publication_fonts(fig: go.Figure) -> None:
+    """Apply publication-quality font sizes to a figure."""
+    fig.update_layout(
+        title_font=dict(size=48, weight="normal"),
+        font=dict(size=32, weight="normal"),
+        xaxis=dict(
+            title_font=dict(size=36, weight="normal"),
+            tickfont=dict(size=28, weight="normal"),
+        ),
+        yaxis=dict(
+            title_font=dict(size=36, weight="normal"),
+            tickfont=dict(size=28, weight="normal"),
+        ),
     )
+
+
+def save_figure(
+    fig: go.Figure,
+    output_dir: Path,
+    base_filename: str,
+    adaptive_height: float,
+    indent: str = "  ",
+) -> None:
+    """Save a figure as both PNG and SVG.
     
-    # Add title page
-    story.append(Paragraph("Boxplot Analysis Report", title_style))
-    story.append(Spacer(1, 0.5*inch))
-    story.append(Paragraph(f"Generated on: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
-    story.append(Paragraph(f"Total plots: {len(png_files)}", styles['Normal']))
-    story.append(PageBreak())
+    Args:
+        fig: Plotly figure to save
+        output_dir: Directory to save files in
+        base_filename: Filename without extension
+        adaptive_height: Height value from create_boxplot
+        indent: Indentation for log messages
+    """
+    height = max(1000, int(adaptive_height * 1.25))
     
-    # Add each image to the PDF
-    for i, png_file in enumerate(png_files):
-        try:
-            # Create a title for the plot based on the filename
-            plot_title = png_file.stem.replace("boxplot__", "").replace("__", " - ").replace("_", " ")
-            
-            # Add plot title
-            story.append(Paragraph(f"Plot {i+1}: {plot_title}", styles['Heading2']))
-            story.append(Spacer(1, 0.2*inch))
-            
-            # Add the image
-            # Scale image to fit page width while maintaining aspect ratio
-            # First, get the actual image dimensions to calculate proper scaling
-            from PIL import Image as PILImage
-            with PILImage.open(png_file) as pil_img:
-                img_width, img_height = pil_img.size
-                aspect_ratio = img_height / img_width
-                
-                # Available space on page (considering margins)
-                # A4 page is 8.27 x 11.69 inches, with margins we have about 7.5 x 10 inches
-                max_width = 7.5 * inch
-                max_height = 9.5 * inch
-                
-                # Calculate dimensions that fit within page bounds
-                pdf_width = max_width
-                pdf_height = pdf_width * aspect_ratio
-                
-                # If height exceeds maximum, scale down by height instead
-                if pdf_height > max_height:
-                    pdf_height = max_height
-                    pdf_width = pdf_height / aspect_ratio
-                
-                img = Image(str(png_file), width=pdf_width, height=pdf_height)
-                story.append(img)
-            
-            # Add page break after every plot except the last one
-            if i < len(png_files) - 1:
-                story.append(PageBreak())
-                
-        except Exception as e:
-            print(f"Error adding {png_file} to PDF: {e}")
-            continue
-    
-    # Build the PDF
+    # Save PNG with high resolution
+    png_path = output_dir / f"{base_filename}.png"
     try:
-        doc.build(story)
-        print(f"PDF created successfully: {pdf_path}")
-        print(f"Included {len(png_files)} boxplot images")
+        fig.write_image(
+            str(png_path),
+            format="png",
+            width=1600,
+            height=height,
+            scale=4,
+        )
+        print(f"{indent}Saved -> {png_path}")
     except Exception as e:
-        print(f"Error creating PDF: {e}")
+        print(f"{indent}Failed to save PNG: {e}")
+
+    # Save SVG for vector graphics
+    svg_path = output_dir / f"{base_filename}.svg"
+    try:
+        fig.write_image(
+            str(svg_path),
+            format="svg",
+            width=1600,
+            height=height,
+        )
+        print(f"{indent}Saved -> {svg_path}")
+    except Exception as e:
+        print(f"{indent}Failed to save SVG: {e}")
 
 
 def _has_real_components(series: pd.Series) -> bool:
@@ -269,16 +126,200 @@ def _has_real_components(series: pd.Series) -> bool:
     return s[non_empty].nunique(dropna=True) > 0
 
 
-def export_boxplots(output_root: Path) -> None:
-    # Clean up old exports first
-    if output_root.exists():
-        import shutil
-        print(f"Cleaning up existing exports in {output_root}")
-        shutil.rmtree(output_root)
+def validate_data_for_plot(
+    dff: Optional[pd.DataFrame],
+    categories: List[str],
+    min_unique: int = 5,
+    indent: str = "  ",
+) -> bool:
+    """Validate that filtered data is suitable for plotting.
+    
+    Args:
+        dff: Filtered DataFrame
+        categories: List of category columns
+        min_unique: Minimum number of unique values required
+        indent: Indentation for log messages
+        
+    Returns:
+        True if data is valid for plotting, False otherwise
+    """
+    if dff is None or dff.empty:
+        print(f"{indent}Skipped (no data after filtering)")
+        return False
 
+    # Check for real components in each category
+    for cat in categories:
+        if cat not in dff.columns or not _has_real_components(dff[cat]):
+            print(f"{indent}Skipped (only '(no value)' component for {cat})")
+            return False
+
+    # Check minimum unique values
+    unique_values = dff[categories[0]].nunique()
+    if unique_values < min_unique:
+        print(f"{indent}Skipped (only {unique_values} unique values, need at least {min_unique})")
+        return False
+
+    return True
+
+
+def create_flat_export(tree_root: Path, flat_root: Path) -> None:
+    """Create a flat export structure by copying all image files to a single directory.
+    
+    Args:
+        tree_root: Path to the tree structure directory
+        flat_root: Path to the flat export directory
+    """
+    clean_directory(flat_root, f"Cleaning up existing flat export in {flat_root}")
+    ensure_output_dir(flat_root)
+    
+    # Find all PNG and SVG files in the tree structure
+    image_files = list(tree_root.glob("**/*.png")) + list(tree_root.glob("**/*.svg"))
+    
+    if not image_files:
+        print("No image files found to copy to flat export")
+        return
+    
+    print(f"Copying {len(image_files)} image files to flat export...")
+    
+    for image_file in image_files:
+        try:
+            # Get relative path and convert to flat filename
+            rel_path = image_file.relative_to(tree_root)
+            flat_filename = str(rel_path).replace("/", "__").replace("\\", "__")
+            flat_path = flat_root / flat_filename
+            shutil.copy2(image_file, flat_path)
+            print(f"  Copied: {rel_path} -> {flat_filename}")
+        except Exception as e:
+            print(f"  Error copying {image_file}: {e}")
+    
+    print(f"Flat export created with {len(image_files)} files in {flat_root}")
+
+
+def create_supplementary_figure_list(flat_root: Path) -> None:
+    """Create a list of supplementary figures from the flat export files.
+    
+    Args:
+        flat_root: Path to the flat export directory
+    """
+    png_files = sorted(flat_root.glob("*.png"))
+    
+    if not png_files:
+        print("No PNG files found to create supplementary figure list")
+        return
+    
+    figure_list = []
+    
+    for i, png_file in enumerate(png_files, start=2):
+        filename = png_file.stem
+        parts = filename.split("__")
+        
+        if len(parts) >= 3:
+            if parts[0] == "Buchwald-Hartwig" and len(parts) >= 4:
+                reaction = "Buchwald-Hartwig"
+                functional_group = parts[1].replace("_", " ")
+                category = parts[3].replace("_", " ")
+                description = f"{category} boxplot for {reaction} reactions for {functional_group} reacting with aryl halides"
+            else:
+                reaction = parts[0].replace("_", " ")
+                category = parts[3].replace("_", " ")
+                
+                if reaction == "Suzuki-Miyaura":
+                    description = f"{category} boxplot for {reaction} reactions for Aryl Groups"
+                elif reaction == "Amide coupling" and "Coupling Reagent" in category:
+                    description = f"{category} boxplot for {reaction} reactions"
+                else:
+                    description = f"{category} boxplot for {reaction} reactions"
+            
+            figure_list.append(f"Supplementary Figure {i}: {description}")
+        else:
+            figure_list.append(f"Supplementary Figure {i}: {filename.replace('_', ' ')}")
+    
+    # Write the list to a text file
+    list_file = flat_root / "supplementary_figure_list.txt"
+    with open(list_file, 'w') as f:
+        for item in figure_list:
+            f.write(item + "\n")
+    
+    print(f"Supplementary figure list created: {list_file}")
+    print(f"Generated {len(figure_list)} figure descriptions")
+    print("\nSupplementary Figure List:")
+    for item in figure_list:
+        print(item)
+
+
+def generate_boxplot(
+    categories: List[str],
+    reaction: str,
+    fg_a: List[str],
+    fg_b: List[str],
+    output_dir: Path,
+    base_filename: str,
+    title_reaction: str,
+    min_eln: int = 5,
+    topn_zscore: int = DEFAULT_TOPN_ZSCORE,
+    max_components: Optional[int] = DEFAULT_MAX_COMPONENTS,
+    min_unique: int = 5,
+    indent: str = "  ",
+) -> bool:
+    """Generate and save a boxplot with the given parameters.
+    
+    Args:
+        categories: List of category columns to plot
+        reaction: Reaction type to filter by
+        fg_a: Functional group A filter
+        fg_b: Functional group B filter
+        output_dir: Directory to save the figure
+        base_filename: Base filename without extension
+        title_reaction: Title to display on the plot
+        min_eln: Minimum ELN count filter
+        topn_zscore: Top N z-score filter
+        max_components: Maximum components to include
+        min_unique: Minimum unique values required
+        indent: Indentation for log messages
+        
+    Returns:
+        True if plot was generated successfully, False otherwise
+    """
+    # Filter data
+    dff = du.filter_data(
+        reactant_types=categories,
+        reaction_types=[reaction],
+        fg_a=fg_a,
+        fg_b=fg_b,
+        exclude_cui=EXCLUDE_CUI,
+        exclude_scaleup=EXCLUDE_SCALEUP,
+        include_null_categories=INCLUDE_NULL_CATEGORIES,
+        min_eln=min_eln,
+        topn_zscore=topn_zscore,
+        max_components=max_components,
+    )
+
+    # Validate data
+    if not validate_data_for_plot(dff, categories, min_unique=min_unique, indent=indent):
+        return False
+
+    try:
+        fig, adaptive_height = pu.create_boxplot(
+            dff,
+            categories,
+            presentation_mode=True,
+            reaction_type=title_reaction,
+            max_categories=max_components if max_components else 13,
+        )
+        apply_publication_fonts(fig)
+    except Exception as e:
+        print(f"{indent}Failed to create figure: {e}")
+        return False
+
+    save_figure(fig, output_dir, base_filename, adaptive_height, indent=indent)
+    return True
+
+
+def export_boxplots(output_root: Path) -> None:
+    """Export all boxplots for supplementary materials."""
+    clean_directory(output_root, f"Cleaning up existing exports in {output_root}")
     ensure_output_dir(output_root)
 
-    # Filter to only specific reaction types as requested
     allowed_reactions = [
         "Buchwald-Hartwig",
         "Suzuki-Miyaura", 
@@ -294,126 +335,58 @@ def export_boxplots(output_root: Path) -> None:
         print(f"No allowed reaction types found in dataset. Looking for: {allowed_reactions}")
         return
 
-    # Filter to only specific categories as requested
     allowed_categories = ["Solvent", "Base", "Catalyst", "Ligand"]
-    
-    # Generate only single category plots
     single_categories = [[cat] for cat in allowed_categories]
     print(f"Will generate plots for {len(single_categories)} single categories only: {allowed_categories}")
 
     for reaction in reactions:
-        # Prepare per-reaction path but do not create yet
         reaction_dir = output_root / sanitize_filename(reaction)
         reaction_dir_created = False
 
-        # Use a constant minimum ELN across all reactions for exports
-        min_eln = 5
-
         # Get categories for this reaction
         if reaction == "Amide coupling":
-            # For Amide coupling, include the combination plot
             reaction_categories = single_categories + [["Coupling Reagent", "Additive"]]
         elif reaction == "Buchwald-Hartwig":
-            # For Buchwald-Hartwig, we'll handle this separately with functional group filtering
-            reaction_categories = []
+            reaction_categories = []  # Handled separately
         else:
-            # For all other reactions, use only single categories
             reaction_categories = single_categories
 
+        # Set functional group filters based on reaction type
+        if reaction == "Suzuki-Miyaura":
+            fg_a_filter = ['ArCl', 'ArI', 'ArBr']
+            fg_b_filter = ['All']
+        else:
+            fg_a_filter = ['All']
+            fg_b_filter = ['All']
+
         for categories in reaction_categories:
-            category_name = " + ".join(categories)  # Single category name except for Amide coupling
+            category_name = " + ".join(categories)
             print(f"Generating boxplot for reaction='{reaction}', category='{category_name}'")
 
-            # Set functional group filters based on reaction type
-            if reaction == "Suzuki-Miyaura":
-                fg_a_filter = ['ArCl', 'ArI', 'ArBr']
-                fg_b_filter = ['All']
-            else:
-                fg_a_filter = ['All']
-                fg_b_filter = ['All']
-
-            # Filter data the same way dashboard does
-            dff = du.filter_data(
-                reactant_types=categories,
-                reaction_types=[reaction],
-                fg_a=fg_a_filter,
-                fg_b=fg_b_filter,
-                exclude_cui=EXCLUDE_CUI,
-                exclude_scaleup=EXCLUDE_SCALEUP,
-                include_null_categories=INCLUDE_NULL_CATEGORIES,
-                min_eln=min_eln,
-                topn_zscore=DEFAULT_TOPN_ZSCORE,
-                max_components=DEFAULT_MAX_COMPONENTS,
-            )
-
-            if dff is None or dff.empty:
-                print(f"  Skipped (no data after filtering)")
-                continue
-
-            # Skip when only '(no value)' would be present for any category
-            skip_plot = False
-            for cat in categories:
-                if cat not in dff.columns or not _has_real_components(dff[cat]):
-                    print(f"  Skipped (only '(no value)' component for {cat})")
-                    skip_plot = True
-                    break
-
-            if skip_plot:
-                continue
-
-            # Check if there are at least 5 unique values in the category
-            unique_values = dff[categories[0]].nunique()
-
-            if unique_values < 5:
-                print(f"  Skipped (only {unique_values} unique values, need at least 5)")
-                continue
-
-            try:
-                # Customize title for Suzuki-Miyaura reactions
-                if reaction == "Suzuki-Miyaura":
-                    title_reaction = f"{reaction} - Aryl Groups"
-                else:
-                    title_reaction = reaction
-                
-                fig, adaptive_height = pu.create_boxplot(dff, categories, presentation_mode=True, reaction_type=title_reaction, max_categories=13)
-                
-                # Further increase font sizes for publication quality
-                fig.update_layout(
-                    title_font_size=48,
-                    font_size=32,
-                    xaxis_title_font_size=36,
-                    yaxis_title_font_size=36,
-                    xaxis_tickfont_size=28,
-                    yaxis_tickfont_size=28,
-                )
-            except Exception as e:
-                print(f"  Failed to create figure: {e}")
-                continue
-
-            # Create reaction directory on first successful figure for this reaction
+            title_reaction = f"{reaction} - Aryl Groups" if reaction == "Suzuki-Miyaura" else reaction
+            
             if not reaction_dir_created:
                 ensure_output_dir(reaction_dir)
                 reaction_dir_created = True
 
-            # Save PNG with high resolution
             category_filename = sanitize_filename(" + ".join(categories))
-            filename = f"boxplot__{sanitize_filename(reaction)}__{category_filename}.png"
-            out_path = reaction_dir / filename
-            try:
-                fig.write_image(
-                    str(out_path),
-                    format="png",
-                    width=1600,
-                    height=max(1000, int(adaptive_height * 1.25)),
-                    scale=4,
-                )
-                print(f"  Saved -> {out_path}")
-            except Exception as e:
-                print(f"  Failed to save image: {e}")
+            base_filename = f"boxplot__{sanitize_filename(reaction)}__{category_filename}"
+            
+            generate_boxplot(
+                categories=categories,
+                reaction=reaction,
+                fg_a=fg_a_filter,
+                fg_b=fg_b_filter,
+                output_dir=reaction_dir,
+                base_filename=base_filename,
+                title_reaction=title_reaction,
+            )
 
         # Special handling for Buchwald-Hartwig with functional group filtering
         if reaction == "Buchwald-Hartwig":
-            # Define functional group sets for Buchwald-Hartwig
+            if not reaction_dir_created:
+                ensure_output_dir(reaction_dir)
+                
             fg_groups = [
                 (["RNH2"], "RNH2"),
                 (["RNH2 a-branch"], "RNH2_a-branch"),
@@ -426,122 +399,131 @@ def export_boxplots(output_root: Path) -> None:
             
             for fg_list, fg_name in fg_groups:
                 print(f"Generating Buchwald-Hartwig plots for functional group: {fg_name}")
-                
-                # Create subfolder for this functional group
                 fg_dir = reaction_dir / sanitize_filename(fg_name)
                 ensure_output_dir(fg_dir)
                 
                 for categories in single_categories:
-                    category_name = " + ".join(categories)  # Single category name
+                    category_name = " + ".join(categories)
                     print(f"  Generating boxplot for category='{category_name}', FG='{fg_name}'")
                     
-                    # Filter data for this specific functional group
-                    # For Buchwald-Hartwig, limit FG B to only ArBr, ArI, and ArCl
-                    dff = du.filter_data(
-                        reactant_types=categories,
-                        reaction_types=[reaction],
+                    title_reaction = f"{reaction} - {fg_name}"
+                    category_filename = sanitize_filename(" + ".join(categories))
+                    base_filename = f"boxplot__{category_filename}"
+                    
+                    generate_boxplot(
+                        categories=categories,
+                        reaction=reaction,
                         fg_a=fg_list,
                         fg_b=['ArBr', 'ArI', 'ArCl'],
-                        exclude_cui=EXCLUDE_CUI,
-                        exclude_scaleup=EXCLUDE_SCALEUP,
-                        include_null_categories=INCLUDE_NULL_CATEGORIES,
-                        min_eln=min_eln,
-                        topn_zscore=DEFAULT_TOPN_ZSCORE,
-                        max_components=DEFAULT_MAX_COMPONENTS,
+                        output_dir=fg_dir,
+                        base_filename=base_filename,
+                        title_reaction=title_reaction,
+                        indent="    ",
                     )
 
-                    if dff is None or dff.empty:
-                        print(f"    Skipped (no data after filtering)")
-                        continue
-
-                    # Skip when only '(no value)' would be present for any category
-                    skip_plot = False
-                    for cat in categories:
-                        if cat not in dff.columns or not _has_real_components(dff[cat]):
-                            print(f"    Skipped (only '(no value)' component for {cat})")
-                            skip_plot = True
-                            break
-
-                    if skip_plot:
-                        continue
-
-                    # Check if there are at least 5 unique values in the category
-                    unique_values = dff[categories[0]].nunique()
-
-                    if unique_values < 5:
-                        print(f"    Skipped (only {unique_values} unique values, need at least 5)")
-                        continue
-
-                    try:
-                        # Create custom title for Buchwald-Hartwig with functional group
-                        title_reaction = f"{reaction} - {fg_name}"
-                        
-                        fig, adaptive_height = pu.create_boxplot(dff, categories, presentation_mode=True, reaction_type=title_reaction, max_categories=13)
-                        
-                        # Further increase font sizes for publication quality
-                        fig.update_layout(
-                            title_font_size=48,
-                            font_size=32,
-                            xaxis_title_font_size=36,
-                            yaxis_title_font_size=36,
-                            xaxis_tickfont_size=28,
-                            yaxis_tickfont_size=28,
-                        )
-                    except Exception as e:
-                        print(f"    Failed to create figure: {e}")
-                        continue
-
-                    # Save PNG with high resolution
-                    category_filename = sanitize_filename(" + ".join(categories))
-                    filename = f"boxplot__{category_filename}.png"
-                    out_path = fg_dir / filename
-                    try:
-                        fig.write_image(
-                            str(out_path),
-                            format="png",
-                            width=1600,
-                            height=max(1000, int(adaptive_height * 1.25)),
-                            scale=4,
-                        )
-                        print(f"    Saved -> {out_path}")
-                    except Exception as e:
-                        print(f"    Failed to save image: {e}")
-
-    # Generate PDF with all boxplots after PNG export is complete
-    print("\nGenerating PDF with all boxplots...")
-    create_pdf_from_boxplots(output_root)
-    
     # Create flat export structure
     print("\nCreating flat export structure...")
     flat_export_dir = output_root.parent / "flat_export"
     create_flat_export(output_root, flat_export_dir)
-    
-    # Generate PDF for flat export as well
-    print("\nGenerating PDF for flat export...")
-    create_pdf_from_boxplots(flat_export_dir)
     
     # Create supplementary figure list
     print("\nCreating supplementary figure list...")
     create_supplementary_figure_list(flat_export_dir)
 
 
-def update_pdf_only(output_root: Path) -> None:
-    """Update only the PDF file using existing PNG files.
+def export_paper_boxplots(output_root: Path) -> None:
+    """Export specific boxplots for paper figures.
     
-    Args:
-        output_root: Path to the directory containing boxplot PNG files
+    This function exports four specific plots:
+    1. Boxplot of z-score by ligand for aryl bromides/aryl chlorides reacting with 
+       secondary amines (top 10 ligands) - Buchwald-Hartwig
+    2. Boxplot of z-score by catalyst for aryl halides reacting with secondary amines 
+       (top 10 catalysts) - Buchwald-Hartwig
+    3. Boxplot of z-score by catalyst for aryl halides reacting with aryl boronates 
+       (top 12 catalysts) - Suzuki-Miyaura
+    4. Boxplot of z-score by solvent/base combinations for aryl halides reacting with 
+       aryl boronates (top 10 combinations) - Suzuki-Miyaura
     """
-    print("Updating PDF with existing boxplot images...")
-    create_pdf_from_boxplots(output_root)
+    clean_directory(output_root, f"Cleaning up existing exports in {output_root}")
+    ensure_output_dir(output_root)
+
+    plots = [
+        {
+            "name": "buchwald_hartwig_ligand_R2NH_ArX",
+            "title": "Buchwald-Hartwig - Secondary Amines + Aryl Halides",
+            "description": "z-score by ligand for aryl bromides/chlorides reacting with secondary amines",
+            "reaction_type": "Buchwald-Hartwig",
+            "category": ["Ligand"],
+            "fg_a": ["R2NH"],
+            "fg_b": ["ArBr", "ArCl", "ArI"],
+            "max_components": 10,
+        },
+        {
+            "name": "buchwald_hartwig_catalyst_R2NH_ArX",
+            "title": "Buchwald-Hartwig - Secondary Amines + Aryl Halides",
+            "description": "z-score by catalyst for aryl halides reacting with secondary amines",
+            "reaction_type": "Buchwald-Hartwig",
+            "category": ["Catalyst"],
+            "fg_a": ["R2NH"],
+            "fg_b": ["ArBr", "ArCl", "ArI"],
+            "max_components": 10,
+        },
+        {
+            "name": "suzuki_miyaura_catalyst_ArX_ArB",
+            "title": "Suzuki-Miyaura - Aryl Halides + Aryl Boronates",
+            "description": "z-score by catalyst for aryl halides reacting with aryl boronates",
+            "reaction_type": "Suzuki-Miyaura",
+            "category": ["Catalyst"],
+            "fg_a": ["ArBr", "ArCl", "ArI"],
+            "fg_b": ["ArB(OR)2", "ArB(OH)2", "ArBF3K"],
+            "max_components": 12,
+        },
+        {
+            "name": "suzuki_miyaura_solvent_base_ArX_ArB",
+            "title": "Suzuki-Miyaura - Aryl Halides + Aryl Boronates",
+            "description": "z-score by solvent/base combinations for aryl halides reacting with aryl boronates",
+            "reaction_type": "Suzuki-Miyaura",
+            "category": ["Solvent", "Base"],
+            "fg_a": ["ArBr", "ArCl", "ArI"],
+            "fg_b": ["ArB(OR)2", "ArB(OH)2", "ArBF3K"],
+            "max_components": 10,
+        },
+    ]
+
+    for plot_config in plots:
+        print(f"\nGenerating: {plot_config['description']}")
+        
+        generate_boxplot(
+            categories=plot_config["category"],
+            reaction=plot_config["reaction_type"],
+            fg_a=plot_config["fg_a"],
+            fg_b=plot_config["fg_b"],
+            output_dir=output_root,
+            base_filename=plot_config["name"],
+            title_reaction=plot_config["title"],
+            topn_zscore=5,
+            max_components=plot_config["max_components"],
+            min_unique=2,
+        )
 
 
 if __name__ == "__main__":
     import sys
     
-    out_dir = Path("exports") / "boxplots"
-    
-    # Check if user wants to update PDF only
-    if len(sys.argv) > 1 and sys.argv[1] == "--pdf-only":
-        update_pdf_only(out_dir)
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--paper":
+            out_dir = Path("exports") / "paper_boxplots"
+            export_paper_boxplots(out_dir)
+        elif sys.argv[1] == "--help" or sys.argv[1] == "-h":
+            print("Usage: python export_boxplots.py [OPTIONS]")
+            print()
+            print("Options:")
+            print("  (no args)    Export all boxplots to exports/boxplots/")
+            print("  --paper      Export paper-specific boxplots to exports/paper_boxplots/")
+            print("  --help, -h   Show this help message")
+        else:
+            print(f"Unknown option: {sys.argv[1]}")
+            print("Use --help for usage information")
     else:
+        out_dir = Path("exports") / "boxplots"
         export_boxplots(out_dir)
