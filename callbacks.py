@@ -13,13 +13,21 @@ by having a clean, top-level entry point.
 """
 
 import io
-from typing import Tuple
+import base64
+from typing import Tuple, List
 
 import pandas as pd
 from dash import Input, Output, State, callback_context, dcc, html, no_update
 
 import data_utils as du
 import plot_utils as pu
+
+# Required columns for uploaded datasets
+REQUIRED_COLUMNS = [
+    'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
+    'Base', 'Catalyst', 'Solvent', 'Ligand', 'Reaction Type',
+    'FG A', 'FG B', 'FG_sorted', 'z-Score'
+]
 
 ## ---------------------------------------------------------------------------
 # Public – callback registration
@@ -66,6 +74,200 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
 
 
     # ------------------------------------------------------------------
+    # Dataset upload processing -----------------------------------------
+    # ------------------------------------------------------------------
+    @app.callback(
+        [Output('uploaded-data-store', 'data'),
+         Output('upload-status-indicator', 'children'),
+         Output('upload-status-indicator', 'className'),
+         Output('upload-error-modal', 'style'),
+         Output('upload-error-content', 'children')],
+        [Input('upload-data', 'contents')],
+        [State('upload-data', 'filename')],
+        prevent_initial_call=True
+    )
+    def _process_uploaded_data(contents, filename):
+        """Parse uploaded CSV file, validate schema, and store in browser session."""
+        if contents is None:
+            return no_update, no_update, no_update, no_update, no_update
+        
+        modal_hidden = {'display': 'none'}
+        modal_visible = {'display': 'flex'}
+        
+        try:
+            # Decode the base64 content
+            content_type, content_string = contents.split(',')
+            decoded = base64.b64decode(content_string)
+            
+            # Try to read CSV with encoding and delimiter detection
+            encodings_to_try = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+            delimiters_to_try = [',', ';', '\t']
+            df = None
+            
+            for encoding in encodings_to_try:
+                for delimiter in delimiters_to_try:
+                    try:
+                        df = pd.read_csv(io.BytesIO(decoded), encoding=encoding, sep=delimiter)
+                        # Check if we got a reasonable number of columns (more than 1)
+                        if len(df.columns) > 1:
+                            break
+                    except (UnicodeDecodeError, pd.errors.ParserError):
+                        continue
+                if df is not None and len(df.columns) > 1:
+                    break
+            
+            if df is None or len(df.columns) <= 1:
+                error_content = html.Div([
+                    html.P([
+                        html.Strong('File: '), filename
+                    ]),
+                    html.P([
+                        html.Strong('Error: '), 
+                        'Could not decode the file. The file encoding is not supported.'
+                    ]),
+                    html.P('Please ensure your CSV file is saved with UTF-8 encoding.')
+                ])
+                return (
+                    None,
+                    html.Span('Upload failed'),
+                    'upload-status error',
+                    modal_visible,
+                    error_content
+                )
+            
+            # Validate required columns
+            missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+            if missing_cols:
+                # Show columns found in the file
+                found_cols = list(df.columns)
+                error_content = html.Div([
+                    html.P([
+                        html.Strong('File: '), filename
+                    ]),
+                    html.P([
+                        html.Strong('Error: '), 
+                        f'Missing required columns: {", ".join(missing_cols)}'
+                    ]),
+                    html.P([
+                        html.Strong('Columns found in your file:')
+                    ]),
+                    html.Code(
+                        ', '.join(found_cols[:20]) + ('...' if len(found_cols) > 20 else ''),
+                        style={'display': 'block', 'padding': '8px', 'background': '#f5f5f5', 
+                               'borderRadius': '4px', 'fontSize': '12px', 'marginTop': '4px'}
+                    ),
+                ])
+                return (
+                    None,
+                    html.Span('Missing columns'),
+                    'upload-status error',
+                    modal_visible,
+                    error_content
+                )
+            
+            # Clean the data similar to default dataset processing
+            df["z-Score"] = (
+                df["z-Score"].astype(str).str.replace(",", ".").str.strip().pipe(pd.to_numeric, errors="coerce")
+            )
+            
+            # Check if z-Score has valid numeric values
+            valid_zscores = df["z-Score"].notna().sum()
+            if valid_zscores == 0:
+                error_content = html.Div([
+                    html.P([
+                        html.Strong('File: '), filename
+                    ]),
+                    html.P([
+                        html.Strong('Error: '), 
+                        'The z-Score column contains no valid numeric values.'
+                    ]),
+                    html.P('Please ensure the z-Score column contains numeric values (decimals can use . or , as separator).')
+                ])
+                return (
+                    None,
+                    html.Span('Invalid z-Score'),
+                    'upload-status error',
+                    modal_visible,
+                    error_content
+                )
+            
+            if "AREA_TOTAL_REDUCED" in df.columns:
+                df["AREA_TOTAL_REDUCED"] = (
+                    df["AREA_TOTAL_REDUCED"].astype(str).str.replace(",", ".").str.strip().pipe(pd.to_numeric, errors="coerce")
+                )
+            
+            # Create FG_PAIR_SORTED if FG A and FG B exist
+            if "FG A" in df.columns and "FG B" in df.columns:
+                if "FG_sorted" in df.columns:
+                    df["FG_PAIR_SORTED"] = df["FG_sorted"]
+                else:
+                    df["FG_PAIR_SORTED"] = df.apply(
+                        lambda r: ", ".join(sorted([str(r["FG A"]), str(r["FG B"])])), axis=1
+                    )
+            
+            # Convert DataFrame to JSON for storage
+            data_json = df.to_json(date_format='iso', orient='split')
+            
+            row_count = len(df)
+            status_text = f'Using: {filename} ({row_count:,} rows)'
+            
+            return (
+                data_json,
+                html.Span([
+                    html.I(className='fas fa-check-circle', style={'marginRight': '4px'}),
+                    status_text
+                ]),
+                'upload-status success',
+                modal_hidden,
+                []
+            )
+            
+        except Exception as e:
+            error_content = html.Div([
+                html.P([
+                    html.Strong('File: '), filename if filename else 'Unknown'
+                ]),
+                html.P([
+                    html.Strong('Error: '), 
+                    str(e)
+                ]),
+                html.P('Please check that your file is a valid CSV file.')
+            ])
+            return (
+                None,
+                html.Span('Upload failed'),
+                'upload-status error',
+                modal_visible,
+                error_content
+            )
+
+    # ------------------------------------------------------------------
+    # Close upload error modal ------------------------------------------
+    # ------------------------------------------------------------------
+    @app.callback(
+        Output('upload-error-modal', 'style', allow_duplicate=True),
+        [Input('upload-error-close', 'n_clicks'),
+         Input('upload-error-close-btn', 'n_clicks')],
+        prevent_initial_call=True
+    )
+    def _close_upload_error_modal(close_x, close_btn):
+        """Close the upload error modal."""
+        return {'display': 'none'}
+
+    # ------------------------------------------------------------------
+    # Update reaction type dropdown options on data upload --------------
+    # ------------------------------------------------------------------
+    @app.callback(
+        Output('reaction-type-dropdown', 'options'),
+        [Input('uploaded-data-store', 'data')]
+    )
+    def _update_reaction_type_options(uploaded_data):
+        """Update reaction type dropdown options based on uploaded or default data."""
+        source_df = du.get_active_dataframe(uploaded_data)
+        reaction_types = du.get_reaction_types_from_data(source_df)
+        return [{"label": rt, "value": rt} for rt in reaction_types]
+
+    # ------------------------------------------------------------------
     # Central compute: filtered data + stats ---------------------------------
     # ------------------------------------------------------------------
     @app.callback(
@@ -79,15 +281,20 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Input('include-null-categories-checkbox', 'value'),
          Input('min-eln-input', 'value'),
          Input('topn-zscore-input', 'value'),
-         Input('max-components-input', 'value')]
+         Input('max-components-input', 'value'),
+         Input('uploaded-data-store', 'data')]
     )
     def _compute_stats(reactant_types, reaction_types, fg_a, fg_b,
-                       exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components):
+                       exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components,
+                       uploaded_data):
+        # Get source DataFrame (uploaded or default)
+        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
+        
         # Compute filtered dataset and stats in a single call, return only stats to client
         _dff, stats = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
                                      exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
                                      min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components,
-                                     return_stats=True)
+                                     return_stats=True, source_df=source_df)
         return stats
 
     # ------------------------------------------------------------------
@@ -95,17 +302,21 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     @app.callback(
         Output('reactant-types-dropdown', 'options'),
-        [Input('reaction-type-dropdown', 'value')]
+        [Input('reaction-type-dropdown', 'value'),
+         Input('uploaded-data-store', 'data')]
     )
-    def _update_reactant_types_options(reaction_types):
+    def _update_reactant_types_options(reaction_types, uploaded_data):
         """Update reactant types dropdown options based on selected reaction types."""
+        # Get source DataFrame (uploaded or default)
+        source_df = du.get_active_dataframe(uploaded_data)
+        
         if not reaction_types or len(reaction_types) == 0:
             # Always exclude Functional Group A and Functional Group B
             filtered_categories = [c for c in du.CATEGORY_OPTIONS if c not in ['Functional Group A', 'Functional Group B']]
             return [{'label': c, 'value': c} for c in filtered_categories]
         
         # Filter data for the selected reaction types
-        dff = du.DF[du.DF['Reaction Type'].isin(reaction_types)]
+        dff = source_df[source_df['Reaction Type'].isin(reaction_types)]
         
         # Check which categories have non-null values for these reaction types
         # Always exclude Functional Group A and Functional Group B
@@ -119,19 +330,22 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         return [{'label': c, 'value': c} for c in available_categories]
 
     # ------------------------------------------------------------------
-    # Functional-group A (formerly “aryl halide”) -----------------------
+    # Functional-group A (formerly "aryl halide") -----------------------
     # ------------------------------------------------------------------
     @app.callback(
         Output('functional-group-a-dropdown', 'options'),
-        [Input('reaction-type-dropdown', 'value')]
+        [Input('reaction-type-dropdown', 'value'),
+         Input('uploaded-data-store', 'data')]
     )
-    def _update_fg_a_options(reaction_types):
+    def _update_fg_a_options(reaction_types, uploaded_data):
         """Populate *Functional Group A* dropdown based on chosen reaction types."""
 
         if not reaction_types:
             return [{'label': 'All', 'value': 'All'}]
 
-        dff = du.DF[du.DF['Reaction Type'].isin(reaction_types)]
+        # Get source DataFrame (uploaded or default)
+        source_df = du.get_active_dataframe(uploaded_data)
+        dff = source_df[source_df['Reaction Type'].isin(reaction_types)]
 
         if {'FG A', 'FG B'}.issubset(dff.columns):
             fg_values = pd.Series(pd.concat([dff['FG A'], dff['FG B']])).dropna().unique()
@@ -142,20 +356,23 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         return [{'label': 'All', 'value': 'All'}]
 
     # ------------------------------------------------------------------
-    # Functional-group B (formerly “N-nucleophile/boronate”) -------------
+    # Functional-group B (formerly "N-nucleophile/boronate") -------------
     # ------------------------------------------------------------------
     @app.callback(
         Output('functional-group-b-dropdown', 'options'),
         [Input('reaction-type-dropdown', 'value'),
-         Input('functional-group-a-dropdown', 'value')]
+         Input('functional-group-a-dropdown', 'value'),
+         Input('uploaded-data-store', 'data')]
     )
-    def _update_fg_b_options(reaction_types, fg_a):
+    def _update_fg_b_options(reaction_types, fg_a, uploaded_data):
         """Return Functional-group B options conditioned on *FG A* selection."""
 
         if not reaction_types:
             return [{'label': 'All', 'value': 'All'}]
 
-        dff = du.DF[du.DF['Reaction Type'].isin(reaction_types)]
+        # Get source DataFrame (uploaded or default)
+        source_df = du.get_active_dataframe(uploaded_data)
+        dff = source_df[source_df['Reaction Type'].isin(reaction_types)]
 
         if {'FG A', 'FG B'}.issubset(dff.columns):
             # Handle multi-selection for FG A
@@ -270,19 +487,23 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Input('reaction-type-dropdown', 'value')],
         [State('reactant-types-dropdown', 'value'),
          State('functional-group-a-dropdown', 'options'),
-         State('functional-group-b-dropdown', 'options')],
+         State('functional-group-b-dropdown', 'options'),
+         State('uploaded-data-store', 'data')],
         prevent_initial_call=True
     )
-    def _reset_filters_and_update_min_eln(n_clicks, reaction_types, current_reactant_types, fg_a_options, fg_b_options):
+    def _reset_filters_and_update_min_eln(n_clicks, reaction_types, current_reactant_types, fg_a_options, fg_b_options, uploaded_data):
         """Reset filters or update min ELN based on trigger."""
         ctx = callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+        
+        # Get source DataFrame (uploaded or default)
+        source_df = du.get_active_dataframe(uploaded_data)
         
         if triggered_id == 'reset-btn':
             # Reset all filters
             # Get available categories for the current reaction types
             if reaction_types and len(reaction_types) > 0:
-                dff = du.DF[du.DF['Reaction Type'].isin(reaction_types)]
+                dff = source_df[source_df['Reaction Type'].isin(reaction_types)]
                 available_categories = []
                 for category in du.CATEGORY_OPTIONS:
                     if (category in dff.columns and 
@@ -503,18 +724,23 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Input('min-eln-input', 'value'),
          Input('topn-zscore-input', 'value'),
          Input('max-components-input', 'value'),
-         Input('analysis-tabs', 'value')]
+         Input('analysis-tabs', 'value'),
+         Input('uploaded-data-store', 'data')]
     )
     def _update_stats_table(reactant_types, reaction_types, fg_a, fg_b,
-                            exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab):
+                            exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab,
+                            uploaded_data):
         # Only update if statistics tab is active
         if active_tab != 'tab-stats':
             return no_update
         
+        # Get source DataFrame (uploaded or default)
+        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
+        
         # Compute filtered data server-side
         dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
                              exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                             min_eln=None, topn_zscore=topn_zscore, max_components=None)
+                             min_eln=None, topn_zscore=topn_zscore, max_components=None, source_df=source_df)
         
         if dff is None or dff.empty:
             return html.Div('No data available for the current filters.', style={'color': '#6c757d'})
@@ -632,16 +858,21 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         State('min-eln-input', 'value'),
         State('topn-zscore-input', 'value'),
         State('max-components-input', 'value'),
+        State('uploaded-data-store', 'data'),
         prevent_initial_call=True,
     )
     def _download_csv(n_clicks, reactant_types, reaction_types, fg_a, fg_b,
-                      exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components):
+                      exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components,
+                      uploaded_data):
         if not n_clicks:
             return no_update
         try:
+            # Get source DataFrame (uploaded or default)
+            source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
+            
             dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
                                  exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                                 min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components)
+                                 min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
             return dcc.send_data_frame(dff.to_csv, "filtered_data.csv", index=False)
         except Exception:
             return no_update
@@ -664,10 +895,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         State('max-components-input', 'value'),
         State("analysis-tabs", "value"),
         State('presentation-mode-store', 'data'),
+        State('uploaded-data-store', 'data'),
         prevent_initial_call=True,
     )
     def _download_png(n_clicks, reactant_types, reaction_types, fg_a, fg_b,
-                      exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode):
+                      exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode,
+                      uploaded_data):
         if not n_clicks:
             return no_update
         
@@ -678,11 +911,14 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         # Do not generate a PNG for the Statistics tab
         if active_tab == 'tab-stats':
             return no_update
+        
+        # Get source DataFrame (uploaded or default)
+        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
             
         try:
             dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
                                  exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                                 min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components)
+                                 min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
             if active_tab == 'tab-heatmap':
                 fig, adaptive_height = pu.create_heatmap(dff, reactant_types, presentation_mode=presentation_mode)
                 filename = 'heatmap.png'
@@ -782,10 +1018,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Input('topn-zscore-input', 'value'),
          Input('max-components-input', 'value'),
          Input('analysis-tabs', 'value'),
-         Input('presentation-mode-store', 'data')]
+         Input('presentation-mode-store', 'data'),
+         Input('uploaded-data-store', 'data')]
     )
     def _update_boxplot(reactant_types, reaction_types, fg_a, fg_b,
-                        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode):
+                        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode,
+                        uploaded_data):
         # Only update if boxplot tab is active
         if active_tab != 'tab-graph':
             return no_update, no_update
@@ -793,11 +1031,14 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         # Ensure reactant_types is not empty
         if not reactant_types or len(reactant_types) == 0:
             reactant_types = ['Ligand']  # Default fallback
+        
+        # Get source DataFrame (uploaded or default)
+        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
             
         # Compute filtered data server-side
         dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
                              exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                             min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components)
+                             min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
         fig, adaptive_height = pu.create_boxplot(dff, reactant_types, presentation_mode=presentation_mode)
         
         # Calculate container height based on adaptive_height
@@ -827,10 +1068,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Input('topn-zscore-input', 'value'),
          Input('max-components-input', 'value'),
          Input('analysis-tabs', 'value'),
-         Input('presentation-mode-store', 'data')]
+         Input('presentation-mode-store', 'data'),
+         Input('uploaded-data-store', 'data')]
     )
     def _update_heatmap(reactant_types, reaction_types, fg_a, fg_b,
-                        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode):
+                        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode,
+                        uploaded_data):
         # Only update if heatmap tab is active
         if active_tab != 'tab-heatmap':
             return no_update, no_update
@@ -838,11 +1081,14 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         # Ensure reactant_types is not empty
         if not reactant_types or len(reactant_types) == 0:
             reactant_types = ['Ligand']  # Default fallback
+        
+        # Get source DataFrame (uploaded or default)
+        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
             
         # Compute filtered data server-side
         dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
                              exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                             min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components)
+                             min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
         fig, adaptive_height = pu.create_heatmap(dff, reactant_types, presentation_mode=presentation_mode)
         
         # Calculate container height based on adaptive_height

@@ -329,6 +329,7 @@ def filter_data(
     topn_zscore: int = None,
     max_components: int = None,
     return_stats: bool = False,
+    source_df: pd.DataFrame = None,  # Optional: use this DataFrame instead of global DF
 ) -> pd.DataFrame | tuple[pd.DataFrame, dict]:
     """Return a filtered dataframe according to the business logic used by the app, with user-customizable filters.
 
@@ -341,6 +342,8 @@ def filter_data(
         include_null_categories: Whether to include null category values
         min_eln, topn_zscore, max_components: Additional filtering parameters
         return_stats: Whether to return statistics along with filtered data
+        source_df: Optional DataFrame to use instead of the default global DF.
+                   Use this for user-uploaded datasets.
 
     If the special keyword argument ``return_stats`` is provided as True (via **kwargs),
     the function returns a tuple ``(filtered_df, stats)`` where ``stats`` mirrors
@@ -348,22 +351,25 @@ def filter_data(
     callers to compute filtered data and the statistics in a single function call.
     """
     
+    # Determine if we're using uploaded data (skip cache for uploaded data)
+    using_uploaded = source_df is not None
     
-    # Check cache first
-    cache_key = _create_cache_key(
-        reactant_types, reaction_types, fg_a, fg_b,
-        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, return_stats
-    )
+    # Check cache first (only for default data)
+    if not using_uploaded:
+        cache_key = _create_cache_key(
+            reactant_types, reaction_types, fg_a, fg_b,
+            exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, return_stats
+        )
+        
+        if cache_key in _FILTER_CACHE:
+            cached_result = _FILTER_CACHE[cache_key]
+            if return_stats:
+                return cached_result['dataframe'].copy(), cached_result['stats'].copy()
+            else:
+                return cached_result['dataframe'].copy()
     
-    if cache_key in _FILTER_CACHE:
-        cached_result = _FILTER_CACHE[cache_key]
-        if return_stats:
-            return cached_result['dataframe'].copy(), cached_result['stats'].copy()
-        else:
-            return cached_result['dataframe'].copy()
-    
-    # "return_stats" is an explicit kw-only parameter with default False for compatibility
-    dff = DF.copy()
+    # Use provided source_df or fall back to global DF
+    dff = source_df.copy() if using_uploaded else DF.copy()
     
     # 1. Filter by Reaction Types (cheap)
     if reaction_types and len(reaction_types) > 0:
@@ -595,16 +601,17 @@ def filter_data(
                 else:
                     dff = dff.merge(top_df, on=key_cols, how='inner')
 
-    # Store result in cache (with size limit)
-    if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
-        # Remove oldest entries (simple FIFO)
-        oldest_key = next(iter(_FILTER_CACHE))
-        del _FILTER_CACHE[oldest_key]
-    
-    _FILTER_CACHE[cache_key] = {
-        'dataframe': dff.copy(),
-        'stats': stats.copy() if stats else {}
-    }
+    # Store result in cache (with size limit) - only for default data
+    if not using_uploaded:
+        if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
+            # Remove oldest entries (simple FIFO)
+            oldest_key = next(iter(_FILTER_CACHE))
+            del _FILTER_CACHE[oldest_key]
+        
+        _FILTER_CACHE[cache_key] = {
+            'dataframe': dff.copy(),
+            'stats': stats.copy() if stats else {}
+        }
     
     # If no statistics requested, short-circuit
     if not return_stats:
@@ -628,4 +635,76 @@ def get_cache_info():
         'max_size': _CACHE_MAX_SIZE,
         'cache_keys': list(_FILTER_CACHE.keys())[:5]  # Show first 5 keys
     }
+
+
+# ---------------------------------------------------------------------------
+# 5. UPLOADED DATA HELPERS
+# ---------------------------------------------------------------------------
+
+def parse_uploaded_data(json_data: str) -> pd.DataFrame | None:
+    """Parse uploaded data from JSON string stored in dcc.Store.
+    
+    Args:
+        json_data: JSON string from dcc.Store containing uploaded dataset
+        
+    Returns:
+        DataFrame if parsing succeeds, None otherwise
+    """
+    if not json_data:
+        return None
+    
+    try:
+        return pd.read_json(json_data, orient='split')
+    except Exception:
+        return None
+
+
+def get_active_dataframe(uploaded_data_json: str = None) -> pd.DataFrame:
+    """Get the active DataFrame - either uploaded data or default.
+    
+    Args:
+        uploaded_data_json: JSON string from uploaded-data-store
+        
+    Returns:
+        The uploaded DataFrame if available, otherwise the default DF
+    """
+    if uploaded_data_json:
+        uploaded_df = parse_uploaded_data(uploaded_data_json)
+        if uploaded_df is not None:
+            return uploaded_df
+    return DF
+
+
+def get_reaction_types_from_data(df: pd.DataFrame = None) -> List[str]:
+    """Get available reaction types from a DataFrame.
+    
+    Args:
+        df: DataFrame to extract reaction types from. Uses default DF if None.
+        
+    Returns:
+        List of unique reaction type values
+    """
+    source = df if df is not None else DF
+    if "Reaction Type" in source.columns:
+        return source["Reaction Type"].dropna().unique().tolist()
+    return []
+
+
+def get_category_options_from_data(df: pd.DataFrame = None) -> List[str]:
+    """Get available category options from a DataFrame.
+    
+    This checks which of the standard category columns exist and have data.
+    
+    Args:
+        df: DataFrame to check. Uses default DF if None.
+        
+    Returns:
+        List of category column names that exist and have data
+    """
+    source = df if df is not None else DF
+    available = []
+    for cat in CATEGORY_OPTIONS:
+        if cat in source.columns and source[cat].notna().any():
+            available.append(cat)
+    return available
 
