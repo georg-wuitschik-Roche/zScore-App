@@ -156,3 +156,4 @@ Thumbs.db
 paper_ssh_key*
 *.pem
 *.key
+/Paper/

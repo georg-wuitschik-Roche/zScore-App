@@ -1,0 +1,10 @@
+Distribution Summary for z-Score Data
+==================================================
+
+Total groups analyzed: 42
+Groups passing Shapiro-Wilk normality test (α=0.05): 0 (0.0%)
+Groups with fairly symmetric distribution (|skew| < 0.5): 3 (7.1%)
+Groups with moderate skewness (0.5 ≤ |skew| < 1): 8
+Groups with high skewness (|skew| ≥ 1): 31
+Median skewness across groups: 1.5318
+Median kurtosis across groups: 2.8126
