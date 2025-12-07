@@ -190,6 +190,9 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
         <b>Reaction:</b><br>
         Reaction Type: {clean_value(row.get('Reaction Type', ''))}<br>
         <br>
+        <b>Reaction Conditions:</b><br>
+        {clean_value(row.get('output_column', ''))}<br>
+        <br>
         <b>Reagents:</b><br>
         Catalyst: {clean_value(row.get('Catalyst', ''))}<br>
         Solvent: {clean_value(row.get('Solvent', ''))}<br>
