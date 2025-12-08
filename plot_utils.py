@@ -526,10 +526,9 @@ def create_distribution_plot(
     title: str = None,
     presentation_mode: bool = False
 ) -> Tuple[go.Figure, int]:
-    """Create a histogram with normal distribution overlay for z-score distribution analysis.
+    """Create a histogram for distribution analysis.
     
-    This visualization helps assess whether the z-score data follows a normal
-    distribution, which is an assumption underlying the z-score methodology.
+    This visualization shows the distribution of the data values.
     
     Args:
         dff: DataFrame containing the data to plot
@@ -573,21 +572,8 @@ def create_distribution_plot(
         histnorm='probability density'
     ))
     
-    # Fit and overlay normal distribution
+    # Calculate statistics for annotation
     if len(data) > 10:
-        mu, std = data.mean(), data.std()
-        x_range = np.linspace(data.min(), data.max(), 100)
-        normal_pdf = stats.norm.pdf(x_range, mu, std)
-        
-        fig.add_trace(go.Scatter(
-            x=x_range,
-            y=normal_pdf,
-            mode='lines',
-            name=f'Normal (μ={mu:.2f}, σ={std:.2f})',
-            line=dict(color='#E74C3C', width=3)
-        ))
-        
-        # Calculate statistics for annotation
         skewness = data.skew()
         kurtosis = data.kurtosis()
         n = len(data)

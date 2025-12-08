@@ -9,9 +9,9 @@ OVERALL DISTRIBUTION:
   Kurtosis: 0.2406
   Shapiro-Wilk p-value (n=5000 sample): 2.48e-63
 
-WITHIN-ELN DISTRIBUTIONS (validates z-score transformation):
-  ELNs analyzed (n >= 20): 528
-  ELNs passing Shapiro-Wilk (α=0.05): 21 (4.0%)
-  ELNs with |skewness| < 0.5: 114 (21.6%)
-  Median within-ELN skewness: 1.1202
-  Median within-ELN kurtosis: 0.6281
+WITHIN-REACTION TYPE DISTRIBUTIONS (validates z-score transformation):
+  Reaction types analyzed (n >= 20): 42
+  Reaction types passing Shapiro-Wilk (α=0.05): 0 (0.0%)
+  Reaction types with |skewness| < 0.5: 6 (14.3%)
+  Median within-reaction type skewness: 1.3587
+  Median within-reaction type kurtosis: 0.9210

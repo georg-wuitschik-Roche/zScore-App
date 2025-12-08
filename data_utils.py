@@ -729,6 +729,7 @@ def compute_distribution_stats(
         dff: DataFrame containing the data to analyze
         group_col: Column to group by (default: 'Reaction Type')
         value_col: Column containing the values to analyze (default: 'z-Score')
+        value_col: Column containing the values to analyze (default: 'z-Score')
         min_samples: Minimum number of samples required per group (default: 20)
         
     Returns:
@@ -1010,7 +1011,7 @@ def _interpret_effect_size(r: float) -> str:
         return 'large'
 
 
-def get_distribution_summary(dff: pd.DataFrame, group_col: str = 'Reaction Type') -> dict:
+def get_distribution_summary(dff: pd.DataFrame, group_col: str = 'Reaction Type', value_col: str = 'z-Score') -> dict:
     """Get a summary of distribution characteristics across all groups.
     
     Provides aggregate statistics about normality across the dataset,
@@ -1019,6 +1020,7 @@ def get_distribution_summary(dff: pd.DataFrame, group_col: str = 'Reaction Type'
     Args:
         dff: DataFrame to analyze
         group_col: Column to group by
+        value_col: Column containing the values to analyze (default: 'z-Score')
         
     Returns:
         Dictionary with summary statistics:
@@ -1034,7 +1036,7 @@ def get_distribution_summary(dff: pd.DataFrame, group_col: str = 'Reaction Type'
     """
     import numpy as np
     
-    dist_stats = compute_distribution_stats(dff, group_col)
+    dist_stats = compute_distribution_stats(dff, group_col, value_col=value_col)
     
     if dist_stats.empty:
         return {

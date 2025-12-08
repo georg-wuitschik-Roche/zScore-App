@@ -1,0 +1,10 @@
+Distribution Summary for AREA_TOTAL_REDUCED (Raw Data)
+==================================================
+
+Total groups analyzed: 42
+Groups passing Shapiro-Wilk normality test (α=0.05): 0 (0.0%)
+Groups with fairly symmetric distribution (|skew| < 0.5): 5 (11.9%)
+Groups with moderate skewness (0.5 ≤ |skew| < 1): 7
+Groups with high skewness (|skew| ≥ 1): 30
+Median skewness across groups: 1.3594
+Median kurtosis across groups: 0.9328

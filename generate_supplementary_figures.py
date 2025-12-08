@@ -11,9 +11,8 @@ This script produces:
    - Within-ELN distribution statistics (validates z-score transformation)
    - Summary of within-ELN skewness values
 2. Z-score distribution analysis:
-   - Histograms with normal overlays for major reaction types
+   - Histograms with normal overlays for all reaction types that have boxplots
    - Summary table of distribution statistics
-3. Statistical significance test results (matching paper boxplot filters)
 
 Usage:
     python generate_supplementary_figures.py
@@ -46,7 +45,6 @@ def ensure_export_dir():
         'raw_data': base_dir / "raw_data",
         'histograms': base_dir / "histograms", 
         'distribution_stats': base_dir / "distribution_stats",
-        'significance_tests': base_dir / "significance_tests",
     }
     
     for subdir in subdirs.values():
@@ -124,69 +122,69 @@ def generate_raw_data_distribution(df: pd.DataFrame, export_dirs: dict):
     fig_overall.write_image(str(export_dir / "overall_histogram.svg"), width=1200, height=600)
     print(f"       Saved overall histogram (skewness={skew_val:.2f})")
     
-    # 2. Within-ELN distribution analysis
-    print("\n  [2] Within-ELN distribution analysis...")
+    # 2. Within-Reaction Type distribution analysis
+    print("\n  [2] Within-Reaction Type distribution analysis...")
     
-    if 'ELN_ID' not in df.columns:
-        print("       WARNING: ELN_ID column not found - skipping within-ELN analysis")
+    if 'Reaction Type' not in df.columns:
+        print("       WARNING: Reaction Type column not found - skipping within-reaction type analysis")
         return {'overall_skewness': skew_val, 'overall_kurtosis': kurt_val}
     
-    # Calculate within-ELN statistics
-    eln_stats = []
-    elns_with_data = df.groupby('ELN_ID')[raw_col].filter(lambda x: x.dropna().shape[0] >= 20)
-    unique_elns = df.loc[elns_with_data.index, 'ELN_ID'].unique()
+    # Calculate within-Reaction Type statistics
+    reaction_stats = []
+    reactions_with_data = df.groupby('Reaction Type')[raw_col].filter(lambda x: x.dropna().shape[0] >= 20)
+    unique_reactions = df.loc[reactions_with_data.index, 'Reaction Type'].unique()
     
-    print(f"       Analyzing {len(unique_elns)} ELNs with >= 20 data points each")
+    print(f"       Analyzing {len(unique_reactions)} reaction types with >= 20 data points each")
     
-    for eln_id in unique_elns:
-        eln_data = df[df['ELN_ID'] == eln_id][raw_col].dropna()
-        if len(eln_data) >= 20:
-            eln_skew = stats.skew(eln_data)
-            eln_kurt = stats.kurtosis(eln_data)
+    for reaction_type in unique_reactions:
+        reaction_data = df[df['Reaction Type'] == reaction_type][raw_col].dropna()
+        if len(reaction_data) >= 20:
+            reaction_skew = stats.skew(reaction_data)
+            reaction_kurt = stats.kurtosis(reaction_data)
             
             # Shapiro-Wilk test
-            sample_n = min(5000, len(eln_data))
-            eln_sample = eln_data.sample(n=sample_n, random_state=42) if len(eln_data) > sample_n else eln_data
+            sample_n = min(5000, len(reaction_data))
+            reaction_sample = reaction_data.sample(n=sample_n, random_state=42) if len(reaction_data) > sample_n else reaction_data
             try:
-                _, eln_shapiro_p = stats.shapiro(eln_sample)
+                _, reaction_shapiro_p = stats.shapiro(reaction_sample)
             except:
-                eln_shapiro_p = np.nan
+                reaction_shapiro_p = np.nan
             
-            eln_stats.append({
-                'ELN_ID': eln_id,
-                'n': len(eln_data),
-                'mean': eln_data.mean(),
-                'std': eln_data.std(),
-                'skewness': eln_skew,
-                'kurtosis': eln_kurt,
-                'shapiro_p': eln_shapiro_p,
-                'is_normal': eln_shapiro_p > 0.05 if not np.isnan(eln_shapiro_p) else False
+            reaction_stats.append({
+                'Reaction Type': reaction_type,
+                'n': len(reaction_data),
+                'mean': reaction_data.mean(),
+                'std': reaction_data.std(),
+                'skewness': reaction_skew,
+                'kurtosis': reaction_kurt,
+                'shapiro_p': reaction_shapiro_p,
+                'is_normal': reaction_shapiro_p > 0.05 if not np.isnan(reaction_shapiro_p) else False
             })
     
-    eln_stats_df = pd.DataFrame(eln_stats)
+    reaction_stats_df = pd.DataFrame(reaction_stats)
     
-    if len(eln_stats_df) > 0:
-        # Save ELN-level statistics
-        eln_stats_df.to_csv(export_dir / "within_eln_statistics.csv", index=False)
+    if len(reaction_stats_df) > 0:
+        # Save reaction type-level statistics
+        reaction_stats_df.to_csv(export_dir / "within_reaction_type_statistics.csv", index=False)
         
         # Summary statistics
-        n_normal = eln_stats_df['is_normal'].sum()
-        pct_normal = 100 * n_normal / len(eln_stats_df)
-        median_skew = eln_stats_df['skewness'].median()
-        n_symmetric = (eln_stats_df['skewness'].abs() < 0.5).sum()
-        pct_symmetric = 100 * n_symmetric / len(eln_stats_df)
+        n_normal = reaction_stats_df['is_normal'].sum()
+        pct_normal = 100 * n_normal / len(reaction_stats_df)
+        median_skew = reaction_stats_df['skewness'].median()
+        n_symmetric = (reaction_stats_df['skewness'].abs() < 0.5).sum()
+        pct_symmetric = 100 * n_symmetric / len(reaction_stats_df)
         
-        print(f"       {len(eln_stats_df)} ELNs analyzed")
+        print(f"       {len(reaction_stats_df)} reaction types analyzed")
         print(f"       {pct_normal:.1f}% pass Shapiro-Wilk normality test")
         print(f"       {pct_symmetric:.1f}% have fairly symmetric distributions (|skew| < 0.5)")
-        print(f"       Median within-ELN skewness: {median_skew:.3f}")
+        print(f"       Median within-reaction type skewness: {median_skew:.3f}")
         
-        # Create histogram of within-ELN skewness values
+        # Create histogram of within-reaction type skewness values
         fig_skew = go.Figure()
         fig_skew.add_trace(go.Histogram(
-            x=eln_stats_df['skewness'],
+            x=reaction_stats_df['skewness'],
             nbinsx=50,
-            name='Within-ELN Skewness',
+            name='Within-Reaction Type Skewness',
             marker_color='coral',
             opacity=0.7
         ))
@@ -200,21 +198,21 @@ def generate_raw_data_distribution(df: pd.DataFrame, export_dirs: dict):
         
         fig_skew.update_layout(
             title=dict(
-                text=f"Distribution of Within-ELN Skewness (AREA_TOTAL_REDUCED)<br>" +
-                     f"<sup>{len(eln_stats_df)} ELNs | {pct_symmetric:.1f}% fairly symmetric | " +
+                text=f"Distribution of Within-Reaction Type Skewness (AREA_TOTAL_REDUCED)<br>" +
+                     f"<sup>{len(reaction_stats_df)} reaction types | {pct_symmetric:.1f}% fairly symmetric | " +
                      f"median skewness={median_skew:.2f}</sup>",
                 font=dict(size=16)
             ),
-            xaxis_title="Skewness within ELN",
-            yaxis_title="Number of ELNs",
+            xaxis_title="Skewness within Reaction Type",
+            yaxis_title="Number of Reaction Types",
             template="plotly_white",
             width=1000,
             height=500
         )
         
-        fig_skew.write_image(str(export_dir / "within_eln_skewness.png"), width=1000, height=500, scale=2)
-        fig_skew.write_image(str(export_dir / "within_eln_skewness.svg"), width=1000, height=500)
-        print(f"       Saved within-ELN skewness distribution")
+        fig_skew.write_image(str(export_dir / "within_reaction_type_skewness.png"), width=1000, height=500, scale=2)
+        fig_skew.write_image(str(export_dir / "within_reaction_type_skewness.svg"), width=1000, height=500)
+        print(f"       Saved within-reaction type skewness distribution")
         
         # Save summary
         with open(export_dir / "summary.txt", 'w') as f:
@@ -227,54 +225,107 @@ def generate_raw_data_distribution(df: pd.DataFrame, export_dirs: dict):
             f.write(f"  Skewness: {skew_val:.4f}\n")
             f.write(f"  Kurtosis: {kurt_val:.4f}\n")
             f.write(f"  Shapiro-Wilk p-value (n={sample_size} sample): {shapiro_p:.2e}\n\n")
-            f.write("WITHIN-ELN DISTRIBUTIONS (validates z-score transformation):\n")
-            f.write(f"  ELNs analyzed (n >= 20): {len(eln_stats_df)}\n")
-            f.write(f"  ELNs passing Shapiro-Wilk (α=0.05): {n_normal} ({pct_normal:.1f}%)\n")
-            f.write(f"  ELNs with |skewness| < 0.5: {n_symmetric} ({pct_symmetric:.1f}%)\n")
-            f.write(f"  Median within-ELN skewness: {median_skew:.4f}\n")
-            f.write(f"  Median within-ELN kurtosis: {eln_stats_df['kurtosis'].median():.4f}\n")
+            f.write("WITHIN-REACTION TYPE DISTRIBUTIONS (validates z-score transformation):\n")
+            f.write(f"  Reaction types analyzed (n >= 20): {len(reaction_stats_df)}\n")
+            f.write(f"  Reaction types passing Shapiro-Wilk (α=0.05): {n_normal} ({pct_normal:.1f}%)\n")
+            f.write(f"  Reaction types with |skewness| < 0.5: {n_symmetric} ({pct_symmetric:.1f}%)\n")
+            f.write(f"  Median within-reaction type skewness: {median_skew:.4f}\n")
+            f.write(f"  Median within-reaction type kurtosis: {reaction_stats_df['kurtosis'].median():.4f}\n")
         
         print(f"       Saved raw data summary")
         
         return {
             'overall_skewness': skew_val,
             'overall_kurtosis': kurt_val,
-            'n_elns': len(eln_stats_df),
-            'pct_normal_elns': pct_normal,
-            'pct_symmetric_elns': pct_symmetric,
-            'median_within_eln_skewness': median_skew
+            'n_reaction_types': len(reaction_stats_df),
+            'pct_normal_reactions': pct_normal,
+            'pct_symmetric_reactions': pct_symmetric,
+            'median_within_reaction_type_skewness': median_skew
         }
     
     return {'overall_skewness': skew_val, 'overall_kurtosis': kurt_val}
 
 
 def generate_distribution_figures(df: pd.DataFrame, export_dirs: dict):
-    """Generate histogram figures for major reaction types (z-scores)."""
+    """Generate histogram figures for all reaction types that have boxplots (AREA_TOTAL_REDUCED).
     
-    print("\n=== Generating Z-Score Distribution Figures ===\n")
+    This shows the underlying distribution of raw yield data (AREA_TOTAL_REDUCED) for each
+    reaction type to address reviewer concerns about non-normal distributions.
+    
+    Reaction types are determined by checking which directories exist in exports/boxplots/.
+    This ensures all reaction types with boxplots also have histograms.
+    """
+    
+    print("\n=== Generating Raw Data (AREA_TOTAL_REDUCED) Distribution Figures ===\n")
     
     export_dir = export_dirs['histograms']
     
-    # Get reaction types with sufficient data
-    reaction_counts = df.groupby('Reaction Type').size()
-    major_reactions = reaction_counts[reaction_counts >= 500].index.tolist()
+    # Check if AREA_TOTAL_REDUCED column exists
+    if 'AREA_TOTAL_REDUCED' not in df.columns:
+        print("  WARNING: AREA_TOTAL_REDUCED column not found - skipping histogram generation")
+        return
     
-    print(f"Found {len(major_reactions)} reaction types with >= 500 data points")
+    # Get reaction types from boxplots directory
+    boxplots_dir = Path("exports/boxplots")
+    boxplot_dir_names = set()
     
-    for i, reaction_type in enumerate(major_reactions[:10], 1):  # Limit to top 10
+    if boxplots_dir.exists():
+        # Get top-level directories (reaction types)
+        for item in boxplots_dir.iterdir():
+            if item.is_dir():
+                boxplot_dir_names.add(item.name)
+    
+    # Also check what reaction types exist in the data
+    available_reaction_types = set(df['Reaction Type'].dropna().unique())
+    
+    # Create mapping: convert boxplot directory names to data reaction type names
+    # Directory names use underscores/hyphens, data uses spaces/slashes
+    reaction_types_to_plot = []
+    for dir_name in sorted(boxplot_dir_names):
+        # Try to match directory name to data reaction type
+        # First try exact match
+        if dir_name in available_reaction_types:
+            reaction_types_to_plot.append(dir_name)
+        else:
+            # Try converting: underscore -> space, hyphen -> slash
+            converted = dir_name.replace('_', ' ').replace('-', '/')
+            if converted in available_reaction_types:
+                reaction_types_to_plot.append(converted)
+            else:
+                # Try reverse: space -> underscore, slash -> hyphen
+                for rt in available_reaction_types:
+                    rt_converted = rt.replace(' ', '_').replace('/', '-')
+                    if rt_converted == dir_name:
+                        reaction_types_to_plot.append(rt)
+                        break
+    
+    # If no boxplots directory found, fall back to all reaction types in data
+    if not reaction_types_to_plot:
+        print("  WARNING: No boxplots directory found, generating histograms for all reaction types in data")
+        reaction_types_to_plot = sorted(available_reaction_types)
+    
+    print(f"Found {len(reaction_types_to_plot)} reaction types with boxplots to process")
+    
+    for i, reaction_type in enumerate(reaction_types_to_plot, 1):
         print(f"  [{i}] Processing: {reaction_type}")
+        
+        # Check if we have data for this reaction type
+        reaction_data = df[df['Reaction Type'] == reaction_type]['AREA_TOTAL_REDUCED'].dropna()
+        if len(reaction_data) < 20:
+            print(f"       Skipping - insufficient data ({len(reaction_data)} values)")
+            continue
         
         # Generate histogram
         try:
             fig_hist, _ = pu.create_distribution_plot(
                 df,
-                value_col='z-Score',
+                value_col='AREA_TOTAL_REDUCED',
                 group_col='Reaction Type',
                 group_value=reaction_type,
                 presentation_mode=True
             )
             
-            # Save as PNG and SVG
+            # Save as PNG and SVG (use same filename format as boxplots)
             safe_name = reaction_type.replace(' ', '_').replace('/', '-')
             fig_hist.write_image(
                 str(export_dir / f"{safe_name}.png"),
@@ -284,35 +335,40 @@ def generate_distribution_figures(df: pd.DataFrame, export_dirs: dict):
                 str(export_dir / f"{safe_name}.svg"),
                 width=1200, height=600
             )
-            print(f"       Saved histogram for {reaction_type}")
+            print(f"       Saved histogram for {reaction_type} ({len(reaction_data)} data points)")
         except Exception as e:
             print(f"       Error creating histogram: {e}")
 
 
 def generate_distribution_summary(df: pd.DataFrame, export_dirs: dict):
-    """Generate distribution statistics summary table."""
+    """Generate distribution statistics summary table for AREA_TOTAL_REDUCED (raw data)."""
     
     print("\n=== Generating Distribution Summary ===\n")
     
     export_dir = export_dirs['distribution_stats']
     
-    # Compute distribution statistics
-    dist_stats = du.compute_distribution_stats(df, group_col='Reaction Type', min_samples=20)
+    # Check if AREA_TOTAL_REDUCED column exists
+    if 'AREA_TOTAL_REDUCED' not in df.columns:
+        print("  WARNING: AREA_TOTAL_REDUCED column not found - skipping distribution summary")
+        return None
+    
+    # Compute distribution statistics for raw data
+    dist_stats = du.compute_distribution_stats(df, group_col='Reaction Type', value_col='AREA_TOTAL_REDUCED', min_samples=20)
     
     if dist_stats.empty:
         print("  No distribution statistics available")
-        return
+        return None
     
     # Save as CSV
-    dist_stats.to_csv(export_dir / "zscore_statistics.csv", index=False)
+    dist_stats.to_csv(export_dir / "raw_data_statistics.csv", index=False)
     print(f"  Saved distribution statistics for {len(dist_stats)} reaction types")
     
     # Generate summary
-    summary = du.get_distribution_summary(df, group_col='Reaction Type')
+    summary = du.get_distribution_summary(df, group_col='Reaction Type', value_col='AREA_TOTAL_REDUCED')
     
     # Save summary as text
-    with open(export_dir / "zscore_summary.txt", 'w') as f:
-        f.write("Distribution Summary for z-Score Data\n")
+    with open(export_dir / "raw_data_summary.txt", 'w') as f:
+        f.write("Distribution Summary for AREA_TOTAL_REDUCED (Raw Data)\n")
         f.write("=" * 50 + "\n\n")
         f.write(f"Total groups analyzed: {summary['n_groups']}\n")
         f.write(f"Groups passing Shapiro-Wilk normality test (α=0.05): {summary['n_normal']} ({summary['pct_normal']:.1f}%)\n")
@@ -328,7 +384,7 @@ def generate_distribution_summary(df: pd.DataFrame, export_dirs: dict):
     try:
         fig_table = pu.create_distribution_summary_table(dist_stats, presentation_mode=True)
         fig_table.write_image(
-            str(export_dir / "zscore_table.png"),
+            str(export_dir / "raw_data_table.png"),
             width=1400, height=max(400, 50 + len(dist_stats) * 35), scale=2
         )
         print(f"  Saved distribution table figure")
@@ -336,198 +392,6 @@ def generate_distribution_summary(df: pd.DataFrame, export_dirs: dict):
         print(f"  Error creating table figure: {e}")
     
     return summary
-
-
-def generate_permutation_tests(df: pd.DataFrame, export_dirs: dict):
-    """Generate permutation test results for key comparisons.
-    
-    We use permutation tests rather than Kruskal-Wallis/Mann-Whitney because:
-    - Multiple observations come from the same ELN (violates independence)
-    - Top-5 selection creates within-ELN correlations
-    - Permutation tests respect the actual data structure
-    
-    Uses the SAME filters as the paper boxplots to ensure consistency.
-    """
-    
-    print("\n=== Generating Permutation Tests ===\n")
-    
-    export_dir = export_dirs['significance_tests']
-    
-    # Define key comparisons - MUST match paper boxplot filters exactly!
-    # See export_boxplots.py export_paper_boxplots() for reference
-    # Settings from export_boxplots.py:
-    #   DEFAULT_MIN_ELN = 10 (but generate_boxplot defaults to 5 for paper plots)
-    #   topn_zscore = 5
-    #   EXCLUDE_CUI = ['exclude_cui']
-    #   EXCLUDE_SCALEUP = [True]
-    #   INCLUDE_NULL_CATEGORIES = [True]
-    
-    key_analyses = [
-        {
-            'name': 'Buchwald-Hartwig_Ligands_R2NH_ArX',
-            'description': 'Secondary amines + aryl halides (top 10)',
-            'reaction_types': ['Buchwald-Hartwig'],
-            'category': 'Ligand',
-            'fg_a': ['R2NH'],  # Secondary amines
-            'fg_b': ['ArBr', 'ArCl', 'ArI'],  # Aryl halides
-            'top_n': 10,  # Match paper boxplot max_components
-        },
-        {
-            'name': 'Buchwald-Hartwig_Catalysts_R2NH_ArX',
-            'description': 'Secondary amines + aryl halides (top 10)',
-            'reaction_types': ['Buchwald-Hartwig'],
-            'category': 'Catalyst',
-            'fg_a': ['R2NH'],
-            'fg_b': ['ArBr', 'ArCl', 'ArI'],
-            'top_n': 10,
-        },
-        {
-            'name': 'Suzuki-Miyaura_Catalysts_ArX_ArB',
-            'description': 'Aryl halides + aryl boronates (top 12)',
-            'reaction_types': ['Suzuki-Miyaura'],
-            'category': 'Catalyst',
-            'fg_a': ['ArBr', 'ArCl', 'ArI'],  # Aryl halides
-            'fg_b': ['ArB(OR)2', 'ArB(OH)2', 'ArBF3K'],  # Aryl boronates
-            'top_n': 12,  # Match paper boxplot max_components
-        },
-        {
-            'name': 'Suzuki-Miyaura_Solvent_Base_ArX_ArB',
-            'description': 'Aryl halides + aryl boronates (top 10 Solvent/Base)',
-            'reaction_types': ['Suzuki-Miyaura'],
-            'category': ['Solvent', 'Base'],  # Combined category
-            'fg_a': ['ArBr', 'ArCl', 'ArI'],  # Aryl halides
-            'fg_b': ['ArB(OR)2', 'ArB(OH)2', 'ArBF3K'],  # Aryl boronates
-            'top_n': 10,
-        },
-        # ========== ALL COMPONENTS (no top-N filter) ==========
-        {
-            'name': 'Buchwald-Hartwig_Ligands_R2NH_ArX_ALL',
-            'description': 'Secondary amines + aryl halides (ALL ligands)',
-            'reaction_types': ['Buchwald-Hartwig'],
-            'category': 'Ligand',
-            'fg_a': ['R2NH'],
-            'fg_b': ['ArBr', 'ArCl', 'ArI'],
-            'top_n': 100,  # High number to include all
-        },
-        {
-            'name': 'Suzuki-Miyaura_Catalysts_ArX_ArB_ALL',
-            'description': 'Aryl halides + aryl boronates (ALL catalysts)',
-            'reaction_types': ['Suzuki-Miyaura'],
-            'category': 'Catalyst',
-            'fg_a': ['ArBr', 'ArCl', 'ArI'],
-            'fg_b': ['ArB(OR)2', 'ArB(OH)2', 'ArBF3K'],
-            'top_n': 100,
-        },
-        {
-            'name': 'Suzuki-Miyaura_Solvent_Base_ArX_ArB_ALL',
-            'description': 'Aryl halides + aryl boronates (ALL Solvent/Base)',
-            'reaction_types': ['Suzuki-Miyaura'],
-            'category': ['Solvent', 'Base'],
-            'fg_a': ['ArBr', 'ArCl', 'ArI'],
-            'fg_b': ['ArB(OR)2', 'ArB(OH)2', 'ArBF3K'],
-            'top_n': 100,
-        }
-    ]
-    
-    # Common filter settings matching export_boxplots.py
-    TOPN_ZSCORE = 5
-    EXCLUDE_CUI = ['exclude_cui']
-    EXCLUDE_SCALEUP = [True]
-    INCLUDE_NULL_CATEGORIES = [True]
-    
-    for analysis in key_analyses:
-        print(f"  Processing: {analysis['name']}")
-        print(f"    Filters: {analysis['description']}")
-        
-        try:
-            # Handle both single category and combined categories (e.g., ['Solvent', 'Base'])
-            category = analysis['category']
-            if isinstance(category, list):
-                reactant_types = category
-                category_col = 'Combined_Category'  # Will create this column
-            else:
-                reactant_types = [category]
-                category_col = category
-            
-            # Use du.filter_data() with the SAME filters as paper boxplots
-            # Settings match export_boxplots.py generate_boxplot() defaults
-            MIN_ELN = 5  # Default in generate_boxplot
-            
-            # For top-N analyses, pass max_components to filter_data (like the boxplot does)
-            # For ALL analyses, use None
-            max_components = analysis.get('top_n') if analysis.get('top_n', 100) < 100 else None
-            
-            dff = du.filter_data(
-                reactant_types=reactant_types,
-                reaction_types=analysis['reaction_types'],
-                fg_a=analysis.get('fg_a'),
-                fg_b=analysis.get('fg_b'),
-                exclude_cui=EXCLUDE_CUI,
-                exclude_scaleup=EXCLUDE_SCALEUP,
-                include_null_categories=INCLUDE_NULL_CATEGORIES,
-                min_eln=MIN_ELN,
-                topn_zscore=TOPN_ZSCORE,
-                max_components=max_components,
-            )
-            
-            # For combined categories, create the combined column (e.g., "Solvent | Base")
-            if isinstance(analysis['category'], list) and len(analysis['category']) > 1:
-                cols = analysis['category']
-                # Check all columns exist
-                missing = [c for c in cols if c not in dff.columns]
-                if missing:
-                    print(f"    Skipping - columns not found: {missing}")
-                    continue
-                # Create combined column like the boxplot does
-                dff[category_col] = dff[cols[0]].astype(str) + ' | ' + dff[cols[1]].astype(str)
-            elif category_col not in dff.columns:
-                print(f"    Skipping - {category_col} column not found")
-                continue
-            
-            print(f"    Filtered data: {len(dff)} rows")
-            
-            if len(dff) < 100:
-                print(f"    Skipping - insufficient data ({len(dff)} rows)")
-                continue
-            
-            # Run permutation test (valid even with non-independent observations)
-            print(f"    Running permutation test (10,000 permutations)...")
-            perm_results = du.compute_permutation_test(
-                dff,
-                category_col=category_col,
-                n_permutations=10000
-            )
-            
-            # Save permutation test results
-            perm_df = pd.DataFrame([{
-                'analysis': analysis['name'],
-                'n_observations': len(dff),
-                'n_categories': dff[category_col].nunique(),
-                'observed_h': round(perm_results['observed_h'], 4),
-                'empirical_p': round(perm_results['empirical_p'], 4),
-                'n_permutations': perm_results['n_permutations'],
-                'permuted_h_95th': round(perm_results['permuted_h_95th'], 4),
-                'significant_at_0.05': perm_results['significant_permutation']
-            }])
-            perm_df.to_csv(
-                export_dir / f"permutation_{analysis['name']}.csv",
-                index=False
-            )
-            
-            # Also save group summary statistics (medians, counts)
-            group_stats = dff.groupby(category_col)['z-Score'].agg(['count', 'median', 'mean', 'std']).round(4)
-            group_stats = group_stats.sort_values('median', ascending=False)
-            group_stats.to_csv(export_dir / f"group_stats_{analysis['name']}.csv")
-            
-            print(f"    Permutation test: H={perm_results['observed_h']:.2f}, "
-                  f"empirical p={perm_results['empirical_p']:.4f} "
-                  f"({'significant' if perm_results['significant_permutation'] else 'not significant'})")
-            print(f"    Saved permutation analysis for {analysis['name']}")
-            
-        except Exception as e:
-            import traceback
-            print(f"    Error: {e}")
-            traceback.print_exc()
 
 
 def main():
@@ -540,7 +404,7 @@ def main():
     # Create export directory structure
     export_dirs = ensure_export_dir()
     print(f"\nExport directory: {export_dirs['base'].absolute()}")
-    print(f"  Subfolders: raw_data/, histograms/, distribution_stats/, significance_tests/")
+    print(f"  Subfolders: raw_data/, histograms/, distribution_stats/")
     
     # Load data
     print("\nLoading data...")
@@ -563,7 +427,6 @@ def main():
     raw_summary = generate_raw_data_distribution(df, export_dirs)
     generate_distribution_figures(df, export_dirs)
     zscore_summary = generate_distribution_summary(df, export_dirs)
-    generate_permutation_tests(df, export_dirs)
     
     # Print final summary
     print("\n" + "=" * 60)
@@ -573,11 +436,11 @@ def main():
     if raw_summary:
         print(f"\n  Raw Data (AREA_TOTAL_REDUCED) Analysis:")
         print(f"    - Overall skewness: {raw_summary.get('overall_skewness', 'N/A'):.3f}")
-        if 'n_elns' in raw_summary:
-            print(f"    - {raw_summary['n_elns']} ELNs analyzed for within-ELN distributions")
-            print(f"    - {raw_summary['pct_normal_elns']:.1f}% of ELNs pass normality test")
-            print(f"    - {raw_summary['pct_symmetric_elns']:.1f}% of ELNs have fairly symmetric distributions")
-            print(f"    - Median within-ELN skewness: {raw_summary['median_within_eln_skewness']:.3f}")
+        if 'n_reaction_types' in raw_summary:
+            print(f"    - {raw_summary['n_reaction_types']} reaction types analyzed for within-reaction type distributions")
+            print(f"    - {raw_summary['pct_normal_reactions']:.1f}% of reaction types pass normality test")
+            print(f"    - {raw_summary['pct_symmetric_reactions']:.1f}% of reaction types have fairly symmetric distributions")
+            print(f"    - Median within-reaction type skewness: {raw_summary['median_within_reaction_type_skewness']:.3f}")
     
     if zscore_summary:
         print(f"\n  Z-Score Distribution Analysis:")
