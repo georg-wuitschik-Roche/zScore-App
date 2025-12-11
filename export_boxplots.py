@@ -434,7 +434,7 @@ def export_boxplots(output_root: Path) -> None:
 def export_paper_boxplots(output_root: Path) -> None:
     """Export specific boxplots for paper figures.
     
-    This function exports four specific plots:
+    This function exports five specific plots:
     1. Boxplot of z-score by ligand for aryl bromides/aryl chlorides reacting with 
        secondary amines (top 10 ligands) - Buchwald-Hartwig
     2. Boxplot of z-score by catalyst for aryl halides reacting with secondary amines 
@@ -442,6 +442,8 @@ def export_paper_boxplots(output_root: Path) -> None:
     3. Boxplot of z-score by catalyst for aryl halides reacting with aryl boronates 
        (top 12 catalysts) - Suzuki-Miyaura
     4. Boxplot of z-score by solvent/base combinations for aryl halides reacting with 
+       aryl boronates (top 10 combinations) - Suzuki-Miyaura
+    5. Boxplot of z-score by solvent/base/catalyst combinations for aryl halides reacting with 
        aryl boronates (top 10 combinations) - Suzuki-Miyaura
     """
     clean_directory(output_root, f"Cleaning up existing exports in {output_root}")
@@ -484,6 +486,16 @@ def export_paper_boxplots(output_root: Path) -> None:
             "description": "z-score by solvent/base combinations for aryl halides reacting with aryl boronates",
             "reaction_type": "Suzuki-Miyaura",
             "category": ["Solvent", "Base"],
+            "fg_a": ["ArBr", "ArCl", "ArI"],
+            "fg_b": ["ArB(OR)2", "ArB(OH)2", "ArBF3K"],
+            "max_components": 10,
+        },
+        {
+            "name": "suzuki_miyaura_catalyst_solvent_base_ArX_ArB",
+            "title": "Suzuki-Miyaura - Aryl Halides + Aryl Boronates",
+            "description": "z-score by catalyst/solvent/base combinations for aryl halides reacting with aryl boronates",
+            "reaction_type": "Suzuki-Miyaura",
+            "category": ["Catalyst", "Solvent", "Base"],
             "fg_a": ["ArBr", "ArCl", "ArI"],
             "fg_b": ["ArB(OR)2", "ArB(OH)2", "ArBF3K"],
             "max_components": 10,
