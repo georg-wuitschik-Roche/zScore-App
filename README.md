@@ -51,7 +51,7 @@ This application is designed for chemists and researchers to analyze experimenta
 ![Suzuki-Miyaura Base Analysis](exports/boxplots/Suzuki-Miyaura/boxplot__Suzuki-Miyaura__Base.png)
 
 ### Amide Coupling Analysis
-![Amide Coupling Additive Analysis](exports/boxplots/Amide_coupling/boxplot__Amide_coupling__Additive.png)
+![Amide Coupling Base Analysis](exports/boxplots/Amide_coupling/boxplot__Amide_coupling__Base.png)
 
 *These images show representative boxplot analyses for different reaction types and reactant combinations.*
 
@@ -104,19 +104,53 @@ This application is designed for chemists and researchers to analyze experimenta
 3. **Access your deployed app:**
    Your application will be available at the provided URL after deployment.
 
-## 📊 Data Requirements
 
-The application expects a CSV file with the following columns:
+
+## 📤 Uploading Your Own Data
+
+The dashboard supports uploading your own experimental datasets for analysis. Click the **"Upload Dataset"** button in the header to load a custom CSV file.
+
+### File Format Requirements
+
+- **Format**: CSV (Comma-Separated Values)
+- **Maximum size**: 50 MB
+- **Supported encodings**: UTF-8
+- **Supported delimiters**: Comma (`,`), semicolon (`;`), or tab
+
+### Required Columns
+
+Your uploaded CSV must contain the following columns:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `z-Score` | Numeric | Z-score values for analysis |
-| `AREA_TOTAL_REDUCED` | Numeric | Area values |
-| `Reaction Type` | Categorical | Type of chemical reaction |
+| `z-Score` | Numeric | Z-score values for analysis (can use `.` or `,` as decimal separator) |
+| `AREA_TOTAL_REDUCED` | Numeric | Area values for normalization |
+| `Reaction Type` | Categorical | Type of chemical reaction (e.g., "Buchwald-Hartwig") |
 | `ELN_ID` | String | Experiment identifier |
 | `PLATENUMBER` | Numeric | Plate number |
-| `Coordinate` | String | Well coordinate |
-| Various reagent columns | Mixed | Additive, Base, Catalyst, etc. |
+| `Coordinate` | String | Well coordinate (e.g., "A1", "B12") |
+| `Base` | String | Base reagent used |
+| `Catalyst` | String | Catalyst reagent used |
+| `Solvent` | String | Solvent used |
+| `Ligand` | String | Ligand used |
+| `FG A` | String | First functional group identifier |
+| `FG B` | String | Second functional group identifier |
+| `FG_sorted` | String | Sorted, concatenated functional group pair (e.g., "COOH, NH2") |
+
+### How Uploaded Data is Processed
+
+- **Replacement behavior**: Uploaded data **replaces** the built-in dataset for the duration of your session. The analysis is performed exclusively on your uploaded data, not side-by-side or merged with the built-in dataset.
+- **Privacy**: Your data is processed entirely in your browser and is **not** uploaded to any server. It remains in browser memory only.
+- **Full functionality**: All filtering, visualization, and export features work identically on uploaded data as they do on the built-in dataset.
+- **Reset**: Click the **"Reset"** button to return to analyzing the built-in dataset.
+
+### Interpreting Results
+
+After uploading your data:
+1. The reaction type dropdown will update to show only the reaction types present in your dataset
+2. Functional group filters will reflect the groups available in your data
+3. Boxplots will display z-score distributions calculated from your uploaded experiments
+4. Export options will generate files based on your filtered data
 
 ## 🏗️ Project Structure
 
@@ -193,6 +227,20 @@ Run with debug logging:
 ```bash
 python app.py
 ```
+
+## ⚠️ Known Limitations 
+
+- The dataset does not contain molecule structures due to the confidentiality of the synthesized structures. Therefore the dataset cannot be searched by structural similarity.
+
+## 🔮 Future Development
+
+The following features are under consideration for future development:
+
+- **Open source structure datasets**: Integrating publicly available chemical structure datasets to enable structure-aware analysis without confidentiality constraints
+- **Structural similarity search**: Implementing molecular fingerprint-based similarity searching to allow users to find reactions with structurally similar substrates
+- **Flexible upload handling**: Allowing users to choose how uploaded data interacts with the built-in dataset (e.g., replace, merge side-by-side, or compare)
+
+Community contributions toward these features are welcome. Please open an issue to discuss implementation approaches.
 
 ## 🤝 Contributing
 
