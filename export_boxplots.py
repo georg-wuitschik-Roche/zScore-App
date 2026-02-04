@@ -259,8 +259,7 @@ def generate_boxplot(
     topn_zscore: int = DEFAULT_TOPN_ZSCORE,
     max_components: Optional[int] = DEFAULT_MAX_COMPONENTS,
     min_unique: int = 5,
-    indent: str = "  ",
-) -> bool:
+    indent: str = "  ",    show_title: bool = True,) -> bool:
     """Generate and save a boxplot with the given parameters.
     
     Args:
@@ -276,6 +275,7 @@ def generate_boxplot(
         max_components: Maximum components to include
         min_unique: Minimum unique values required
         indent: Indentation for log messages
+        show_title: Whether to show the title on the plot (default True)
         
     Returns:
         True if plot was generated successfully, False otherwise
@@ -307,6 +307,8 @@ def generate_boxplot(
             max_categories=max_components if max_components else 13,
         )
         apply_publication_fonts(fig)
+        if not show_title:
+            fig.update_layout(title_text="")
     except Exception as e:
         print(f"{indent}Failed to create figure: {e}")
         return False
@@ -516,6 +518,7 @@ def export_paper_boxplots(output_root: Path) -> None:
             topn_zscore=5,
             max_components=plot_config["max_components"],
             min_unique=2,
+            show_title=False,
         )
 
 
