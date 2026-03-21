@@ -1,5 +1,4 @@
-# Data files (stored in Google Cloud Bucket)
-*.csv
+# Data files
 *.tsv
 *.xlsx
 *.json

@@ -1,0 +1,19 @@
+// The Dev Container format allows you to configure your environment. At the heart of it
+// is a Docker image or Dockerfile which controls the tools available in your environment.
+//
+// See https://aka.ms/devcontainer.json for more information.
+{
+	"name": "zScore Dashboard",
+	"image": "eu.repository.roche.com/cde-gitpod-docker-prd-l/ona-base:2.0",
+	"forwardPorts": [8050],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance"
+			]
+		}
+	},
+	"postCreateCommand": "pip install -r requirements.txt",
+	"postStartCommand": "python app.py &"
+}
