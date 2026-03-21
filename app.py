@@ -19,7 +19,16 @@ import callbacks  # interactivity/callbacks
 def _create_dash_app() -> Dash:  # noqa: D401 (imperative mood is fine here)
     """Return a fully configured :class:`dash.Dash` instance."""
 
-    app = Dash(__name__, suppress_callback_exceptions=True, title="Z-Score Dashboard")
+    app = Dash(
+        __name__,
+        suppress_callback_exceptions=True,
+        title="Z-Score Dashboard",
+        update_title=None,
+        external_stylesheets=[
+            "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+        ],
+    )
     app.layout = layout.serve_layout  # callable – Dash calls it on every page load
 
     # Register ALL callbacks in a single line – keeps import order clean

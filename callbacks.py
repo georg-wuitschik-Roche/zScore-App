@@ -216,12 +216,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         Output('url', 'pathname'),
         Output('url', 'search'),
         Input('landing-explore-btn', 'n_clicks'),
+        Input('start-tutorial-btn', 'n_clicks'),
         Input('landing-reaction-dropdown', 'value'),
         prevent_initial_call=True,
     )
-    def _navigate_to_dashboard(n_clicks, selected_reactions):
-        """Navigate to the dashboard when a reaction is selected or Explore is clicked."""
-        if not selected_reactions and not n_clicks:
+    def _navigate_to_dashboard(explore_clicks, tutorial_clicks, selected_reactions):
+        """Navigate to the dashboard when Explore/Tutorial is clicked or a reaction is selected."""
+        if not selected_reactions and not explore_clicks and not tutorial_clicks:
             return no_update, no_update
         search = ''
         if selected_reactions:
@@ -287,13 +288,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         """
         function(n_clicks, is_presentation_mode) {
             if (!n_clicks || n_clicks === 0) {
-                return [false, "Presentation Mode", "presentation-toggle-btn", "app-container"];
+                return [false, "Presentation Mode", "settings-dropdown-btn", "app-container"];
             }
             var newMode = !is_presentation_mode;
             if (newMode) {
-                return [true, "Exit Presentation", "presentation-toggle-btn active", "app-container presentation-mode"];
+                return [true, "Exit Presentation", "settings-dropdown-btn active", "app-container presentation-mode"];
             }
-            return [false, "Presentation Mode", "presentation-toggle-btn", "app-container"];
+            return [false, "Presentation Mode", "settings-dropdown-btn", "app-container"];
         }
         """,
         [Output('presentation-mode-store', 'data'),
@@ -302,6 +303,52 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Output('main-container', 'className')],
         [Input('presentation-mode-toggle', 'n_clicks')],
         [State('presentation-mode-store', 'data')]
+    )
+
+    # ------------------------------------------------------------------
+    # Settings dropdown toggle ---------------------------------------------
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(toggleClicks, presClicks, currentClass) {
+            var ctx = window.dash_clientside.callback_context;
+            if (!ctx.triggered.length) return window.dash_clientside.no_update;
+            var trigger = ctx.triggered[0].prop_id.split('.')[0];
+
+            // Presentation-mode toggle always closes dropdown
+            if (trigger === 'presentation-mode-toggle') {
+                return 'settings-dropdown hidden';
+            }
+
+            // Gear icon toggles dropdown open/closed
+            if (!toggleClicks) return window.dash_clientside.no_update;
+
+            // Attach click-outside listener once (uses set_props to stay in sync)
+            if (!window._settingsOutsideHandler) {
+                window._settingsOutsideHandler = function(e) {
+                    var wrapper = document.querySelector('.settings-wrapper');
+                    var dd = document.getElementById('settings-dropdown');
+                    if (wrapper && dd && !wrapper.contains(e.target) &&
+                        !dd.classList.contains('hidden')) {
+                        window.dash_clientside.set_props(
+                            'settings-dropdown', {className: 'settings-dropdown hidden'}
+                        );
+                    }
+                };
+                document.addEventListener('click', window._settingsOutsideHandler, true);
+            }
+
+            if (currentClass.indexOf('hidden') !== -1) {
+                return 'settings-dropdown';
+            }
+            return 'settings-dropdown hidden';
+        }
+        """,
+        Output('settings-dropdown', 'className'),
+        [Input('settings-toggle', 'n_clicks'),
+         Input('presentation-mode-toggle', 'n_clicks')],
+        [State('settings-dropdown', 'className')],
+        prevent_initial_call=True,
     )
 
 

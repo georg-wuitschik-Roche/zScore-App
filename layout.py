@@ -74,7 +74,13 @@ def landing_layout() -> html.Div:
             html.Button(
                 'Explore',
                 id='landing-explore-btn',
-                className='landing-explore-btn',
+                n_clicks=0,
+                style={'display': 'none'},
+            ),
+            html.Button(
+                'Start Tutorial',
+                id='start-tutorial-btn',
+                className='landing-tutorial-btn',
                 n_clicks=0,
             ),
             # Hidden interval to trigger background preloading of default data
@@ -95,54 +101,72 @@ def dashboard_layout() -> html.Div:
         className='dashboard-content',
         children=[
             # --------------------------------------------------------------
-            # HEADER -- logo & title
+            # NAVBAR -- app bar with logo, title, settings & reset
             # --------------------------------------------------------------
-            html.Div(
-                className='header',
+            html.Nav(
+                className='navbar',
                 children=[
-                    html.Img(
-                        src='assets/logo.png',
-                        className='logo',
-                        id='dashboard-logo',
-                    ),
-                    html.H1(
-                        'Data-Driven Reagent Selection for Empirical Chemical Discovery',
-                        className='title',
-                    ),
                     html.Div(
-                        className='presentation-toggle-container',
+                        className='navbar-inner',
                         children=[
+                            html.Img(
+                                src='assets/logo.png',
+                                className='logo',
+                                id='dashboard-logo',
+                            ),
+                            html.H1(
+                                'Data-Driven Reagent Selection for Empirical Chemical Discovery',
+                                className='title',
+                            ),
+                            # -- Settings gear + dropdown --
                             html.Div(
-                                className='upload-container',
+                                className='settings-wrapper',
                                 children=[
-                                    dcc.Upload(
-                                        id='upload-data',
-                                        children=html.Button(
-                                            'Upload Dataset',
-                                            id='upload-btn',
-                                            className='upload-btn',
-                                        ),
-                                        accept='.csv',
-                                        max_size=50 * 1024 * 1024,
+                                    html.Button(
+                                        html.I(className='fa-solid fa-gear'),
+                                        id='settings-toggle',
+                                        className='settings-toggle',
+                                        n_clicks=0,
                                     ),
                                     html.Div(
-                                        id='upload-status-indicator',
-                                        className='upload-status',
-                                        children=[],
+                                        id='settings-dropdown',
+                                        className='settings-dropdown hidden',
+                                        children=[
+                                            html.Div(
+                                                className='upload-container settings-dropdown-item',
+                                                children=[
+                                                    dcc.Upload(
+                                                        id='upload-data',
+                                                        children=html.Button(
+                                                            'Upload Dataset',
+                                                            id='upload-btn',
+                                                            className='settings-dropdown-btn',
+                                                        ),
+                                                        accept='.csv',
+                                                        max_size=50 * 1024 * 1024,
+                                                    ),
+                                                    html.Div(
+                                                        id='upload-status-indicator',
+                                                        className='upload-status',
+                                                        children=[],
+                                                    ),
+                                                ],
+                                            ),
+                                            html.Button(
+                                                'Presentation Mode',
+                                                id='presentation-mode-toggle',
+                                                className='settings-dropdown-btn',
+                                                n_clicks=0,
+                                            ),
+                                        ],
                                     ),
                                 ],
                             ),
-                            html.Button('Reset', id='reset-btn'),
+                            # -- Reset (far right, subtle) --
                             html.Button(
-                                'Presentation Mode',
-                                id='presentation-mode-toggle',
-                                className='presentation-toggle-btn',
-                                n_clicks=0,
-                            ),
-                            html.Button(
-                                'Start Tutorial',
-                                id='start-tutorial-btn',
-                                n_clicks=0,
+                                [html.I(className='fa-solid fa-arrow-rotate-right'), ' Reset'],
+                                id='reset-btn',
+                                className='reset-btn-subtle',
                             ),
                         ],
                     ),
