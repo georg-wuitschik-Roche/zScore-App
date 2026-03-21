@@ -84,7 +84,7 @@ def _parse_filter_args(args: tuple) -> dict:
     """Convert positional filter args into a kwargs dict for filter_data.
 
     Returns a dict with keys matching ``du.filter_data`` parameters plus
-    ``'uploaded_data'`` (the raw JSON string from ``dcc.Store``).
+    ``'uploaded_data'`` (the UUID string from ``dcc.Store``).
     """
     return dict(zip(_FILTER_KEYS, args))
 
@@ -95,10 +95,11 @@ def _call_filter_data(fkw: dict, **overrides) -> pd.DataFrame:
     *overrides* are forwarded to ``du.filter_data`` and take precedence
     (e.g. ``return_stats=True``, ``min_eln=None``).
     """
-    uploaded_data = fkw['uploaded_data']
-    source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
+    session_id = fkw['uploaded_data']  # UUID string or None
+    source_df = du.get_uploaded_dataframe(session_id) if session_id else None
     kwargs = {k: fkw[k] for k in _FILTER_KEYS if k != 'uploaded_data'}
     kwargs['source_df'] = source_df
+    kwargs['session_id'] = session_id
     kwargs.update(overrides)
     return du.filter_data(**kwargs)
 
@@ -202,11 +203,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
          Output('upload-error-modal', 'style'),
          Output('upload-error-content', 'children')],
         [Input('upload-data', 'contents')],
-        [State('upload-data', 'filename')],
+        [State('upload-data', 'filename'),
+         State('uploaded-data-store', 'data')],
         prevent_initial_call=True
     )
-    def _process_uploaded_data(contents, filename):
-        """Parse uploaded CSV file, validate schema, and store in browser session."""
+    def _process_uploaded_data(contents, filename, previous_session_id):
+        """Parse uploaded CSV file, validate schema, and store server-side."""
         if contents is None:
             return no_update, no_update, no_update, no_update, no_update
         
@@ -342,14 +344,17 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
                         lambda r: ", ".join(sorted([str(r["FG A"]), str(r["FG B"])])), axis=1
                     )
             
-            # Convert DataFrame to JSON for storage
-            data_json = df.to_json(date_format='iso', orient='split')
-            
+            # Clean up previous upload session
+            du.remove_uploaded_dataframe(previous_session_id)
+
+            # Store DataFrame server-side, return UUID to browser
+            session_id = du.store_uploaded_dataframe(df)
+
             row_count = len(df)
             status_text = f'Using: {filename} ({row_count:,} rows)'
-            
+
             return (
-                data_json,
+                session_id,
                 html.Span([
                     html.I(className='fas fa-check-circle', style={'marginRight': '4px'}),
                     status_text
@@ -1006,7 +1011,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     @app.callback(
         [Output('whole-dataset-stats', 'style'),
-         Output('whole-dataset-content', 'children'),
+         Output('whole-dataset-stats-content', 'children'),
          Output('functional-group-a-stats', 'style'),
          Output('functional-group-a-stats-content', 'children'),
          Output('functional-group-b-stats', 'style'),

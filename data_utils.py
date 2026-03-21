@@ -23,6 +23,9 @@ quickly understand *why* a certain transformation exists.
 from pathlib import Path
 import hashlib
 import logging
+import threading
+import time
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -539,26 +542,31 @@ def filter_data(
     max_components: int | None = None,
     return_stats: bool = False,
     source_df: pd.DataFrame | None = None,
+    session_id: str | None = None,
 ) -> pd.DataFrame | tuple[pd.DataFrame, dict]:
     """Return a filtered DataFrame using the app's 10-step filter chain.
 
     When *return_stats* is ``True`` the return value is a tuple
     ``(filtered_df, stats_dict)``.
+
+    Args:
+        session_id: UUID of an uploaded dataset (used for cache keying).
+            Pass ``None`` when using the default dataset.
     """
     using_uploaded = source_df is not None
 
-    # --- cache lookup (default data only) ---
-    if not using_uploaded:
-        cache_key = _create_cache_key(
-            reactant_types, reaction_types, fg_a, fg_b,
-            exclude_cui, exclude_scaleup, include_null_categories,
-            min_eln, topn_zscore, max_components, return_stats,
-        )
-        if cache_key in _FILTER_CACHE:
-            cached = _FILTER_CACHE[cache_key]
-            if return_stats:
-                return cached['dataframe'].copy(), cached['stats'].copy()
-            return cached['dataframe'].copy()
+    # --- cache lookup (works for both default and uploaded data) ---
+    cache_key = _create_cache_key(
+        session_id,
+        reactant_types, reaction_types, fg_a, fg_b,
+        exclude_cui, exclude_scaleup, include_null_categories,
+        min_eln, topn_zscore, max_components, return_stats,
+    )
+    if cache_key in _FILTER_CACHE:
+        cached = _FILTER_CACHE[cache_key]
+        if return_stats:
+            return cached['dataframe'].copy(), cached['stats'].copy()
+        return cached['dataframe'].copy()
 
     dff = source_df.copy() if using_uploaded else DF.copy()
     include_null = _convert_checkbox_to_bool(include_null_categories)
@@ -613,14 +621,16 @@ def filter_data(
     dff = _filter_max_components(dff, max_components, reactant_types, include_null)
 
     # --- cache store ---
-    if not using_uploaded:
-        if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
-            oldest_key = next(iter(_FILTER_CACHE))
-            del _FILTER_CACHE[oldest_key]
-        _FILTER_CACHE[cache_key] = {
-            'dataframe': dff.copy(),
-            'stats': stats.copy() if stats else {},
-        }
+    if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
+        oldest_key = next(iter(_FILTER_CACHE))
+        del _FILTER_CACHE[oldest_key]
+    _FILTER_CACHE[cache_key] = {
+        'dataframe': dff.copy(),
+        'stats': stats.copy() if stats else {},
+    }
+    # Track cache keys per session for cleanup on upload removal
+    if session_id:
+        _SESSION_CACHE_KEYS.setdefault(session_id, set()).add(cache_key)
 
     if not return_stats:
         return dff
@@ -646,38 +656,110 @@ def get_cache_info():
 
 
 # ---------------------------------------------------------------------------
-# 5. UPLOADED DATA HELPERS
+# 5. SERVER-SIDE UPLOAD STORE
 # ---------------------------------------------------------------------------
+# Uploaded DataFrames are kept in-process memory keyed by UUID.  Only the
+# UUID travels between browser and server, eliminating repeated JSON
+# serialisation/deserialisation of potentially large datasets.
 
-def parse_uploaded_data(json_data: str) -> pd.DataFrame | None:
-    """Parse uploaded data from JSON string stored in dcc.Store.
-    
-    Args:
-        json_data: JSON string from dcc.Store containing uploaded dataset
-        
-    Returns:
-        DataFrame if parsing succeeds, None otherwise
+_UPLOAD_STORE: dict[str, dict] = {}
+_UPLOAD_STORE_LOCK = threading.Lock()
+_UPLOAD_TTL_SECONDS = 3600   # 1 hour of inactivity
+_UPLOAD_MAX_SESSIONS = 10    # max concurrent uploaded datasets
+_SESSION_CACHE_KEYS: dict[str, set[str]] = {}  # session_id → filter cache keys
+
+
+def _cleanup_expired_uploads() -> None:
+    """Remove upload store entries that have exceeded the TTL.
+
+    Must be called while holding ``_UPLOAD_STORE_LOCK``.
     """
-    if not json_data:
-        return None
-    
-    try:
-        return pd.read_json(json_data, orient='split')
-    except Exception:
-        return None
+    now = time.time()
+    expired = [
+        sid for sid, entry in _UPLOAD_STORE.items()
+        if now - entry['last_access'] > _UPLOAD_TTL_SECONDS
+    ]
+    for sid in expired:
+        del _UPLOAD_STORE[sid]
+        _purge_session_cache(sid)
+        logger.info('Upload session %s expired and removed', sid[:8])
 
 
-def get_active_dataframe(uploaded_data_json: str = None) -> pd.DataFrame:
-    """Get the active DataFrame - either uploaded data or default.
-    
+def _purge_session_cache(session_id: str) -> None:
+    """Remove all filter-cache entries associated with *session_id*."""
+    keys = _SESSION_CACHE_KEYS.pop(session_id, set())
+    for k in keys:
+        _FILTER_CACHE.pop(k, None)
+
+
+def store_uploaded_dataframe(df: pd.DataFrame) -> str:
+    """Store *df* server-side and return a UUID handle.
+
     Args:
-        uploaded_data_json: JSON string from uploaded-data-store
-        
+        df: Validated DataFrame from a user upload.
+
     Returns:
-        The uploaded DataFrame if available, otherwise the default DF
+        UUID string that identifies this upload session.
     """
-    if uploaded_data_json:
-        uploaded_df = parse_uploaded_data(uploaded_data_json)
+    session_id = str(uuid.uuid4())
+    with _UPLOAD_STORE_LOCK:
+        _cleanup_expired_uploads()
+        # Evict oldest if at capacity
+        while len(_UPLOAD_STORE) >= _UPLOAD_MAX_SESSIONS:
+            oldest = next(iter(_UPLOAD_STORE))
+            del _UPLOAD_STORE[oldest]
+            _purge_session_cache(oldest)
+            logger.info('Upload session %s evicted (cap reached)', oldest[:8])
+        _UPLOAD_STORE[session_id] = {
+            'df': df,
+            'last_access': time.time(),
+        }
+    logger.info('Stored upload session %s (%d rows)', session_id[:8], len(df))
+    return session_id
+
+
+def get_uploaded_dataframe(session_id: str) -> pd.DataFrame | None:
+    """Look up a stored DataFrame by its UUID handle.
+
+    Updates the last-access timestamp so the entry stays alive.
+
+    Args:
+        session_id: UUID returned by :func:`store_uploaded_dataframe`.
+
+    Returns:
+        The stored DataFrame, or ``None`` if expired / not found.
+    """
+    if not session_id:
+        return None
+    with _UPLOAD_STORE_LOCK:
+        entry = _UPLOAD_STORE.get(session_id)
+        if entry is None:
+            return None
+        entry['last_access'] = time.time()
+        return entry['df']
+
+
+def remove_uploaded_dataframe(session_id: str) -> None:
+    """Explicitly remove a stored upload and its cached filter results."""
+    if not session_id:
+        return
+    with _UPLOAD_STORE_LOCK:
+        _UPLOAD_STORE.pop(session_id, None)
+    _purge_session_cache(session_id)
+    logger.info('Upload session %s removed', session_id[:8])
+
+
+def get_active_dataframe(session_id: str | None = None) -> pd.DataFrame:
+    """Return the uploaded DataFrame for *session_id*, or the default ``DF``.
+
+    Args:
+        session_id: UUID from ``uploaded-data-store`` (may be ``None``).
+
+    Returns:
+        The uploaded DataFrame if available, otherwise the default DF.
+    """
+    if session_id:
+        uploaded_df = get_uploaded_dataframe(session_id)
         if uploaded_df is not None:
             return uploaded_df
     return DF

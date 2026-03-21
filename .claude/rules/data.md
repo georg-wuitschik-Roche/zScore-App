@@ -36,7 +36,7 @@ dff = dff[dff["z-Score"] > 0]
 ```
 
 ## Caching
-Use the existing LRU-style cache with MD5 hash keys. Skip cache for uploaded data.
+Use the existing LRU-style cache with MD5 hash keys. Uploaded data is cached using the session UUID as part of the cache key; entries are purged when the upload session is removed.
 
 ```python
 # Good
