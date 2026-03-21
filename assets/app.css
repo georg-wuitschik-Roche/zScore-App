@@ -134,6 +134,8 @@ button:hover, .dash-button:hover {
 /* -- Footer pinned to bottom, never clipped -- */
 .app-footer {
     flex-shrink: 0;
+    width: 100%;
+    margin-top: auto;
     text-align: center;
     padding: 28px 24px;
     border-top: 1px solid var(--color-border);
@@ -159,9 +161,9 @@ button:hover, .dash-button:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     flex: 1;
     padding: 24px;
+    padding-top: 12vh;
     text-align: center;
 }
 
@@ -240,8 +242,7 @@ button:hover, .dash-button:hover {
 /* ================================================================== */
 
 .dashboard-content {
-    max-width: 1900px;
-    margin: 0 auto;
+    margin: 0;
     padding: 32px 60px 0;
     box-sizing: border-box;
 }
@@ -259,8 +260,7 @@ button:hover, .dash-button:hover {
 }
 
 .navbar-inner {
-    max-width: 1900px;
-    margin: 0 auto;
+    margin: 0;
     padding: 0 60px;
     display: flex;
     align-items: center;
@@ -375,6 +375,32 @@ button:hover, .dash-button:hover {
     margin-bottom: 24px;
 }
 
+.controls-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    align-items: flex-start;
+}
+
+.control-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-col label {
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.fg-dropdown { min-width: 0; }
+
+/* Legacy class kept for options panel / other uses */
 .dropdown-row {
     display: flex;
     flex-direction: row;
@@ -392,7 +418,7 @@ button:hover, .dash-button:hover {
     justify-content: flex-start;
 }
 
-.dropdown-col label, .functional-group-row label {
+.dropdown-col label {
     margin-bottom: 6px;
     font-size: 11px;
     font-weight: 500;
@@ -400,15 +426,6 @@ button:hover, .dash-button:hover {
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
-
-.functional-group-row {
-    display: flex;
-    justify-content: flex-start;
-    margin: 16px 0;
-    gap: 16px;
-}
-
-.fg-dropdown { min-width: 200px; }
 
 /* ================================================================== */
 /* 6. DROPDOWNS & MULTI-SELECT                                        */
@@ -815,8 +832,8 @@ button.tutorial-highlight,
 /* 12. PRESENTATION MODE                                              */
 /* ================================================================== */
 
-.app-container.presentation-mode .dropdown-col label,
-.app-container.presentation-mode .functional-group-row label {
+.app-container.presentation-mode .control-col label,
+.app-container.presentation-mode .dropdown-col label {
     font-size: 15px !important;
     font-weight: 500 !important;
     color: var(--color-text-secondary) !important;
@@ -852,23 +869,16 @@ button.tutorial-highlight,
     line-height: 1.4 !important;
 }
 
-.app-container.presentation-mode .dropdown-row {
-    gap: 32px !important;
+.app-container.presentation-mode .controls-row {
+    gap: 24px !important;
     margin-bottom: 32px !important;
 }
 
-.app-container.presentation-mode .dropdown-col {
-    min-width: 250px !important;
-    max-width: 400px !important;
-}
-
-.app-container.presentation-mode .functional-group-row {
-    gap: 32px !important;
-    margin: 24px 0 !important;
-}
-
-.app-container.presentation-mode .functional-group-row .dash-dropdown {
-    min-width: 280px !important;
+.app-container.presentation-mode .control-col label {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    color: var(--color-text-secondary) !important;
+    margin-bottom: 6px !important;
 }
 
 .app-container.presentation-mode .navbar {

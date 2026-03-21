@@ -91,6 +91,7 @@ def landing_layout() -> html.Div:
             ),
             # Hidden div to receive preload callback output
             html.Div(id='preload-sink', style={'display': 'none'}),
+            _footer(),
         ],
     )
 
@@ -173,10 +174,10 @@ def dashboard_layout() -> html.Div:
                 ],
             ),
             # --------------------------------------------------------------
-            # DROPDOWN ROW -- primary filters
+            # CONTROLS ROW -- all primary filters side by side
             # --------------------------------------------------------------
             html.Div(
-                className='dropdown-row',
+                className='controls-row',
                 children=[
                     html.Div(
                         [
@@ -190,56 +191,42 @@ def dashboard_layout() -> html.Div:
                                     else [du.REACTION_TYPES[0]]
                                 ),
                                 multi=True,
-                                placeholder='Select one or more reaction types...',
+                                placeholder='Select reaction types...',
                             ),
                             _stats_badge('whole-dataset'),
                         ],
-                        className='dropdown-col',
+                        className='control-col',
                     ),
-                ],
-            ),
-            # --------------------------------------------------------------
-            # FUNCTIONAL GROUP SELECTION ROW
-            # --------------------------------------------------------------
-            html.Div(
-                className='functional-group-row',
-                children=[
                     html.Div(
                         [
-                            html.Label('Reacting Functional Group(s) A:'),
+                            html.Label('Functional Group(s) A:'),
                             dcc.Dropdown(
                                 id='functional-group-a-dropdown',
                                 options=[{'label': 'All', 'value': 'All'}],
                                 value=['RNH2 a-branch', 'RNH2'],
                                 multi=True,
                                 className='fg-dropdown',
-                                placeholder='Select functional groups...',
+                                placeholder='Select groups...',
                             ),
                             _stats_badge('functional-group-a'),
-                        ]
+                        ],
+                        className='control-col',
                     ),
                     html.Div(
                         [
-                            html.Label('Reacting Functional Group(s) B:'),
+                            html.Label('Functional Group(s) B:'),
                             dcc.Dropdown(
                                 id='functional-group-b-dropdown',
                                 options=[{'label': 'All', 'value': 'All'}],
                                 value=['ArBr', 'ArCl'],
                                 multi=True,
                                 className='fg-dropdown',
-                                placeholder='Select functional groups...',
+                                placeholder='Select groups...',
                             ),
                             _stats_badge('functional-group-b'),
-                        ]
+                        ],
+                        className='control-col',
                     ),
-                ],
-            ),
-            # --------------------------------------------------------------
-            # REACTANT TYPE SELECTION ROW
-            # --------------------------------------------------------------
-            html.Div(
-                className='dropdown-row',
-                children=[
                     html.Div(
                         [
                             html.Label('Reactant Type(s):'),
@@ -248,10 +235,10 @@ def dashboard_layout() -> html.Div:
                                 options=CATEGORY_OPTIONS,
                                 value=(['Catalyst'] if 'Catalyst' in du.CATEGORY_OPTIONS else [du.CATEGORY_OPTIONS[0]]),
                                 multi=True,
-                                placeholder='Select one or more reactant types...',
+                                placeholder='Select reactant types...',
                             ),
                         ],
-                        className='dropdown-col',
+                        className='control-col',
                     ),
                 ],
             ),
@@ -496,8 +483,6 @@ def serve_layout() -> html.Div:
             # ---- both pages always in DOM; visibility toggled by callback ----
             html.Div(id='landing-page', children=landing_layout()),
             html.Div(id='dashboard-page', style={'display': 'none'}, children=dashboard_layout()),
-            # ---- footer (always visible) ----
-            _footer(),
             # ---- modals (always in DOM for callbacks) ----
             html.Div(
                 id='upload-error-modal',

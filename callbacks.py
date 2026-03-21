@@ -203,7 +203,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             if (pathname === '/dashboard') {
                 return [{display: 'none'}, {display: 'block'}];
             }
-            return [{display: 'block'}, {display: 'none'}];
+            return [{display: 'flex', flexDirection: 'column', flex: '1'}, {display: 'none'}];
         }
         """,
         Output('landing-page', 'style'),
