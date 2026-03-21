@@ -26,7 +26,7 @@ Browser
 │    ├── callbacks.py  (event handlers)   │
 │    │     ├── data_utils.py  (filter/cache/load) ──► CSV / GCS
 │    │     └── plot_utils.py  (boxplots/heatmaps)    │
-│    └── assets/app.css  (Apple-style UI)            │
+│    └── assets/app.css  (custom UI)                 │
 ├─────────────────────────────────────────┤
 │  Batch scripts (not served):            │
 │    export_boxplots.py                   │
@@ -76,7 +76,7 @@ zScore-App/
 | Logic      | `callbacks.py`       | Event handlers, state management           |
 | Data       | `data_utils.py`      | CSV load, filter chain, LRU cache (50)     |
 | Viz        | `plot_utils.py`      | `create_boxplot()`, color mapping, hover    |
-| Style      | `assets/app.css`     | Apple-inspired design, responsive layout   |
+| Style      | `assets/app.css`     | Custom design, responsive layout           |
 | Deploy     | `Dockerfile`         | Cloud Run container config                 |
 
 ## Code Guidelines
@@ -107,6 +107,11 @@ zScore-App/
 | Upload max size       | 50 MB      |
 | Gunicorn workers      | 1          |
 | Gunicorn threads      | 8          |
+
+## Data Privacy
+- **User-uploaded data must never be persisted or shared.** Uploaded datasets transit through the server for processing but are held only in browser memory (`dcc.Store`) for the session.
+- Never log, write to disk, or transmit uploaded data to any external service.
+- The server must not persist uploaded data beyond the callback lifecycle.
 
 ## Naming Conventions
 - Private functions: `_prefix` (e.g. `_load_and_prepare`)

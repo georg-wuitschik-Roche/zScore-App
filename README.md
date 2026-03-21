@@ -15,7 +15,7 @@ This application is designed for chemists and researchers to analyze experimenta
 - **🔍 Multi-level Filtering**: Filter by reaction type, reactant type(s), Functional Group A, and Functional Group B
 - **🔄 Dynamic Dropdowns**: Dropdown options update based on selected filters for intuitive navigation
 - **💾 Data Export**: Download filtered data as CSV or plots as PNG for further analysis
-- **📱 Responsive Design**: Modern, clean interface with Apple-inspired styling that works on all devices
+- **📱 Responsive Design**: Modern, clean interface that works on all devices
 - **🎯 Hover Tooltips**: Detailed information on hover with all experimental parameters
 - **⚡ Performance Optimized**: Intelligent caching and data processing for smooth interactions
 
@@ -128,7 +128,7 @@ Your uploaded CSV must contain the following columns:
 ### How Uploaded Data is Processed
 
 - **Replacement behavior**: Uploaded data **replaces** the built-in dataset for the duration of your session. The analysis is performed exclusively on your uploaded data, not side-by-side or merged with the built-in dataset.
-- **Privacy**: Your data is processed entirely in your browser and is **not** uploaded to any server. It remains in browser memory only.
+- **Privacy**: Uploaded data is held in browser memory for the duration of your session. It transits through the server for processing but is **never stored to disk, logged, or transmitted** to any external service. When you close the tab or reset, the data is gone.
 - **Full functionality**: All filtering, visualization, and export features work identically on uploaded data as they do on the built-in dataset.
 - **Reset**: Click the **"Reset"** button to return to analyzing the built-in dataset.
 
