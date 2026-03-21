@@ -276,52 +276,51 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
 
     # Add custom data for hover template with all columns
     dff_hover = dff.copy()
-    
-    # Create comprehensive hover text with explicit HTML template
-    def create_hover_text(row):
-        # Helper function to clean values
-        def clean_value(val):
-            if pd.isna(val) or val == '<NA>' or val == '' or str(val).strip() == '':
-                return ''
-            return str(val)
-        
-        # Format numeric values appropriately
-        z_score = f"{row['z-Score']:.3f}" if pd.notna(row['z-Score']) and row['z-Score'] != '<NA>' else ""
-        area = f"{row['AREA_TOTAL_REDUCED']:.2f}%" if pd.notna(row['AREA_TOTAL_REDUCED']) and row['AREA_TOTAL_REDUCED'] != '<NA>' else ""
-        
-        # Build HTML template with all columns explicitly listed
-        hover_html = f"""
-        <b>Experiment Details:</b><br>
-        ELN_ID: {clean_value(row.get('ELN_ID', ''))}<br>
-        Plate: {clean_value(row.get('PLATENUMBER', ''))}<br>
-        Coordinate: {clean_value(row.get('Coordinate', ''))}<br>
-        <br>
-        <b>Results:</b><br>
-        z-Score: {z_score}<br>
-        Area: {area}<br>
-        <br>
-        <b>Reaction:</b><br>
-        Reaction Type: {clean_value(row.get('Reaction Type', ''))}<br>
-        <br>
-        <b>Reaction Conditions:</b><br>
-        {clean_value(row.get('output_column', ''))}<br>
-        <br>
-        <b>Reagents:</b><br>
-        Catalyst: {clean_value(row.get('Catalyst', ''))}<br>
-        Solvent: {clean_value(row.get('Solvent', ''))}<br>
-        Base: {clean_value(row.get('Base', ''))}<br>
-        Ligand: {clean_value(row.get('Ligand', ''))}<br>
-        Additive: {clean_value(row.get('Additive', ''))}<br>
-        Coupling Reagent: {clean_value(row.get('Coupling Reagent', ''))}<br>
-        Functional Group A: {clean_value(row.get('FG A', ''))}<br>
-        Functional Group B: {clean_value(row.get('FG B', ''))}<br>
-        Secondary Solvent: {clean_value(row.get('Secondary Solvent', ''))}<br>
-        """
-        
-        
-        return hover_html
-    
-    dff_hover['hover_text'] = dff_hover.apply(create_hover_text, axis=1)
+
+    # Build hover text using vectorized string operations (avoids row-by-row apply)
+    def _col_str(col: str) -> pd.Series:
+        """Return a cleaned string Series for *col*, '' for missing values."""
+        if col not in dff_hover.columns:
+            return pd.Series('', index=dff_hover.index)
+        s = dff_hover[col]
+        if s.dtype == 'object':
+            return s.fillna('').astype(str).str.strip()
+        return s.fillna('').astype(str)
+
+    z_score_s = dff_hover['z-Score'].map(
+        lambda v: f'{v:.3f}' if pd.notna(v) else '', na_action=None,
+    )
+    area_s = dff_hover['AREA_TOTAL_REDUCED'].map(
+        lambda v: f'{v:.2f}%' if pd.notna(v) else '', na_action=None,
+    )
+
+    dff_hover['hover_text'] = (
+        '<b>Experiment Details:</b><br>'
+        + 'ELN_ID: ' + _col_str('ELN_ID') + '<br>'
+        + 'Plate: ' + _col_str('PLATENUMBER') + '<br>'
+        + 'Coordinate: ' + _col_str('Coordinate') + '<br>'
+        + '<br>'
+        + '<b>Results:</b><br>'
+        + 'z-Score: ' + z_score_s + '<br>'
+        + 'Area: ' + area_s + '<br>'
+        + '<br>'
+        + '<b>Reaction:</b><br>'
+        + 'Reaction Type: ' + _col_str('Reaction Type') + '<br>'
+        + '<br>'
+        + '<b>Reaction Conditions:</b><br>'
+        + _col_str('output_column') + '<br>'
+        + '<br>'
+        + '<b>Reagents:</b><br>'
+        + 'Catalyst: ' + _col_str('Catalyst') + '<br>'
+        + 'Solvent: ' + _col_str('Solvent') + '<br>'
+        + 'Base: ' + _col_str('Base') + '<br>'
+        + 'Ligand: ' + _col_str('Ligand') + '<br>'
+        + 'Additive: ' + _col_str('Additive') + '<br>'
+        + 'Coupling Reagent: ' + _col_str('Coupling Reagent') + '<br>'
+        + 'Functional Group A: ' + _col_str('FG A') + '<br>'
+        + 'Functional Group B: ' + _col_str('FG B') + '<br>'
+        + 'Secondary Solvent: ' + _col_str('Secondary Solvent') + '<br>'
+    )
     
     # Calculate ELN count per category for tooltip
     eln_counts = dff_hover.groupby(y_category)['ELN_ID'].nunique()
@@ -449,35 +448,21 @@ def create_heatmap(dff, reactant_types: list, base_height: int = 800, presentati
         x_medians = dff.groupby(x_category)["z-Score"].median().sort_values(ascending=False)
         x_category_order = x_medians.index.tolist()
         
-        # Create 2D heatmap data: y_category vs x_category
-        heatmap_data = []
-        eln_counts = []  # Store ELN counts for tooltip
-        for y_cat in y_category_order:
-            row_data = []
-            eln_row = []
-            for x_cat in x_category_order:
-                # Get data for this combination
-                mask = (dff[y_category] == y_cat) & (dff[x_category] == x_cat)
-                subset_data = dff[mask]["z-Score"]
-                if len(subset_data) > 0:
-                    # Use median z-score for this combination, excluding null values
-                    valid_data = subset_data.dropna()
-                    if len(valid_data) > 0:
-                        row_data.append(valid_data.median())
-                        # Count unique ELNs for this combination
-                        eln_count = dff[mask]["ELN_ID"].nunique()
-                        eln_row.append(eln_count)
-                    else:
-                        row_data.append(np.nan)  # All data was null
-                        eln_row.append(0)
-                else:
-                    row_data.append(np.nan)  # No data for this combination
-                    eln_row.append(0)
-            heatmap_data.append(row_data)
-            eln_counts.append(eln_row)
-        
-        heatmap_data = np.array(heatmap_data)
-        eln_counts = np.array(eln_counts)
+        # Build 2D matrices via pivot_table (replaces O(Y*X) nested loops)
+        heatmap_df = dff.pivot_table(
+            index=y_category, columns=x_category,
+            values='z-Score', aggfunc='median',
+        )
+        eln_df = dff.pivot_table(
+            index=y_category, columns=x_category,
+            values='ELN_ID', aggfunc='nunique',
+        )
+        # Reindex to the desired order (fills missing combos with NaN / 0)
+        heatmap_df = heatmap_df.reindex(index=y_category_order, columns=x_category_order)
+        eln_df = eln_df.reindex(index=y_category_order, columns=x_category_order).fillna(0).astype(int)
+
+        heatmap_data = heatmap_df.values
+        eln_counts = eln_df.values
         
         # Flatten eln_counts for customdata (Plotly expects 1D array for heatmap customdata)
         # Create heatmap with categories on both axes
