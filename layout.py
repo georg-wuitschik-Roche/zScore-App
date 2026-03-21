@@ -21,28 +21,28 @@ import data_utils as du
 # 1. CONVENIENCE -- drop-down option helpers
 # ---------------------------------------------------------------------------
 
-REACTION_TYPE_OPTIONS = [{"label": rt, "value": rt} for rt in du.REACTION_TYPES]
-CATEGORY_OPTIONS = [{"label": c, "value": c} for c in du.CATEGORY_OPTIONS]
+REACTION_TYPE_OPTIONS = [{'label': rt, 'value': rt} for rt in du.REACTION_TYPES]
+CATEGORY_OPTIONS = [{'label': c, 'value': c} for c in du.CATEGORY_OPTIONS]
 
 
 # ---------------------------------------------------------------------------
 # 2. COMPONENT HELPERS
 # ---------------------------------------------------------------------------
 
+
 def _stats_badge(prefix: str) -> html.Div:
     """Return a hidden stats badge component pair for a dropdown."""
     return html.Div(
         id=f'{prefix}-stats',
         className='stats-badge',
-        children=[
-            html.Div(id=f'{prefix}-stats-content', className='stats-badge-content')
-        ],
+        children=[html.Div(id=f'{prefix}-stats-content', className='stats-badge-content')],
     )
 
 
 # ---------------------------------------------------------------------------
 # 3. PAGE LAYOUTS
 # ---------------------------------------------------------------------------
+
 
 def landing_layout() -> html.Div:
     """Return the landing page with reaction-type search."""
@@ -178,80 +178,83 @@ def dashboard_layout() -> html.Div:
             html.Div(
                 className='dropdown-row',
                 children=[
-                    html.Div([
-                        html.Label('Reaction Type(s):'),
-                        dcc.Dropdown(
-                            id='reaction-type-dropdown',
-                            options=REACTION_TYPE_OPTIONS,
-                            value=(
-                                ['Buchwald-Hartwig']
-                                if 'Buchwald-Hartwig' in du.REACTION_TYPES
-                                else [du.REACTION_TYPES[0]]
+                    html.Div(
+                        [
+                            html.Label('Reaction Type(s):'),
+                            dcc.Dropdown(
+                                id='reaction-type-dropdown',
+                                options=REACTION_TYPE_OPTIONS,
+                                value=(
+                                    ['Buchwald-Hartwig']
+                                    if 'Buchwald-Hartwig' in du.REACTION_TYPES
+                                    else [du.REACTION_TYPES[0]]
+                                ),
+                                multi=True,
+                                placeholder='Select one or more reaction types...',
                             ),
-                            multi=True,
-                            placeholder='Select one or more reaction types...',
-                        ),
-                        _stats_badge('whole-dataset'),
-                    ], className='dropdown-col'),
+                            _stats_badge('whole-dataset'),
+                        ],
+                        className='dropdown-col',
+                    ),
                 ],
             ),
-
             # --------------------------------------------------------------
             # FUNCTIONAL GROUP SELECTION ROW
             # --------------------------------------------------------------
             html.Div(
                 className='functional-group-row',
                 children=[
-                    html.Div([
-                        html.Label('Reacting Functional Group(s) A:'),
-                        dcc.Dropdown(
-                            id='functional-group-a-dropdown',
-                            options=[{'label': 'All', 'value': 'All'}],
-                            value=['RNH2 a-branch', 'RNH2'],
-                            multi=True,
-                            className='fg-dropdown',
-                            placeholder='Select functional groups...',
-                        ),
-                        _stats_badge('functional-group-a'),
-                    ]),
-                    html.Div([
-                        html.Label('Reacting Functional Group(s) B:'),
-                        dcc.Dropdown(
-                            id='functional-group-b-dropdown',
-                            options=[{'label': 'All', 'value': 'All'}],
-                            value=['ArBr', 'ArCl'],
-                            multi=True,
-                            className='fg-dropdown',
-                            placeholder='Select functional groups...',
-                        ),
-                        _stats_badge('functional-group-b'),
-                    ]),
+                    html.Div(
+                        [
+                            html.Label('Reacting Functional Group(s) A:'),
+                            dcc.Dropdown(
+                                id='functional-group-a-dropdown',
+                                options=[{'label': 'All', 'value': 'All'}],
+                                value=['RNH2 a-branch', 'RNH2'],
+                                multi=True,
+                                className='fg-dropdown',
+                                placeholder='Select functional groups...',
+                            ),
+                            _stats_badge('functional-group-a'),
+                        ]
+                    ),
+                    html.Div(
+                        [
+                            html.Label('Reacting Functional Group(s) B:'),
+                            dcc.Dropdown(
+                                id='functional-group-b-dropdown',
+                                options=[{'label': 'All', 'value': 'All'}],
+                                value=['ArBr', 'ArCl'],
+                                multi=True,
+                                className='fg-dropdown',
+                                placeholder='Select functional groups...',
+                            ),
+                            _stats_badge('functional-group-b'),
+                        ]
+                    ),
                 ],
             ),
-
             # --------------------------------------------------------------
             # REACTANT TYPE SELECTION ROW
             # --------------------------------------------------------------
             html.Div(
                 className='dropdown-row',
                 children=[
-                    html.Div([
-                        html.Label('Reactant Type(s):'),
-                        dcc.Dropdown(
-                            id='reactant-types-dropdown',
-                            options=CATEGORY_OPTIONS,
-                            value=(
-                                ['Catalyst']
-                                if 'Catalyst' in du.CATEGORY_OPTIONS
-                                else [du.CATEGORY_OPTIONS[0]]
+                    html.Div(
+                        [
+                            html.Label('Reactant Type(s):'),
+                            dcc.Dropdown(
+                                id='reactant-types-dropdown',
+                                options=CATEGORY_OPTIONS,
+                                value=(['Catalyst'] if 'Catalyst' in du.CATEGORY_OPTIONS else [du.CATEGORY_OPTIONS[0]]),
+                                multi=True,
+                                placeholder='Select one or more reactant types...',
                             ),
-                            multi=True,
-                            placeholder='Select one or more reactant types...',
-                        ),
-                    ], className='dropdown-col'),
+                        ],
+                        className='dropdown-col',
+                    ),
                 ],
             ),
-
             # --------------------------------------------------------------
             # OPTIONS TOGGLE
             # --------------------------------------------------------------
@@ -269,7 +272,6 @@ def dashboard_layout() -> html.Div:
                     ),
                 ],
             ),
-
             # --------------------------------------------------------------
             # OPTIONS PANEL (collapsible)
             # --------------------------------------------------------------
@@ -277,76 +279,99 @@ def dashboard_layout() -> html.Div:
                 id='filter-panel-container',
                 className='filter-panel',
                 children=[
-                    html.Div(className='filter-options-row sliders', children=[
-                        html.Label('Minimum Number of ELNs:'),
-                        html.Div(
-                            dcc.Slider(
-                                id='min-eln-input',
-                                min=1, max=20, step=1, value=5,
-                                marks={i: str(i) for i in [1, 5, 10, 15, 20]},
-                                tooltip={'placement': 'bottom', 'always_visible': True},
-                                persistence=True, persistence_type='local',
+                    html.Div(
+                        className='filter-options-row sliders',
+                        children=[
+                            html.Label('Minimum Number of ELNs:'),
+                            html.Div(
+                                dcc.Slider(
+                                    id='min-eln-input',
+                                    min=1,
+                                    max=20,
+                                    step=1,
+                                    value=5,
+                                    marks={i: str(i) for i in [1, 5, 10, 15, 20]},
+                                    tooltip={'placement': 'bottom', 'always_visible': True},
+                                    persistence=True,
+                                    persistence_type='local',
+                                ),
+                                className='slider-wrap min-eln',
                             ),
-                            className='slider-wrap min-eln',
-                        ),
-                        html.Label('Top-N z-Score per (ELN_ID, selected reactant type(s)):'),
-                        html.Div(
-                            dcc.Slider(
-                                id='topn-zscore-input',
-                                min=1, max=10, step=1, value=5,
-                                marks={i: str(i) for i in [1, 3, 5, 7, 10]},
-                                tooltip={'placement': 'bottom', 'always_visible': True},
-                                persistence=True, persistence_type='local',
+                            html.Label('Top-N z-Score per (ELN_ID, selected reactant type(s)):'),
+                            html.Div(
+                                dcc.Slider(
+                                    id='topn-zscore-input',
+                                    min=1,
+                                    max=10,
+                                    step=1,
+                                    value=5,
+                                    marks={i: str(i) for i in [1, 3, 5, 7, 10]},
+                                    tooltip={'placement': 'bottom', 'always_visible': True},
+                                    persistence=True,
+                                    persistence_type='local',
+                                ),
+                                className='slider-wrap topn',
                             ),
-                            className='slider-wrap topn',
-                        ),
-                        html.Label('Max Components to Display:'),
-                        html.Div(
-                            dcc.Slider(
-                                id='max-components-input',
-                                min=1, max=10, step=1, value=10,
-                                marks={1: '1', 5: '5', 10: '10'},
-                                tooltip={'placement': 'bottom', 'always_visible': True},
-                                persistence=True, persistence_type='local',
+                            html.Label('Max Components to Display:'),
+                            html.Div(
+                                dcc.Slider(
+                                    id='max-components-input',
+                                    min=1,
+                                    max=10,
+                                    step=1,
+                                    value=10,
+                                    marks={1: '1', 5: '5', 10: '10'},
+                                    tooltip={'placement': 'bottom', 'always_visible': True},
+                                    persistence=True,
+                                    persistence_type='local',
+                                ),
+                                className='slider-wrap max-comp',
                             ),
-                            className='slider-wrap max-comp',
-                        ),
-                    ]),
-                    html.Div(className='filter-options-row', children=[
-                        dcc.Checklist(
-                            id='exclude-cui-checkbox',
-                            options=[{'label': 'Exclude CuI as Catalyst', 'value': 'exclude_cui'}],
-                            value=['exclude_cui'],
-                            inline=True,
-                            className='checklist-item',
-                            persistence=True, persistence_type='local',
-                        ),
-                        dcc.Checklist(
-                            id='include-scaleup-checkbox',
-                            options=[{'label': 'Exclude Scale-Up Plates', 'value': True}],
-                            value=[True],
-                            inline=True,
-                            className='checklist-item',
-                            persistence=True, persistence_type='local',
-                        ),
-                        dcc.Checklist(
-                            id='include-null-categories-checkbox',
-                            options=[{'label': 'Include combinations with null reactant types', 'value': True}],
-                            value=[True],
-                            inline=True,
-                            className='checklist-item',
-                            persistence=True, persistence_type='local',
-                        ),
-                    ]),
-                    html.Div(className='filter-options-row downloads', children=[
-                        html.Button('Download CSV', id='download-csv-btn', className='download-btn-gap'),
-                        dcc.Download(id='download-csv'),
-                        html.Button('Download PNG', id='download-png-btn'),
-                        dcc.Download(id='download-png'),
-                    ]),
+                        ],
+                    ),
+                    html.Div(
+                        className='filter-options-row',
+                        children=[
+                            dcc.Checklist(
+                                id='exclude-cui-checkbox',
+                                options=[{'label': 'Exclude CuI as Catalyst', 'value': 'exclude_cui'}],
+                                value=['exclude_cui'],
+                                inline=True,
+                                className='checklist-item',
+                                persistence=True,
+                                persistence_type='local',
+                            ),
+                            dcc.Checklist(
+                                id='include-scaleup-checkbox',
+                                options=[{'label': 'Exclude Scale-Up Plates', 'value': True}],
+                                value=[True],
+                                inline=True,
+                                className='checklist-item',
+                                persistence=True,
+                                persistence_type='local',
+                            ),
+                            dcc.Checklist(
+                                id='include-null-categories-checkbox',
+                                options=[{'label': 'Include combinations with null reactant types', 'value': True}],
+                                value=[True],
+                                inline=True,
+                                className='checklist-item',
+                                persistence=True,
+                                persistence_type='local',
+                            ),
+                        ],
+                    ),
+                    html.Div(
+                        className='filter-options-row downloads',
+                        children=[
+                            html.Button('Download CSV', id='download-csv-btn', className='download-btn-gap'),
+                            dcc.Download(id='download-csv'),
+                            html.Button('Download PNG', id='download-png-btn'),
+                            dcc.Download(id='download-png'),
+                        ],
+                    ),
                 ],
             ),
-
             # --------------------------------------------------------------
             # ANALYSIS TABS
             # --------------------------------------------------------------
@@ -420,23 +445,25 @@ def _footer() -> html.Footer:
     return html.Footer(
         className='app-footer',
         children=[
-            html.P([
-                'Part of: Ahlbrecht, J.; Lutz, M.\u2009D.\u2009R.; Jost, V.; '
-                'F\u00e4rber, M.; Br\u00e4se, S.; Wuitschik, G. ',
-                html.Em(
-                    'Which Reaction Conditions Work on Drug-Like Molecules? '
-                    'Lessons from 66,000 High-Throughput Experiments.'
-                ),
-                ' ACS Cent. Sci. ',
-                html.Strong('2026'),
-                ', 12 (2), 222\u2013232. ',
-                html.A(
-                    'DOI: 10.1021/acscentsci.5c02031',
-                    href='https://doi.org/10.1021/acscentsci.5c02031',
-                    target='_blank',
-                    rel='noopener noreferrer',
-                ),
-            ]),
+            html.P(
+                [
+                    'Part of: Ahlbrecht, J.; Lutz, M.\u2009D.\u2009R.; Jost, V.; '
+                    'F\u00e4rber, M.; Br\u00e4se, S.; Wuitschik, G. ',
+                    html.Em(
+                        'Which Reaction Conditions Work on Drug-Like Molecules? '
+                        'Lessons from 66,000 High-Throughput Experiments.'
+                    ),
+                    ' ACS Cent. Sci. ',
+                    html.Strong('2026'),
+                    ', 12 (2), 222\u2013232. ',
+                    html.A(
+                        'DOI: 10.1021/acscentsci.5c02031',
+                        href='https://doi.org/10.1021/acscentsci.5c02031',
+                        target='_blank',
+                        rel='noopener noreferrer',
+                    ),
+                ]
+            ),
         ],
     )
 
@@ -444,6 +471,7 @@ def _footer() -> html.Footer:
 # ---------------------------------------------------------------------------
 # 4. PUBLIC API
 # ---------------------------------------------------------------------------
+
 
 def serve_layout() -> html.Div:
     """Return the *root* Dash component (called by Dash on page load).
@@ -458,6 +486,8 @@ def serve_layout() -> html.Div:
             dcc.Location(id='url', refresh=False),
             # ---- client-side stores (always present) ----
             dcc.Store(id='filter-stats-store'),
+            dcc.Store(id='filter-trigger-store', data=0),
+            html.Div(id='filter-debounce-sink', style={'display': 'none'}),
             dcc.Store(id='presentation-mode-store', data=False),
             dcc.Store(id='tutorial-store', data={'active': False, 'step': 0}),
             dcc.Store(id='uploaded-data-store', storage_type='memory'),
@@ -465,8 +495,7 @@ def serve_layout() -> html.Div:
             dcc.Store(id='upload-error-store', storage_type='memory'),
             # ---- both pages always in DOM; visibility toggled by callback ----
             html.Div(id='landing-page', children=landing_layout()),
-            html.Div(id='dashboard-page', style={'display': 'none'},
-                     children=dashboard_layout()),
+            html.Div(id='dashboard-page', style={'display': 'none'}, children=dashboard_layout()),
             # ---- footer (always visible) ----
             _footer(),
             # ---- modals (always in DOM for callbacks) ----

@@ -12,8 +12,8 @@ import os
 
 from dash import Dash
 
-import layout  # visual components
 import callbacks  # interactivity/callbacks
+import layout  # visual components
 
 
 def _create_dash_app() -> Dash:  # noqa: D401 (imperative mood is fine here)
@@ -22,11 +22,11 @@ def _create_dash_app() -> Dash:  # noqa: D401 (imperative mood is fine here)
     app = Dash(
         __name__,
         suppress_callback_exceptions=True,
-        title="Z-Score Dashboard",
+        title='Z-Score Dashboard',
         update_title=None,
         external_stylesheets=[
-            "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap",
-            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
+            'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
         ],
     )
     app.layout = layout.serve_layout  # callable – Dash calls it on every page load
@@ -42,6 +42,6 @@ app: Dash = _create_dash_app()
 server = app.server  # Required for Plotly Cloud deployment
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Local development – enable hot-reloading
-    app.run(debug=os.environ.get("DASH_DEBUG", "1") == "1") 
+    app.run(debug=os.environ.get('DASH_DEBUG', '1') == '1')
