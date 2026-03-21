@@ -8,6 +8,8 @@ it immediately clear **where** the application starts and avoids duplicate
 logic (all heavy lifting lives in the dedicated modules).
 """
 
+import os
+
 from dash import Dash
 
 import layout  # visual components
@@ -33,4 +35,4 @@ server = app.server  # Required for Plotly Cloud deployment
 
 if __name__ == "__main__":
     # Local development – enable hot-reloading
-    app.run(debug=True) 
+    app.run(debug=os.environ.get("DASH_DEBUG", "1") == "1") 

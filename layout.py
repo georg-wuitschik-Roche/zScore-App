@@ -6,14 +6,14 @@ Single source of truth for the **visual layout** of the Dash application.
 
 Why keep the layout in its own module?
 -------------------------------------
-1. **Separation of concerns** – the layout describes *what* the user sees
+1. **Separation of concerns** -- the layout describes *what* the user sees
    while callbacks describe *how* the app reacts to user input.  Having
    them in different files helps future maintainers reason about the
    codebase.
-2. **Reusability** – a clearly scoped `serve_layout()` function can be
+2. **Reusability** -- a clearly scoped `serve_layout()` function can be
    imported from notebooks or unit tests to render components in
    isolation.
-3. **Avoid circular imports** – the layout needs *no* callback
+3. **Avoid circular imports** -- the layout needs *no* callback
    decorators so it can be imported *before* callbacks are registered.
 
 The function names are chosen to read nicely inside :pyfile:`app.py`:
@@ -24,7 +24,7 @@ from dash import dcc, html
 import data_utils as du
 
 # ---------------------------------------------------------------------------
-# 1. CONVENIENCE – drop-down option helpers
+# 1. CONVENIENCE -- drop-down option helpers
 # ---------------------------------------------------------------------------
 
 # Pre-compute **static** option lists (the reactive options are handled via
@@ -33,17 +33,31 @@ REACTION_TYPE_OPTIONS = [{"label": rt, "value": rt} for rt in du.REACTION_TYPES]
 CATEGORY_OPTIONS = [{"label": c, "value": c} for c in du.CATEGORY_OPTIONS]
 
 
+# ---------------------------------------------------------------------------
+# 2. COMPONENT HELPERS
+# ---------------------------------------------------------------------------
+
+def _stats_badge(prefix: str) -> html.Div:
+    """Return a hidden stats badge component pair for a dropdown."""
+    return html.Div(
+        id=f'{prefix}-stats',
+        className='stats-badge',
+        children=[
+            html.Div(id=f'{prefix}-stats-content', className='stats-badge-content')
+        ],
+    )
 
 
 # ---------------------------------------------------------------------------
-# 2. PUBLIC API
+# 3. PUBLIC API
 # ---------------------------------------------------------------------------
 
 def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
-    """Return the *root* Dash component (called by Dash on page load)."""
+    """Return the *root* Dash component (called by Dash on page load).
 
-    # The outermost container allows us to apply a single class for global
-    # styling (see ``assets/apple.css``).
+    Styles live in ``assets/app.css``.
+    """
+
     return html.Div(
         id="main-container",
         className="app-container",
@@ -61,7 +75,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
             # Store for upload error modal visibility
             dcc.Store(id='upload-error-store', storage_type='memory'),
             # --------------------------------------------------------------
-            # 2.1  HEADER – logo & title
+            # HEADER -- logo & title
             # --------------------------------------------------------------
             html.Div(
                 className="header",
@@ -74,7 +88,6 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                     html.Div(
                         className="presentation-toggle-container",
                         children=[
-                            # Upload Dataset button with status indicator
                             html.Div(
                                 className="upload-container",
                                 children=[
@@ -83,44 +96,40 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                         children=html.Button(
                                             "Upload Dataset",
                                             id="upload-btn",
-                                            className="upload-btn"
+                                            className="upload-btn",
                                         ),
                                         accept='.csv',
-                                        max_size=50 * 1024 * 1024,  # 50MB max
+                                        max_size=50 * 1024 * 1024,
                                     ),
                                     html.Div(
                                         id='upload-status-indicator',
                                         className='upload-status',
-                                        children=[]
-                                    )
-                                ]
+                                        children=[],
+                                    ),
+                                ],
                             ),
-                            html.Button(
-                                "Reset",
-                                id="reset-btn"
-                            ),
+                            html.Button("Reset", id="reset-btn"),
                             html.Button(
                                 "Presentation Mode",
                                 id="presentation-mode-toggle",
                                 className="presentation-toggle-btn",
-                                n_clicks=0
+                                n_clicks=0,
                             ),
                             html.Button(
                                 "Start Tutorial",
                                 id="start-tutorial-btn",
-                                n_clicks=0
-                            )
-                        ]
-                    )
+                                n_clicks=0,
+                            ),
+                        ],
+                    ),
                 ],
             ),
             # --------------------------------------------------------------
-            # 2.2  DROPDOWN ROW – primary filters
+            # DROPDOWN ROW -- primary filters
             # --------------------------------------------------------------
             html.Div(
                 className="dropdown-row",
                 children=[
-                    # Reaction type ------------------------------------------------
                     html.Div([
                         html.Label('Reaction Type(s):'),
                         dcc.Dropdown(
@@ -130,23 +139,16 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                             multi=True,
                             placeholder='Select one or more reaction types...',
                         ),
-                        html.Div(
-                            id='whole-dataset-stats',
-                            style={'display': 'none', 'marginTop': '4px', 'textAlign': 'center'},
-                            children=[
-                                html.Div(id='whole-dataset-content', style={'fontSize': '11px', 'color': '#6c757d'})
-                            ]
-                        )
+                        _stats_badge('whole-dataset'),
                     ], className='dropdown-col'),
                 ],
             ),
 
             # --------------------------------------------------------------
-            # 2.2.1  FUNCTIONAL GROUP SELECTION ROW
+            # FUNCTIONAL GROUP SELECTION ROW
             # --------------------------------------------------------------
             html.Div(
                 className='functional-group-row',
-                style={'display': 'flex', 'justifyContent': 'flex-start', 'margin': '16px 0', 'gap': '16px'},
                 children=[
                     html.Div([
                         html.Label('Reacting Functional Group(s) A:'),
@@ -155,16 +157,10 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                             options=[{'label': 'All', 'value': 'All'}],
                             value=['RNH2 a-branch', 'RNH2'],
                             multi=True,
-                            style={'minWidth': '200px'},
+                            className='fg-dropdown',
                             placeholder='Select functional groups...',
                         ),
-                        html.Div(
-                            id='functional-group-a-stats',
-                            style={'display': 'none', 'marginTop': '4px', 'textAlign': 'center'},
-                            children=[
-                                html.Div(id='functional-group-a-stats-content', style={'fontSize': '11px', 'color': '#6c757d'})
-                            ]
-                        )
+                        _stats_badge('functional-group-a'),
                     ]),
                     html.Div([
                         html.Label('Reacting Functional Group(s) B:'),
@@ -173,27 +169,20 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                             options=[{'label': 'All', 'value': 'All'}],
                             value=['ArBr', 'ArCl'],
                             multi=True,
-                            style={'minWidth': '200px'},
+                            className='fg-dropdown',
                             placeholder='Select functional groups...',
                         ),
-                        html.Div(
-                            id='functional-group-b-stats',
-                            style={'display': 'none', 'marginTop': '4px', 'textAlign': 'center'},
-                            children=[
-                                html.Div(id='functional-group-b-stats-content', style={'fontSize': '11px', 'color': '#6c757d'})
-                            ]
-                        )
+                        _stats_badge('functional-group-b'),
                     ]),
                 ],
             ),
 
             # --------------------------------------------------------------
-            # 2.3  REACTANT TYPE SELECTION ROW
+            # REACTANT TYPE SELECTION ROW
             # --------------------------------------------------------------
             html.Div(
                 className="dropdown-row",
                 children=[
-                    # Reactant types (combined categories) -----------------------
                     html.Div([
                         html.Label('Reactant Type(s):'),
                         dcc.Dropdown(
@@ -204,161 +193,105 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                             placeholder='Select one or more reactant types...',
                         ),
                     ], className='dropdown-col'),
-
                 ],
             ),
 
             # --------------------------------------------------------------
-            # 2.6  OPTIONS TOGGLE (moved above charts)
+            # OPTIONS TOGGLE
             # --------------------------------------------------------------
             html.Div(
                 id='filter-toggle-container',
-                style={'position': 'relative', 'margin': '32px 0 24px 0'},
+                className='filter-toggle-container',
                 children=[
-                    html.Div(
-                        id='filter-toggle-line',
-                        style={
-                            'position': 'absolute',
-                            'left': '0',
-                            'top': '50%',
-                            'width': '100%',
-                            'height': '2px',
-                            'backgroundColor': '#d0d0d0',
-                            'zIndex': '1'
-                        }
-                    ),
+                    html.Div(id='filter-toggle-line', className='filter-toggle-line'),
                     html.Button(
                         id='toggle-filters-btn',
                         children=[
-                            html.I(className='fas fa-filter', style={'marginRight': '8px'}),
-                            html.Span('Options', style={'textAlign': 'center'})
+                            html.I(className='fas fa-filter btn-icon'),
+                            html.Span('Options'),
                         ],
-                        style={
-                            'position': 'absolute',
-                            'left': '20px',
-                            'top': '50%',
-                            'transform': 'translateY(-50%)',
-                            'backgroundColor': 'white',
-                            'border': '2px solid #d0d0d0',
-                            'borderRadius': '20px',
-                            'padding': '8px 16px',
-                            'cursor': 'pointer',
-                            'zIndex': '2',
-                            'fontSize': '14px',
-                            'fontWeight': '500',
-                            'color': '#666',
-                            'display': 'flex',
-                            'alignItems': 'center'
-                        }
-                    )
-                ]
+                    ),
+                ],
             ),
 
             # --------------------------------------------------------------
-            # 2.6.1  OPTIONS PANEL (appears below button when toggled)
+            # OPTIONS PANEL (collapsible)
             # --------------------------------------------------------------
             html.Div(
                 id='filter-panel-container',
                 className='filter-panel',
-                style={
-                    'margin': '0',
-                    'padding': '20px',
-                    'border': '1px solid #e0e0e0',
-                    'borderTop': 'none',
-                    'borderRadius': '0 0 8px 8px',
-                    'background': '#fafbfc',
-                    'display': 'none',
-                    'maxHeight': '0',
-                    'overflow': 'hidden',
-                    'transition': 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out'
-                },
                 children=[
-                    html.Div([
-                        html.Label('Minimum Number of ELNs:', style={'marginRight': '8px'}),
+                    html.Div(className='filter-options-row sliders', children=[
+                        html.Label('Minimum Number of ELNs:'),
                         html.Div(
                             dcc.Slider(
                                 id='min-eln-input',
-                                min=1,
-                                max=20,
-                                step=1,
-                                value=5,
+                                min=1, max=20, step=1, value=5,
                                 marks={i: str(i) for i in [1, 5, 10, 15, 20]},
                                 tooltip={"placement": "bottom", "always_visible": True},
-                                persistence=True,
-                                persistence_type='local',
+                                persistence=True, persistence_type='local',
                             ),
-                            style={'width': '150px', 'marginRight': '32px'}
+                            className='slider-wrap min-eln',
                         ),
-                        html.Label('Top-N z-Score per (ELN_ID, selected reactant type(s)):', style={'marginRight': '8px'}),
+                        html.Label('Top-N z-Score per (ELN_ID, selected reactant type(s)):'),
                         html.Div(
                             dcc.Slider(
                                 id='topn-zscore-input',
-                                min=1,
-                                max=10,
-                                step=1,
-                                value=5,
+                                min=1, max=10, step=1, value=5,
                                 marks={i: str(i) for i in [1, 3, 5, 7, 10]},
                                 tooltip={"placement": "bottom", "always_visible": True},
-                                persistence=True,
-                                persistence_type='local',
+                                persistence=True, persistence_type='local',
                             ),
-                            style={'width': '120px', 'marginRight': '32px'}
+                            className='slider-wrap topn',
                         ),
-                        html.Label('Max Components to Display:', style={'marginRight': '8px'}),
+                        html.Label('Max Components to Display:'),
                         html.Div(
                             dcc.Slider(
                                 id='max-components-input',
-                                min=1,
-                                max=10,
-                                step=1,
-                                value=10,
+                                min=1, max=10, step=1, value=10,
                                 marks={1: '1', 5: '5', 10: '10'},
                                 tooltip={"placement": "bottom", "always_visible": True},
-                                persistence=True,
-                                persistence_type='local',
+                                persistence=True, persistence_type='local',
                             ),
-                            style={'width': '150px'}
+                            className='slider-wrap max-comp',
                         ),
-                    ], style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap', 'marginBottom': '16px', 'justifyContent': 'flex-start'}),
-                    html.Div([
+                    ]),
+                    html.Div(className='filter-options-row', children=[
                         dcc.Checklist(
                             id='exclude-cui-checkbox',
                             options=[{'label': 'Exclude CuI as Catalyst', 'value': 'exclude_cui'}],
                             value=['exclude_cui'],
                             inline=True,
-                            style={'marginRight': '32px'},
-                            persistence=True,
-                            persistence_type='local',
+                            className='checklist-item',
+                            persistence=True, persistence_type='local',
                         ),
                         dcc.Checklist(
                             id='include-scaleup-checkbox',
                             options=[{'label': 'Exclude Scale-Up Plates', 'value': True}],
                             value=[True],
                             inline=True,
-                            style={'marginRight': '32px'},
-                            persistence=True,
-                            persistence_type='local',
+                            className='checklist-item',
+                            persistence=True, persistence_type='local',
                         ),
                         dcc.Checklist(
                             id='include-null-categories-checkbox',
                             options=[{'label': 'Include combinations with null reactant types', 'value': True}],
                             value=[True],
                             inline=True,
-                            persistence=True,
-                            persistence_type='local',
+                            persistence=True, persistence_type='local',
                         ),
-                    ], style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap', 'justifyContent': 'flex-start'}),
-                    html.Div([
-                        html.Button('Download CSV', id='download-csv-btn', style={'marginRight': '16px'}),
+                    ]),
+                    html.Div(className='filter-options-row downloads', children=[
+                        html.Button('Download CSV', id='download-csv-btn', className='download-btn-gap'),
                         dcc.Download(id='download-csv'),
-                        html.Button('Download PNG', id='download-png-btn', style={'marginLeft': '16px'}),
+                        html.Button('Download PNG', id='download-png-btn'),
                         dcc.Download(id='download-png'),
-                    ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'flex-start', 'marginTop': '16px'}),
-                ]
+                    ]),
+                ],
             ),
 
             # --------------------------------------------------------------
-            # 2.7  ANALYSIS TABS
+            # ANALYSIS TABS
             # --------------------------------------------------------------
             dcc.Tabs(
                 id='analysis-tabs',
@@ -370,7 +303,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                         children=[
                             html.Div(
                                 id='boxplot-container',
-                                style={'height': '800px', 'width': '100%'},
+                                className='plot-container',
                                 children=[
                                     dcc.Loading(
                                         id="boxplot-loading",
@@ -378,12 +311,12 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                         children=dcc.Graph(
                                             id='boxplot',
                                             clear_on_unhover=True,
-                                            style={'height': '100%'}
-                                        )
-                                    )
-                                ]
-                            )
-                        ]
+                                            style={'height': '100%'},
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ],
                     ),
                     dcc.Tab(
                         label='Heatmap',
@@ -391,16 +324,16 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                         children=[
                             html.Div(
                                 id='heatmap-container',
-                                style={'height': '800px', 'width': '100%'},
+                                className='plot-container',
                                 children=[
                                     dcc.Graph(
                                         id='heatmap',
                                         clear_on_unhover=True,
-                                        style={'height': '100%'}
-                                    )
-                                ]
-                            )
-                        ]
+                                        style={'height': '100%'},
+                                    ),
+                                ],
+                            ),
+                        ],
                     ),
                     dcc.Tab(
                         label='Statistics',
@@ -408,22 +341,22 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                         children=[
                             html.Div(
                                 id='stats-container',
-                                style={'width': '100%', 'padding': '12px 0'},
+                                className='stats-container',
                                 children=[
                                     dcc.Loading(
                                         id='stats-loading',
                                         type='default',
-                                        children=html.Div(id='stats-content')
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-                ]
+                                        children=html.Div(id='stats-content'),
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
             ),
 
             # --------------------------------------------------------------
-            # 2.8  UPLOAD ERROR MODAL
+            # UPLOAD ERROR MODAL
             # --------------------------------------------------------------
             html.Div(
                 id='upload-error-modal',
@@ -436,53 +369,44 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                             html.Div(
                                 className='upload-error-header',
                                 children=[
-                                    html.H3('Upload Error', style={'margin': '0', 'color': '#dc3545'}),
+                                    html.H3('Upload Error'),
                                     html.Button(
-                                        '×',
+                                        '\u00d7',
                                         id='upload-error-close',
                                         className='upload-error-close-btn',
-                                        n_clicks=0
-                                    )
-                                ]
+                                        n_clicks=0,
+                                    ),
+                                ],
                             ),
                             html.Div(
                                 id='upload-error-content',
                                 className='upload-error-body',
-                                children=[]
+                                children=[],
                             ),
                             html.Div(
                                 className='upload-error-footer',
                                 children=[
-                                    html.H4('Required Columns:', style={'marginBottom': '8px', 'marginTop': '16px'}),
+                                    html.H4('Required Columns:'),
                                     html.Code(
                                         'ELN_ID, PLATENUMBER, Coordinate, AREA_TOTAL_REDUCED, Base, Catalyst, '
                                         'Solvent, Ligand, Reaction Type, FG A, FG B, FG_sorted, z-Score',
-                                        style={
-                                            'display': 'block', 
-                                            'padding': '12px', 
-                                            'background': '#f5f5f5', 
-                                            'borderRadius': '6px', 
-                                            'fontSize': '12px', 
-                                            'lineHeight': '1.6',
-                                            'whiteSpace': 'pre-wrap',
-                                            'wordBreak': 'break-word'
-                                        }
+                                        className='required-columns-code',
                                     ),
                                     html.Button(
                                         'Close',
                                         id='upload-error-close-btn',
-                                        style={'marginTop': '16px', 'width': '100%'},
-                                        n_clicks=0
-                                    )
-                                ]
-                            )
-                        ]
-                    )
-                ]
+                                        className='close-btn-full',
+                                        n_clicks=0,
+                                    ),
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
             ),
 
             # --------------------------------------------------------------
-            # 2.9  TUTORIAL OVERLAY
+            # TUTORIAL OVERLAY
             # --------------------------------------------------------------
             html.Div(
                 id='tutorial-overlay',
@@ -493,19 +417,18 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                         className='tutorial-panel',
                         children=[
                             html.H3(id='tutorial-title', children='Welcome'),
-                            html.Div(id='tutorial-body', children='Let\'s take a quick tour of the app.'),
+                            html.Div(id='tutorial-body', children="Let's take a quick tour of the app."),
                             html.Div(
-                                style={'display': 'flex', 'justifyContent': 'space-between', 'gap': '8px', 'marginTop': '12px'},
+                                className='tutorial-btn-row',
                                 children=[
                                     html.Button('Back', id='tutorial-back', n_clicks=0),
                                     html.Button('Skip', id='tutorial-skip', n_clicks=0),
                                     html.Button('Next', id='tutorial-next', n_clicks=0),
-                                ]
-                            )
-                        ]
-                    )
-                ]
+                                ],
+                            ),
+                        ],
+                    ),
+                ],
             ),
-
         ],
     )
