@@ -807,14 +807,38 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             State('functional-group-a-dropdown', 'options'),
             State('functional-group-b-dropdown', 'options'),
             State('url-restore-flag', 'data'),
+            State('uploaded-data-store', 'data'),
         ],
         prevent_initial_call=True,
     )
-    def _reset_functional_groups_on_reaction_change(reaction_types, fg_a_options, fg_b_options, is_restoring):
-        """Clear both functional group dropdowns when reaction types change."""
+    def _reset_functional_groups_on_reaction_change(
+        reaction_types, fg_a_options, fg_b_options, is_restoring, uploaded_data
+    ):
+        """Reset functional groups when reaction types change.
+
+        Only applies ``DEFAULT_FG_A`` / ``DEFAULT_FG_B`` when the selected
+        reaction types exactly match ``DEFAULT_REACTION_TYPES``.  For any
+        other selection the dropdowns are reset to ``['All']``.
+        """
         if is_restoring:
             return no_update, no_update
-        return ['All'], ['All']
+
+        # Only apply FG defaults for the default reaction type selection
+        if sorted(reaction_types or []) != sorted(DEFAULT_REACTION_TYPES):
+            return ['All'], ['All']
+
+        # Validate defaults against available FG values
+        source_df = du.get_active_dataframe(uploaded_data)
+        dff = source_df[source_df['Reaction Type'].isin(reaction_types)]
+
+        available_fgs: set[str] = set()
+        if {'FG A', 'FG B'}.issubset(dff.columns):
+            available_fgs = set(pd.concat([dff['FG A'], dff['FG B']]).dropna().unique())
+
+        valid_fg_a = [v for v in DEFAULT_FG_A if v in available_fgs]
+        valid_fg_b = [v for v in DEFAULT_FG_B if v in available_fgs]
+
+        return valid_fg_a or ['All'], valid_fg_b or ['All']
 
     # ------------------------------------------------------------------
     # Set initial functional group A values on page load ---------------
@@ -838,7 +862,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             # If no defaults available, return 'All'
             return ['All']
 
-        return current_fg_a
+        return no_update
 
     # ------------------------------------------------------------------
     # Set initial functional group B values on page load ---------------
@@ -862,7 +886,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             # If no defaults available, return 'All'
             return ['All']
 
-        return current_fg_b
+        return no_update
 
     # ------------------------------------------------------------------
     # Reset filters callback -------------------------------------------
@@ -975,11 +999,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             )
 
         elif triggered_id == 'reaction-type-dropdown':
-            # Handle reaction type change - keep reactant types the same
-            # Keep reactant types unchanged when reaction types change
+            # Reaction type changed – keep all other filters as-is.
+            # Use no_update (not the current value) to avoid triggering
+            # downstream callbacks with a redundant property update.
             return (
                 no_update,
-                current_reactant_types,
+                no_update,
                 no_update,
                 no_update,
                 no_update,
@@ -1009,12 +1034,16 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         Output('min-eln-input', 'value', allow_duplicate=True),
         [Input('functional-group-a-dropdown', 'value'), Input('functional-group-b-dropdown', 'value')],
-        [State('reaction-type-dropdown', 'value'), State('url-restore-flag', 'data')],
+        [
+            State('reaction-type-dropdown', 'value'),
+            State('url-restore-flag', 'data'),
+            State('min-eln-input', 'value'),
+        ],
         prevent_initial_call='initial_duplicate',
     )
-    def _update_min_eln_on_fg_change(fg_a_values, fg_b_values, reaction_types, is_restoring):
+    def _update_min_eln_on_fg_change(fg_a_values, fg_b_values, reaction_types, is_restoring, current_min_eln):
         """Update min ELN when functional group selections change."""
-        if is_restoring:
+        if is_restoring or current_min_eln == DEFAULT_MIN_ELN:
             return no_update
         return DEFAULT_MIN_ELN
 
