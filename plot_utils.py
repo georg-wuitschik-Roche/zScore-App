@@ -133,6 +133,8 @@ def _add_stats_annotation(fig: go.Figure, text: str, fs: dict,
 
 def _safe_str_conversion(series: pd.Series) -> pd.Series:
     """Convert a pandas Series to string while handling null values gracefully."""
+    if hasattr(series, 'cat'):
+        series = series.astype('object')
     return series.fillna('(no value)').astype(str)
 
 # ---------------------------------------------------------------------------
@@ -283,6 +285,8 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
         if col not in dff_hover.columns:
             return pd.Series('', index=dff_hover.index)
         s = dff_hover[col]
+        if hasattr(s, 'cat'):
+            s = s.astype('object')
         if s.dtype == 'object':
             return s.fillna('').astype(str).str.strip()
         return s.fillna('').astype(str)

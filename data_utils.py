@@ -29,6 +29,7 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+import numpy as np
 import pandas as pd
 import requests
 
@@ -234,9 +235,10 @@ def _load_and_prepare(csv_path: Path = CSV_PATH) -> pd.DataFrame:
             df["FG_PAIR_SORTED"] = df["FG_sorted"]
         else:
             # Fallback: compute the sorted pair if not provided
-            df["FG_PAIR_SORTED"] = df.apply(
-                lambda r: ", ".join(sorted([str(r["FG A"]), str(r["FG B"])])), axis=1
-            )
+            a = df["FG A"].astype(str)
+            b = df["FG B"].astype(str)
+            lo, hi = np.minimum(a, b), np.maximum(a, b)
+            df["FG_PAIR_SORTED"] = lo + ", " + hi
 
     # ------------------------------------------------------------------
     # 1.1  --------------  TYPE CONVERSIONS  ---------------------------
@@ -253,8 +255,16 @@ def _load_and_prepare(csv_path: Path = CSV_PATH) -> pd.DataFrame:
         df["AREA_TOTAL_REDUCED"].astype(str).str.replace(",", ".").str.strip().pipe(pd.to_numeric, errors="coerce")
     )
 
-    # Any additional one-off data-quality fixes should live here so we
-    # have a single choke-point for audit.
+    # Convert low-cardinality string columns to Categorical to reduce
+    # memory (~77 MB → ~15 MB) and speed up groupby / isin / == ops.
+    _CATEGORICAL_COLS = [
+        'Catalyst', 'Solvent', 'Base', 'Ligand', 'Additive',
+        'Coupling Reagent', 'Secondary Solvent', 'Reaction Type',
+        'FG A', 'FG B', 'FG_PAIR_SORTED', 'ELN_ID',
+    ]
+    for col in _CATEGORICAL_COLS:
+        if col in df.columns:
+            df[col] = df[col].astype('category')
 
     return df
 
@@ -404,11 +414,11 @@ def _filter_scaleup_plates(dff: pd.DataFrame, exclude_scaleup: list | None) -> p
     plate_variability = (
         dff.groupby(['ELN_ID', 'PLATENUMBER'])[reagent_cols]
         .nunique()
-        .reset_index()
     )
-    has_variability = (plate_variability[reagent_cols] > 1).any(axis=1)
-    plates_to_keep = plate_variability[has_variability][['ELN_ID', 'PLATENUMBER']]
-    return dff.merge(plates_to_keep, on=['ELN_ID', 'PLATENUMBER'], how='inner')
+    has_variability = (plate_variability > 1).any(axis=1)
+    keep_idx = has_variability[has_variability].index  # MultiIndex of (ELN_ID, PLATENUMBER)
+    row_keys = pd.MultiIndex.from_arrays([dff['ELN_ID'], dff['PLATENUMBER']])
+    return dff[row_keys.isin(keep_idx)]
 
 
 _REAGENT_COLS = [
@@ -419,13 +429,25 @@ _NAN_SENTINEL = '__NAN__'
 _NULL_SENTINEL = '__NULL_CATEGORY__'
 
 
+def _fillna_safe(df_or_series, value):
+    """Fill NaN with *value*, safely handling Categorical columns."""
+    if isinstance(df_or_series, pd.Series):
+        if hasattr(df_or_series, 'cat'):
+            return df_or_series.astype('object').fillna(value)
+        return df_or_series.fillna(value)
+    # DataFrame: cast any categorical columns to object first
+    cat_cols = [c for c in df_or_series.columns if hasattr(df_or_series[c], 'cat')]
+    if cat_cols:
+        df_or_series = df_or_series.astype({c: 'object' for c in cat_cols})
+    return df_or_series.fillna(value)
+
+
 def _deduplicate_best_zscore(dff: pd.DataFrame) -> pd.DataFrame:
     """Step 7: Keep the best z-Score per unique reagent combination."""
     dedup_cols = ['ELN_ID'] + [c for c in _REAGENT_COLS if c in dff.columns]
 
-    # Fill NaN only on the groupby columns (avoids full DataFrame copy)
-    fill_map = {c: _NAN_SENTINEL for c in dedup_cols if c in dff.columns}
-    filled = dff[dedup_cols].fillna(fill_map)
+    # Fill NaN only on the groupby columns (avoids full DataFrame copy).
+    filled = _fillna_safe(dff[dedup_cols], _NAN_SENTINEL)
     filled['z-Score'] = dff['z-Score']
 
     rank = filled.groupby(dedup_cols)['z-Score'].rank(method='first', ascending=False)
@@ -453,7 +475,7 @@ def _filter_topn_zscore(
         return dff
 
     if include_null:
-        filled = dff[rank_cols].fillna(_NULL_SENTINEL)
+        filled = _fillna_safe(dff[rank_cols], _NULL_SENTINEL)
         filled['z-Score'] = dff['z-Score']
         rank = filled.groupby(rank_cols)['z-Score'].rank(method='first', ascending=False)
     else:
@@ -474,7 +496,7 @@ def _filter_min_eln(
 
     group_cols = ['Reaction Type'] + [rt for rt in reactant_types if rt]
     if include_null:
-        filled = dff[group_cols].fillna(_NULL_SENTINEL)
+        filled = _fillna_safe(dff[group_cols], _NULL_SENTINEL)
         filled['ELN_ID'] = dff['ELN_ID']
         counts = filled.groupby(group_cols)['ELN_ID'].transform('nunique')
     else:
@@ -511,21 +533,24 @@ def _filter_max_components(
 
     if len(key_cols) == 1:
         if include_null:
-            left = dff[key_cols[0]].fillna(_NULL_SENTINEL)
-            right = top_df[key_cols[0]].fillna(_NULL_SENTINEL)
+            left = _fillna_safe(dff[key_cols[0]], _NULL_SENTINEL)
+            right = _fillna_safe(top_df[key_cols[0]], _NULL_SENTINEL)
             return dff[left.isin(right)]
         return dff[dff[key_cols[0]].isin(top_df[key_cols[0]].tolist())]
 
     if include_null:
-        left_keys = dff[key_cols].fillna(_NULL_SENTINEL).reset_index()
-        right_keys = top_df[key_cols].fillna(_NULL_SENTINEL).drop_duplicates()
+        left_keys = _fillna_safe(dff[key_cols], _NULL_SENTINEL).reset_index()
+        right_keys = _fillna_safe(top_df[key_cols], _NULL_SENTINEL).drop_duplicates()
         matched = left_keys.merge(right_keys, on=key_cols, how='inner')
         return dff.loc[matched['index'].unique().tolist()]
     return dff.merge(top_df, on=key_cols, how='inner')
 
 
 # Cache for filtered data - stores (cache_key -> (dataframe, stats))
-_FILTER_CACHE: dict[str, dict] = {}
+# Uses OrderedDict for LRU eviction: move_to_end on hit, pop oldest on full.
+from collections import OrderedDict
+_FILTER_CACHE: OrderedDict[str, dict] = OrderedDict()
+_FILTER_CACHE_LOCK = threading.Lock()
 _CACHE_MAX_SIZE = 50
 
 
@@ -562,13 +587,17 @@ def filter_data(
         exclude_cui, exclude_scaleup, include_null_categories,
         min_eln, topn_zscore, max_components, return_stats,
     )
-    if cache_key in _FILTER_CACHE:
-        cached = _FILTER_CACHE[cache_key]
-        if return_stats:
-            return cached['dataframe'].copy(), cached['stats'].copy()
-        return cached['dataframe'].copy()
+    with _FILTER_CACHE_LOCK:
+        if cache_key in _FILTER_CACHE:
+            _FILTER_CACHE.move_to_end(cache_key)  # LRU: mark as recently used
+            cached = _FILTER_CACHE[cache_key]
+            if return_stats:
+                return cached['dataframe'].copy(), cached['stats'].copy()
+            return cached['dataframe'].copy()
 
-    dff = source_df.copy() if using_uploaded else DF.copy()
+    # No .copy() needed: every filter step returns a new DataFrame via
+    # boolean indexing, and _deduplicate_best_zscore creates an explicit copy.
+    dff = source_df if using_uploaded else DF
     include_null = _convert_checkbox_to_bool(include_null_categories)
     stats: dict | None = {} if return_stats else None
 
@@ -620,17 +649,17 @@ def filter_data(
     # Step 10: Max components
     dff = _filter_max_components(dff, max_components, reactant_types, include_null)
 
-    # --- cache store ---
-    if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
-        oldest_key = next(iter(_FILTER_CACHE))
-        del _FILTER_CACHE[oldest_key]
-    _FILTER_CACHE[cache_key] = {
-        'dataframe': dff.copy(),
-        'stats': stats.copy() if stats else {},
-    }
-    # Track cache keys per session for cleanup on upload removal
-    if session_id:
-        _SESSION_CACHE_KEYS.setdefault(session_id, set()).add(cache_key)
+    # --- cache store (LRU eviction) ---
+    with _FILTER_CACHE_LOCK:
+        if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
+            _FILTER_CACHE.popitem(last=False)  # evict least-recently-used
+        _FILTER_CACHE[cache_key] = {
+            'dataframe': dff.copy(),
+            'stats': stats.copy() if stats else {},
+        }
+        # Track cache keys per session for cleanup on upload removal
+        if session_id:
+            _SESSION_CACHE_KEYS.setdefault(session_id, set()).add(cache_key)
 
     if not return_stats:
         return dff
@@ -639,8 +668,8 @@ def filter_data(
 
 def clear_filter_cache():
     """Clear the filter data cache. Useful for debugging or memory management."""
-    global _FILTER_CACHE
-    _FILTER_CACHE.clear()
+    with _FILTER_CACHE_LOCK:
+        _FILTER_CACHE.clear()
 
 # Clear cache on import to ensure fresh start
 clear_filter_cache()
@@ -688,8 +717,9 @@ def _cleanup_expired_uploads() -> None:
 def _purge_session_cache(session_id: str) -> None:
     """Remove all filter-cache entries associated with *session_id*."""
     keys = _SESSION_CACHE_KEYS.pop(session_id, set())
-    for k in keys:
-        _FILTER_CACHE.pop(k, None)
+    with _FILTER_CACHE_LOCK:
+        for k in keys:
+            _FILTER_CACHE.pop(k, None)
 
 
 def store_uploaded_dataframe(df: pd.DataFrame) -> str:

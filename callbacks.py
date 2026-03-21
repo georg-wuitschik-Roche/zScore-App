@@ -16,6 +16,7 @@ import io
 import base64
 import logging
 
+import numpy as np
 import pandas as pd
 from dash import Input, Output, State, callback_context, dcc, html, no_update
 
@@ -340,9 +341,10 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
                 if "FG_sorted" in df.columns:
                     df["FG_PAIR_SORTED"] = df["FG_sorted"]
                 else:
-                    df["FG_PAIR_SORTED"] = df.apply(
-                        lambda r: ", ".join(sorted([str(r["FG A"]), str(r["FG B"])])), axis=1
-                    )
+                    a = df["FG A"].astype(str)
+                    b = df["FG B"].astype(str)
+                    lo, hi = np.minimum(a, b), np.maximum(a, b)
+                    df["FG_PAIR_SORTED"] = lo + ", " + hi
             
             # Clean up previous upload session
             du.remove_uploaded_dataframe(previous_session_id)
