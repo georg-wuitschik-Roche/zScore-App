@@ -118,3 +118,12 @@ zScore-App/
 - Constants: `UPPER_SNAKE` at module top
 - Callbacks: underscore prefix (e.g. `_toggle_presentation_mode`)
 - Files: `snake_case.py`
+
+## Skills
+Always follow the guidelines defined in these skill files:
+- `.claude/skills/git.md` — Git commit and branching rules
+- `.claude/skills/dev.md` — Development workflow
+- `.claude/skills/build.md` — Build and deployment
+- `.claude/skills/lint.md` — Linting and code quality
+- `.claude/skills/export.md` — Export and figure generation
+- `.claude/skills/frontend-design.md` — UI/UX design system
