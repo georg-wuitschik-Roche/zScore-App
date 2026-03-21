@@ -5,6 +5,12 @@
 
 A comprehensive Dash Plotly web application for analyzing z-score data from chemical reaction experiments. This dashboard provides interactive boxplots and filtering capabilities for exploring reagent performance across different reaction types.
 
+## 📄 Publication
+
+This dashboard accompanies the following publication:
+
+> Ahlbrecht, J.; Lutz, M. D. R.; Jost, V.; Färber, M.; Bräse, S.; Wuitschik, G. *Which Reaction Conditions Work on Drug-Like Molecules? Lessons from 66,000 High-Throughput Experiments.* ACS Cent. Sci. **2026**, 12 (2), 222–232. [DOI: 10.1021/acscentsci.5c02031](https://doi.org/10.1021/acscentsci.5c02031)
+
 ## 🎯 Overview
 
 This application is designed for chemists and researchers to analyze experimental data through interactive visualizations. It enables deep exploration of z-score distributions across various reaction parameters, helping identify optimal conditions and trends in chemical reactions.

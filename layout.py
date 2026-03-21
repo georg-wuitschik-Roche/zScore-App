@@ -4,19 +4,13 @@ from __future__ import annotations
 ===============
 Single source of truth for the **visual layout** of the Dash application.
 
-Why keep the layout in its own module?
--------------------------------------
-1. **Separation of concerns** -- the layout describes *what* the user sees
-   while callbacks describe *how* the app reacts to user input.  Having
-   them in different files helps future maintainers reason about the
-   codebase.
-2. **Reusability** -- a clearly scoped `serve_layout()` function can be
-   imported from notebooks or unit tests to render components in
-   isolation.
-3. **Avoid circular imports** -- the layout needs *no* callback
-   decorators so it can be imported *before* callbacks are registered.
+The app uses URL-based routing:
+- ``/``          – landing page with reaction-type search
+- ``/dashboard`` – full analysis dashboard
 
-The function names are chosen to read nicely inside :pyfile:`app.py`:
+``serve_layout()`` renders a thin shell (stores, ``dcc.Location``,
+page-content container, footer, and modals).  A routing callback in
+:pyfile:`callbacks.py` swaps the page content based on the URL.
 """
 
 from dash import dcc, html
@@ -27,8 +21,6 @@ import data_utils as du
 # 1. CONVENIENCE -- drop-down option helpers
 # ---------------------------------------------------------------------------
 
-# Pre-compute **static** option lists (the reactive options are handled via
-# callbacks in :pyfile:`callbacks.py`).
 REACTION_TYPE_OPTIONS = [{"label": rt, "value": rt} for rt in du.REACTION_TYPES]
 CATEGORY_OPTIONS = [{"label": c, "value": c} for c in du.CATEGORY_OPTIONS]
 
@@ -49,54 +41,86 @@ def _stats_badge(prefix: str) -> html.Div:
 
 
 # ---------------------------------------------------------------------------
-# 3. PUBLIC API
+# 3. PAGE LAYOUTS
 # ---------------------------------------------------------------------------
 
-def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
-    """Return the *root* Dash component (called by Dash on page load).
-
-    Styles live in ``assets/app.css``.
-    """
-
+def landing_layout() -> html.Div:
+    """Return the landing page with reaction-type search."""
     return html.Div(
-        id="main-container",
-        className="app-container",
+        className='landing-container',
         children=[
-            # In-memory store for lightweight stats (filtered data no longer stored client-side)
-            dcc.Store(id='filter-stats-store'),
-            # Store for presentation mode state
-            dcc.Store(id='presentation-mode-store', data=False),
-            # Store for interactive tutorial state
-            dcc.Store(id='tutorial-store', data={'active': False, 'step': 0}),
-            # Store for user-uploaded dataset (memory storage - no size limit)
-            dcc.Store(id='uploaded-data-store', storage_type='memory'),
-            # Store for upload status messages
-            dcc.Store(id='upload-status-store', storage_type='memory'),
-            # Store for upload error modal visibility
-            dcc.Store(id='upload-error-store', storage_type='memory'),
+            html.Img(src='assets/logo.png', className='landing-logo'),
+            html.H1(
+                'Z-Score Dashboard',
+                className='landing-title',
+            ),
+            html.P(
+                'Search for a reaction type to explore z-score analytics',
+                className='landing-subtitle',
+            ),
+            html.Div(
+                className='landing-search-wrapper',
+                children=[
+                    dcc.Dropdown(
+                        id='landing-reaction-dropdown',
+                        options=REACTION_TYPE_OPTIONS,
+                        placeholder='Search by reaction type...',
+                        multi=True,
+                        className='landing-search',
+                        searchable=True,
+                    ),
+                ],
+            ),
+            html.Button(
+                'Explore',
+                id='landing-explore-btn',
+                className='landing-explore-btn',
+                n_clicks=0,
+            ),
+            # Hidden interval to trigger background preloading of default data
+            dcc.Interval(
+                id='preload-interval',
+                interval=500,
+                max_intervals=1,
+            ),
+            # Hidden div to receive preload callback output
+            html.Div(id='preload-sink', style={'display': 'none'}),
+        ],
+    )
+
+
+def dashboard_layout() -> html.Div:
+    """Return the full analysis dashboard."""
+    return html.Div(
+        className='dashboard-content',
+        children=[
             # --------------------------------------------------------------
             # HEADER -- logo & title
             # --------------------------------------------------------------
             html.Div(
-                className="header",
+                className='header',
                 children=[
-                    html.Img(src="assets/logo.png", className="logo"),
+                    html.Img(
+                        src='assets/logo.png',
+                        className='logo',
+                        id='dashboard-logo',
+                    ),
                     html.H1(
-                        "Data-Driven Reagent Selection for Empirical Chemical Discovery",
-                        className="title",
+                        'Data-Driven Reagent Selection for Empirical Chemical Discovery',
+                        className='title',
                     ),
                     html.Div(
-                        className="presentation-toggle-container",
+                        className='presentation-toggle-container',
                         children=[
                             html.Div(
-                                className="upload-container",
+                                className='upload-container',
                                 children=[
                                     dcc.Upload(
                                         id='upload-data',
                                         children=html.Button(
-                                            "Upload Dataset",
-                                            id="upload-btn",
-                                            className="upload-btn",
+                                            'Upload Dataset',
+                                            id='upload-btn',
+                                            className='upload-btn',
                                         ),
                                         accept='.csv',
                                         max_size=50 * 1024 * 1024,
@@ -108,16 +132,16 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                     ),
                                 ],
                             ),
-                            html.Button("Reset", id="reset-btn"),
+                            html.Button('Reset', id='reset-btn'),
                             html.Button(
-                                "Presentation Mode",
-                                id="presentation-mode-toggle",
-                                className="presentation-toggle-btn",
+                                'Presentation Mode',
+                                id='presentation-mode-toggle',
+                                className='presentation-toggle-btn',
                                 n_clicks=0,
                             ),
                             html.Button(
-                                "Start Tutorial",
-                                id="start-tutorial-btn",
+                                'Start Tutorial',
+                                id='start-tutorial-btn',
                                 n_clicks=0,
                             ),
                         ],
@@ -128,14 +152,18 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
             # DROPDOWN ROW -- primary filters
             # --------------------------------------------------------------
             html.Div(
-                className="dropdown-row",
+                className='dropdown-row',
                 children=[
                     html.Div([
                         html.Label('Reaction Type(s):'),
                         dcc.Dropdown(
                             id='reaction-type-dropdown',
                             options=REACTION_TYPE_OPTIONS,
-                            value=['Buchwald-Hartwig'] if 'Buchwald-Hartwig' in du.REACTION_TYPES else [du.REACTION_TYPES[0]],
+                            value=(
+                                ['Buchwald-Hartwig']
+                                if 'Buchwald-Hartwig' in du.REACTION_TYPES
+                                else [du.REACTION_TYPES[0]]
+                            ),
                             multi=True,
                             placeholder='Select one or more reaction types...',
                         ),
@@ -181,14 +209,18 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
             # REACTANT TYPE SELECTION ROW
             # --------------------------------------------------------------
             html.Div(
-                className="dropdown-row",
+                className='dropdown-row',
                 children=[
                     html.Div([
                         html.Label('Reactant Type(s):'),
                         dcc.Dropdown(
                             id='reactant-types-dropdown',
                             options=CATEGORY_OPTIONS,
-                            value=['Catalyst'] if 'Catalyst' in du.CATEGORY_OPTIONS else [du.CATEGORY_OPTIONS[0]],
+                            value=(
+                                ['Catalyst']
+                                if 'Catalyst' in du.CATEGORY_OPTIONS
+                                else [du.CATEGORY_OPTIONS[0]]
+                            ),
                             multi=True,
                             placeholder='Select one or more reactant types...',
                         ),
@@ -228,7 +260,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                 id='min-eln-input',
                                 min=1, max=20, step=1, value=5,
                                 marks={i: str(i) for i in [1, 5, 10, 15, 20]},
-                                tooltip={"placement": "bottom", "always_visible": True},
+                                tooltip={'placement': 'bottom', 'always_visible': True},
                                 persistence=True, persistence_type='local',
                             ),
                             className='slider-wrap min-eln',
@@ -239,7 +271,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                 id='topn-zscore-input',
                                 min=1, max=10, step=1, value=5,
                                 marks={i: str(i) for i in [1, 3, 5, 7, 10]},
-                                tooltip={"placement": "bottom", "always_visible": True},
+                                tooltip={'placement': 'bottom', 'always_visible': True},
                                 persistence=True, persistence_type='local',
                             ),
                             className='slider-wrap topn',
@@ -250,7 +282,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                 id='max-components-input',
                                 min=1, max=10, step=1, value=10,
                                 marks={1: '1', 5: '5', 10: '10'},
-                                tooltip={"placement": "bottom", "always_visible": True},
+                                tooltip={'placement': 'bottom', 'always_visible': True},
                                 persistence=True, persistence_type='local',
                             ),
                             className='slider-wrap max-comp',
@@ -278,6 +310,7 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                             options=[{'label': 'Include combinations with null reactant types', 'value': True}],
                             value=[True],
                             inline=True,
+                            className='checklist-item',
                             persistence=True, persistence_type='local',
                         ),
                     ]),
@@ -306,8 +339,8 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                 className='plot-container',
                                 children=[
                                     dcc.Loading(
-                                        id="boxplot-loading",
-                                        type="default",
+                                        id='boxplot-loading',
+                                        type='default',
                                         children=dcc.Graph(
                                             id='boxplot',
                                             clear_on_unhover=True,
@@ -354,10 +387,65 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                     ),
                 ],
             ),
+        ],
+    )
 
-            # --------------------------------------------------------------
-            # UPLOAD ERROR MODAL
-            # --------------------------------------------------------------
+
+def _footer() -> html.Footer:
+    """Return the app-wide footer with paper citation."""
+    return html.Footer(
+        className='app-footer',
+        children=[
+            html.P([
+                'Part of: Ahlbrecht, J.; Lutz, M.\u2009D.\u2009R.; Jost, V.; '
+                'F\u00e4rber, M.; Br\u00e4se, S.; Wuitschik, G. ',
+                html.Em(
+                    'Which Reaction Conditions Work on Drug-Like Molecules? '
+                    'Lessons from 66,000 High-Throughput Experiments.'
+                ),
+                ' ACS Cent. Sci. ',
+                html.Strong('2026'),
+                ', 12 (2), 222\u2013232. ',
+                html.A(
+                    'DOI: 10.1021/acscentsci.5c02031',
+                    href='https://doi.org/10.1021/acscentsci.5c02031',
+                    target='_blank',
+                    rel='noopener noreferrer',
+                ),
+            ]),
+        ],
+    )
+
+
+# ---------------------------------------------------------------------------
+# 4. PUBLIC API
+# ---------------------------------------------------------------------------
+
+def serve_layout() -> html.Div:
+    """Return the *root* Dash component (called by Dash on page load).
+
+    The routing callback in ``callbacks.py`` fills ``page-content``
+    with either the landing page or the dashboard based on the URL.
+    """
+    return html.Div(
+        id='main-container',
+        className='app-container',
+        children=[
+            dcc.Location(id='url', refresh=False),
+            # ---- client-side stores (always present) ----
+            dcc.Store(id='filter-stats-store'),
+            dcc.Store(id='presentation-mode-store', data=False),
+            dcc.Store(id='tutorial-store', data={'active': False, 'step': 0}),
+            dcc.Store(id='uploaded-data-store', storage_type='memory'),
+            dcc.Store(id='upload-status-store', storage_type='memory'),
+            dcc.Store(id='upload-error-store', storage_type='memory'),
+            # ---- both pages always in DOM; visibility toggled by callback ----
+            html.Div(id='landing-page', children=landing_layout()),
+            html.Div(id='dashboard-page', style={'display': 'none'},
+                     children=dashboard_layout()),
+            # ---- footer (always visible) ----
+            _footer(),
+            # ---- modals (always in DOM for callbacks) ----
             html.Div(
                 id='upload-error-modal',
                 className='upload-error-modal',
@@ -388,8 +476,10 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                                 children=[
                                     html.H4('Required Columns:'),
                                     html.Code(
-                                        'ELN_ID, PLATENUMBER, Coordinate, AREA_TOTAL_REDUCED, Base, Catalyst, '
-                                        'Solvent, Ligand, Reaction Type, FG A, FG B, FG_sorted, z-Score',
+                                        'ELN_ID, PLATENUMBER, Coordinate, '
+                                        'AREA_TOTAL_REDUCED, Base, Catalyst, '
+                                        'Solvent, Ligand, Reaction Type, FG A, '
+                                        'FG B, FG_sorted, z-Score',
                                         className='required-columns-code',
                                     ),
                                     html.Button(
@@ -404,10 +494,6 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                     ),
                 ],
             ),
-
-            # --------------------------------------------------------------
-            # TUTORIAL OVERLAY
-            # --------------------------------------------------------------
             html.Div(
                 id='tutorial-overlay',
                 className='tutorial-overlay',
@@ -417,7 +503,10 @@ def serve_layout() -> html.Div:  # noqa: D401 (imperative mood is fine here)
                         className='tutorial-panel',
                         children=[
                             html.H3(id='tutorial-title', children='Welcome'),
-                            html.Div(id='tutorial-body', children="Let's take a quick tour of the app."),
+                            html.Div(
+                                id='tutorial-body',
+                                children="Let's take a quick tour of the app.",
+                            ),
                             html.Div(
                                 className='tutorial-btn-row',
                                 children=[

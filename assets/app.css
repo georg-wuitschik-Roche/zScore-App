@@ -1,3 +1,240 @@
+/* ================================================================== */
+/* 1. CUSTOM PROPERTIES                                               */
+/* ================================================================== */
+
+:root {
+    /* Colors – brand */
+    --color-primary: #0071e3;
+    --color-primary-hover: #0060c0;
+    --color-primary-light: #e8f2ff;
+    --color-primary-border: #b3d9ff;
+
+    /* Colors – text */
+    --color-text: #1d1d1f;
+    --color-text-secondary: #555;
+    --color-text-muted: #86868b;
+    --color-tag-text: #0066cc;
+
+    /* Colors – backgrounds */
+    --color-bg: #fff;
+    --color-bg-page: #f5f5f7;
+    --color-bg-hover: #f0f0f5;
+    --color-bg-panel: #fafbfc;
+
+    /* Colors – borders */
+    --color-border: #e0e0e0;
+    --color-border-input: #e0e0e5;
+    --color-border-btn: #d1d1d6;
+
+    /* Colors – status */
+    --color-danger: #dc3545;
+    --color-danger-hover: #c82333;
+    --color-success-bg: #d4edda;
+    --color-success-text: #155724;
+    --color-error-bg: #f8d7da;
+    --color-error-text: #721c24;
+
+    /* Radii */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-pill: 24px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+    /* Presentation-mode accent */
+    --color-pres-accent: #667eea;
+}
+
+/* ================================================================== */
+/* 2. RESET & BASE                                                    */
+/* ================================================================== */
+
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-bg-page);
+}
+
+body, .app-container, h1, h2, h3, h4,
+.dropdown-col label, button, .dash-button,
+.dash-dropdown, .Select-control, .Select-menu-outer, .Select-menu {
+    font-family: "Helvetica Neue", Arial, sans-serif !important;
+}
+
+h1, h2, h3, h4 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+button, .dash-button {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-btn);
+    border-radius: var(--radius-md);
+    padding: 10px 24px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+    transition: background 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+button:hover, .dash-button:hover {
+    background: var(--color-bg-hover);
+    box-shadow: var(--shadow-lg);
+}
+
+#reset-btn {
+    background: var(--color-danger) !important;
+    color: white !important;
+    border: 1px solid var(--color-danger) !important;
+    font-weight: bold !important;
+}
+
+#reset-btn:hover {
+    background: var(--color-danger-hover) !important;
+    border-color: #bd2130 !important;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3) !important;
+}
+
+/* ================================================================== */
+/* 3. PAGE LAYOUT                                                     */
+/* ================================================================== */
+
+#main-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--color-bg);
+}
+
+/* -- Landing page fills available space above footer -- */
+#landing-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* -- Dashboard scrolls independently -- */
+#dashboard-page {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* -- Footer pinned to bottom, never clipped -- */
+.app-footer {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 20px 16px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.app-footer p { margin: 0; }
+
+.app-footer a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.app-footer a:hover { text-decoration: underline; }
+
+/* ================================================================== */
+/* 4. LANDING PAGE                                                    */
+/* ================================================================== */
+
+.landing-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 24px;
+    text-align: center;
+}
+
+.landing-logo {
+    width: 80px;
+    height: auto;
+    margin-bottom: 24px;
+}
+
+.landing-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0 0 12px;
+    letter-spacing: -0.5px;
+}
+
+.landing-subtitle {
+    font-size: 16px;
+    color: var(--color-text-muted);
+    margin: 0 0 40px;
+    font-weight: 400;
+}
+
+.landing-search-wrapper {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 24px;
+}
+
+.landing-search .Select-control {
+    border-radius: var(--radius-pill) !important;
+    border: 1px solid #d2d2d7 !important;
+    min-height: 48px !important;
+    padding: 0 16px !important;
+    box-shadow: var(--shadow-md) !important;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.landing-search .Select-control:hover,
+.landing-search .Select.is-focused .Select-control {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 2px 12px rgba(0, 113, 227, 0.12) !important;
+}
+
+.landing-search .Select-placeholder {
+    color: var(--color-text-muted) !important;
+    font-size: 15px !important;
+    line-height: 48px !important;
+}
+
+.landing-explore-btn {
+    background: var(--color-primary) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius-md) !important;
+    padding: 14px 48px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.2s !important;
+}
+
+.landing-explore-btn:hover {
+    background: var(--color-primary-hover) !important;
+}
+
+/* ================================================================== */
+/* 5. DASHBOARD LAYOUT                                                */
+/* ================================================================== */
+
+.dashboard-content {
+    max-width: 1900px;
+    margin: 0 auto;
+    padding: 32px 60px 0;
+    box-sizing: border-box;
+}
+
 .header {
     display: flex;
     align-items: center;
@@ -10,6 +247,7 @@
     height: auto;
     border-radius: 8px;
     flex-shrink: 0;
+    cursor: pointer;
 }
 
 .title {
@@ -24,18 +262,11 @@
     margin-bottom: 24px;
 }
 
-body, .app-container, h1, h2, h3, h4, .dropdown-col label, button, .dash-button, .dash-dropdown, .Select-control, .Select-menu-outer, .Select-menu {
-    font-family: "Helvetica Neue", Arial, sans-serif !important;
-}
-
-.app-container {
-    max-width: 1900px;
-    margin: 32px auto 0 auto;
-    padding: 0 60px;
-    box-sizing: border-box;
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+.presentation-toggle-container {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    gap: 16px;
 }
 
 .dropdown-row {
@@ -59,25 +290,27 @@ body, .app-container, h1, h2, h3, h4, .dropdown-col label, button, .dash-button,
     margin-bottom: 6px;
     font-size: 15px;
     font-weight: 500;
-    color: #555;
+    color: var(--color-text-secondary);
 }
 
-body {
-    margin: 0;
-    padding: 0;
-    background: #f5f5f7;
+.functional-group-row {
+    display: flex;
+    justify-content: flex-start;
+    margin: 16px 0;
+    gap: 16px;
 }
 
-h1, h2, h3, h4 {
-    font-weight: 600;
-    letter-spacing: -0.01em;
-}
+.fg-dropdown { min-width: 200px; }
+
+/* ================================================================== */
+/* 6. DROPDOWNS & MULTI-SELECT                                        */
+/* ================================================================== */
 
 .dash-dropdown, .Select-control, .Select-menu-outer, .Select-menu {
-    border-radius: 12px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    border: 1px solid #e0e0e5 !important;
-    background: #fff !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--color-border-input) !important;
+    background: var(--color-bg) !important;
 }
 
 .dash-dropdown, .Select-control {
@@ -85,7 +318,12 @@ h1, h2, h3, h4 {
     font-size: 16px !important;
 }
 
-/* Improve multi-select dropdown spacing and layout */
+.Select-control {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
 .Select-control .Select-value-wrapper {
     height: auto !important;
     min-height: 40px !important;
@@ -109,9 +347,9 @@ h1, h2, h3, h4 {
 .Select-control .Select-value {
     margin: 2px !important;
     padding: 4px 8px !important;
-    background-color: #e8f2ff !important;
-    border: 1px solid #b3d9ff !important;
-    border-radius: 6px !important;
+    background-color: var(--color-primary-light) !important;
+    border: 1px solid var(--color-primary-border) !important;
+    border-radius: var(--radius-sm) !important;
     font-size: 14px !important;
     line-height: 1.3 !important;
     display: inline-flex !important;
@@ -120,13 +358,13 @@ h1, h2, h3, h4 {
 }
 
 .Select-control .Select-value-label {
-    color: #0066cc !important;
+    color: var(--color-tag-text) !important;
     font-weight: 500 !important;
 }
 
 .Select-control .Select-value-icon {
     padding: 0 4px !important;
-    color: #0066cc !important;
+    color: var(--color-tag-text) !important;
     font-weight: bold !important;
 }
 
@@ -142,661 +380,10 @@ h1, h2, h3, h4 {
     min-height: 28px !important;
 }
 
-/* Ensure dropdown expands vertically when needed */
-.Select-control {
-    height: auto !important;
-    min-height: 44px !important;
-    max-height: none !important;
-    overflow: visible !important;
-}
-
-button, .dash-button {
-    background: #fff;
-    border: 1px solid #d1d1d6;
-    border-radius: 12px;
-    padding: 10px 24px;
-    font-size: 16px;
-    font-weight: 500;
-    color: #0071e3;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-    transition: background 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-}
-
-button:hover, .dash-button:hover {
-    background: #f0f0f5;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-
-/* Reset button specific styling */
-#reset-btn {
-    background: #dc3545 !important;
-    color: white !important;
-    border: 1px solid #dc3545 !important;
-    font-weight: bold !important;
-}
-
-#reset-btn:hover {
-    background: #c82333 !important;
-    border-color: #bd2130 !important;
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3) !important;
-}
-
-.dash-graph {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    padding: 24px;
-    margin-top: 24px;
-}
-
-/* Make tooltips persistent and selectable */
-.dash-tooltip {
-    pointer-events: auto !important;
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
-
-/* Ensure tooltip stays visible */
-.dash-tooltip * {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-}
-
-/* Additional selectors for tooltip elements */
-[class*="tooltip"], [class*="hover"] {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    pointer-events: auto !important;
-}
-
-/* Target all possible tooltip containers */
-.dash-tooltip, .dash-tooltip *, 
-[class*="tooltip"], [class*="tooltip"] *,
-[class*="hover"], [class*="hover"] * {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    pointer-events: auto !important;
-}
-
-/* Make Plotly axis labels selectable */
-.js-plotly-plot .gtitle,
-.js-plotly-plot .xtick text,
-.js-plotly-plot .ytick text,
-.js-plotly-plot .xtitle,
-.js-plotly-plot .ytitle,
-.js-plotly-plot .g-gtitle,
-.js-plotly-plot .g-xtitle,
-.js-plotly-plot .g-ytitle,
-.js-plotly-plot .g-xtick text,
-.js-plotly-plot .g-ytick text {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    pointer-events: auto !important;
-}
-
-/* Make all text elements in Plotly charts selectable */
-.js-plotly-plot text {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    pointer-events: auto !important;
-}
-
-/* Additional selectors for better text selection coverage */
-.js-plotly-plot .g-gtitle text,
-.js-plotly-plot .g-xtitle text,
-.js-plotly-plot .g-ytitle text,
-.js-plotly-plot .g-xtick text,
-.js-plotly-plot .g-ytick text,
-.js-plotly-plot .g-legend text,
-.js-plotly-plot .g-colorbar text {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    pointer-events: auto !important;
-}
-
-/* Ensure SVG text elements are selectable */
-.js-plotly-plot svg text {
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    cursor: text !important;
-    pointer-events: auto !important;
-}
-
 /* ================================================================== */
-/* PRESENTATION MODE STYLES */
+/* 7. FILTER PANEL                                                    */
 /* ================================================================== */
 
-.presentation-toggle-container {
-    display: flex;
-    align-items: center;
-    margin-left: auto;
-    gap: 16px;
-}
-
-.presentation-toggle-btn {
-    background: #fff !important;
-    color: #0071e3 !important;
-    border: 1px solid #d1d1d6 !important;
-    padding: 12px 20px !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
-    transition: background 0.2s, box-shadow 0.2s !important;
-    cursor: pointer !important;
-}
-
-.presentation-toggle-btn:hover {
-    background: #f0f0f5 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-}
-
-.presentation-toggle-btn.active {
-    background: #e8f2ff !important;
-    color: #0066cc !important;
-    border-color: #b3d9ff !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
-}
-
-.presentation-toggle-btn.active:hover {
-    background: #e2eeff !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-}
-
-
-
-/* Presentation mode modifications for enhanced visibility */
-
-/* Keep dropdown labels normal size in presentation mode */
-.app-container.presentation-mode .dropdown-col label,
-.app-container.presentation-mode .functional-group-row label {
-    font-size: 15px !important;
-    font-weight: 500 !important;
-    color: #555 !important;
-    margin-bottom: 6px !important;
-}
-
-/* Much larger dropdown containers and text */
-.app-container.presentation-mode .dash-dropdown {
-    font-size: 22px !important;
-    min-height: 65px !important;
-    border: 2px solid #667eea !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
-}
-
-/* Larger dropdown option text */
-.app-container.presentation-mode .Select-control {
-    font-size: 22px !important;
-    min-height: 65px !important;
-    border: 2px solid #667eea !important;
-    padding: 8px 16px !important;
-}
-
-/* Enhanced dropdown menu visibility */
-.app-container.presentation-mode .Select-menu-outer {
-    font-size: 20px !important;
-    border: 2px solid #667eea !important;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
-}
-
-.app-container.presentation-mode .Select-option {
-    font-size: 20px !important;
-    padding: 12px 16px !important;
-    line-height: 1.4 !important;
-}
-
-/* Larger dropdown row spacing */
-.app-container.presentation-mode .dropdown-row {
-    gap: 32px !important;
-    margin-bottom: 32px !important;
-}
-
-.app-container.presentation-mode .dropdown-col {
-    min-width: 250px !important;
-    max-width: 400px !important;
-}
-
-/* Functional group row enhancements */
-.app-container.presentation-mode .functional-group-row {
-    gap: 32px !important;
-    margin: 24px 0 !important;
-}
-
-.app-container.presentation-mode .functional-group-row .dash-dropdown {
-    min-width: 280px !important;
-}
-
-/* Enhanced title in presentation mode */
-.app-container.presentation-mode .title {
-    font-size: 36px !important;
-    font-weight: 700 !important;
-    line-height: 1.2 !important;
-}
-
-/* Enhanced header styling in presentation mode */
-.app-container.presentation-mode .header {
-    margin-bottom: 50px !important;
-    padding: 20px 0 !important;
-}
-
-/* Much larger buttons in presentation mode */
-.app-container.presentation-mode button:not(.presentation-toggle-btn) {
-    font-size: 20px !important;
-    padding: 16px 32px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    min-height: 55px !important;
-}
-
-/* Enhanced reset button visibility */
-.app-container.presentation-mode #reset-btn {
-    font-size: 20px !important;
-    padding: 16px 32px !important;
-    font-weight: 700 !important;
-}
-
-/* Enhanced tab styling in presentation mode */
-.app-container.presentation-mode .dash-tabs {
-    margin-top: 40px !important;
-}
-
-.app-container.presentation-mode .dash-tabs .tab {
-    font-size: 24px !important;
-    padding: 20px 35px !important;
-    font-weight: 600 !important;
-    border-radius: 12px 12px 0 0 !important;
-    margin-right: 4px !important;
-}
-
-/* Enhanced filter toggle button */
-.app-container.presentation-mode #toggle-filters-btn {
-    font-size: 18px !important;
-    padding: 12px 24px !important;
-    font-weight: 600 !important;
-}
-
-/* Enhanced slider visibility in presentation mode */
-.app-container.presentation-mode .rc-slider {
-    height: 8px !important;
-}
-
-.app-container.presentation-mode .rc-slider-handle {
-    width: 20px !important;
-    height: 20px !important;
-    border-width: 3px !important;
-}
-
-.app-container.presentation-mode .rc-slider-mark-text {
-    font-size: 16px !important;
-    font-weight: 600 !important;
-}
-
-/* Enhanced checkbox styling */
-.app-container.presentation-mode .dash-checklist label {
-    font-size: 18px !important;
-    font-weight: 600 !important;
-}
-
-.app-container.presentation-mode .dash-checklist input[type="checkbox"] {
-    transform: scale(1.5) !important;
-    margin-right: 12px !important;
-}
-
-/* Enhanced multi-select spacing in presentation mode */
-.app-container.presentation-mode .Select-control .Select-value-wrapper {
-    min-height: 56px !important;
-    padding: 6px 12px !important;
-    gap: 6px !important;
-}
-
-.app-container.presentation-mode .Select-control .Select-multi-value-wrapper {
-    min-height: 52px !important;
-    padding: 4px !important;
-    gap: 6px !important;
-}
-
-.app-container.presentation-mode .Select-control .Select-value {
-    margin: 3px !important;
-    padding: 8px 12px !important;
-    font-size: 18px !important;
-    line-height: 1.4 !important;
-    border-radius: 8px !important;
-    background-color: #e8f2ff !important;
-    border: 2px solid #b3d9ff !important;
-}
-
-.app-container.presentation-mode .Select-control .Select-value-label {
-    font-size: 18px !important;
-    font-weight: 600 !important;
-}
-
-.app-container.presentation-mode .Select-control .Select-value-icon {
-    padding: 0 6px !important;
-    font-size: 16px !important;
-}
-
-.app-container.presentation-mode .Select-control .Select-input {
-    margin: 3px !important;
-    padding: 6px !important;
-    min-height: 36px !important;
-    font-size: 22px !important;
-}
-
-.app-container.presentation-mode .Select-control {
-    min-height: 65px !important;
-    height: auto !important;
-    max-height: none !important;
-
-} 
-
-/* ================================================================== */
-/* TUTORIAL OVERLAY STYLES */
-/* ================================================================== */
-
-.tutorial-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.25);
-    z-index: 9995;
-    display: none;
-    pointer-events: none;
-}
-
-.tutorial-panel {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 520px;
-    max-width: calc(100% - 48px);
-    background: #ffffff;
-    border-radius: 14px;
-    border: 1px solid #e6e6ea;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-    padding: 16px 16px 12px 16px;
-    max-height: 70vh;
-    overflow-y: auto;
-    z-index: 10000;
-    pointer-events: auto;
-}
-
-.tutorial-panel h3 {
-    margin: 0 0 8px 0;
-}
-
-.tutorial-highlight {
-    position: relative;
-    z-index: 9998 !important;
-    outline: 3px solid #4c9ffe !important;
-    box-shadow: 0 0 0 6px rgba(76, 159, 254, 0.25) !important;
-    border-radius: 8px !important;
-}
-
-/* Highlight buttons differently while preserving existing styling */
-button.tutorial-highlight, .dash-button.tutorial-highlight, #toggle-filters-btn.tutorial-highlight {
-    outline: 3px solid #4c9ffe !important;
-    box-shadow: 0 0 0 6px rgba(76, 159, 254, 0.25) !important;
-}
-
-/* Make sure highlighted dropdowns render above overlay shadows */
-.Select.tutorial-highlight, .dash-dropdown.tutorial-highlight, .Select-control.tutorial-highlight {
-    z-index: 9998 !important;
-}
-
-/* ================================================================== */
-/* UPLOAD COMPONENT STYLES */
-/* ================================================================== */
-
-.upload-container {
-    position: relative;
-    display: inline-block;
-}
-
-.presentation-toggle-container .upload-btn {
-    height: 44px;
-    box-sizing: border-box;
-}
-
-.upload-btn {
-    background: #fff !important;
-    color: #0071e3 !important;
-    border: 1px solid #d1d1d6 !important;
-    padding: 12px 20px !important;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
-    transition: background 0.2s, box-shadow 0.2s !important;
-    cursor: pointer !important;
-    white-space: nowrap;
-}
-
-.upload-btn:hover {
-    background: #f0f0f5 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
-}
-
-.upload-btn:active {
-    background: #e8e8ed !important;
-}
-
-/* Upload status indicator */
-.upload-status {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 4px;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.upload-status:empty {
-    display: none;
-}
-
-.upload-status.success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.upload-status.error {
-    background: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.upload-status i {
-    font-size: 12px;
-}
-
-/* Ensure dcc.Upload component doesn't add extra styling */
-.upload-container > div {
-    display: inline-block;
-}
-
-/* Presentation mode upload button */
-.app-container.presentation-mode .upload-btn {
-    font-size: 20px !important;
-    padding: 16px 32px !important;
-    font-weight: 600 !important;
-    border-radius: 12px !important;
-    min-height: 55px !important;
-}
-
-.app-container.presentation-mode .upload-status {
-    font-size: 13px;
-    padding: 4px 10px;
-}
-
-/* ================================================================== */
-/* UPLOAD ERROR MODAL STYLES */
-/* ================================================================== */
-
-.upload-error-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.upload-error-panel {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    max-width: 550px;
-    width: 100%;
-    max-height: 80vh;
-    overflow-y: auto;
-    animation: modalSlideIn 0.2s ease-out;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.upload-error-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #fff5f5;
-    border-radius: 12px 12px 0 0;
-}
-
-.upload-error-close-btn {
-    background: none !important;
-    border: none !important;
-    font-size: 28px !important;
-    color: #999 !important;
-    cursor: pointer !important;
-    padding: 0 8px !important;
-    line-height: 1 !important;
-    box-shadow: none !important;
-}
-
-.upload-error-close-btn:hover {
-    color: #dc3545 !important;
-    background: none !important;
-}
-
-.upload-error-body {
-    padding: 20px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.upload-error-body p {
-    margin: 8px 0;
-    line-height: 1.5;
-}
-
-.upload-error-footer {
-    padding: 16px 20px 20px;
-    background: #fafbfc;
-    border-radius: 0 0 12px 12px;
-}
-
-.upload-error-footer h4 {
-    color: #333;
-    font-size: 14px;
-    margin: 0;
-}
-
-.upload-error-footer ul {
-    margin: 0;
-    padding-left: 20px;
-    font-size: 13px;
-    color: #555;
-}
-
-.upload-error-footer li {
-    margin: 4px 0;
-}
-
-.upload-error-footer button {
-    background: #0071e3 !important;
-    color: white !important;
-    border: none !important;
-}
-
-/* ================================================================== */
-/* LAYOUT COMPONENT STYLES (moved from inline styles in layout.py)    */
-/* ================================================================== */
-
-/* Stats badges below dropdowns */
-.stats-badge {
-    display: none;
-    margin-top: 4px;
-    text-align: center;
-}
-
-.stats-badge-content {
-    font-size: 11px;
-    color: #6c757d;
-}
-
-/* Functional group row */
-.functional-group-row {
-    display: flex;
-    justify-content: flex-start;
-    margin: 16px 0;
-    gap: 16px;
-}
-
-.fg-dropdown {
-    min-width: 200px;
-}
-
-/* Filter toggle container and line */
 .filter-toggle-container {
     position: relative;
     margin: 32px 0 24px 0;
@@ -830,18 +417,15 @@ button.tutorial-highlight, .dash-button.tutorial-highlight, #toggle-filters-btn.
     align-items: center;
 }
 
-#toggle-filters-btn .btn-icon {
-    margin-right: 8px;
-}
+#toggle-filters-btn .btn-icon { margin-right: 8px; }
 
-/* Filter panel (collapsible options) */
 .filter-panel {
     margin: 0;
     padding: 20px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--color-border);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    background: #fafbfc;
+    background: var(--color-bg-panel);
     display: none;
     max-height: 0;
     overflow: hidden;
@@ -855,68 +439,229 @@ button.tutorial-highlight, .dash-button.tutorial-highlight, #toggle-filters-btn.
     justify-content: flex-start;
 }
 
-.filter-options-row.sliders {
-    margin-bottom: 16px;
+.filter-options-row.sliders { margin-bottom: 16px; }
+.filter-options-row.downloads { margin-top: 16px; }
+.filter-options-row label { margin-right: 8px; }
+
+.slider-wrap { margin-right: 32px; }
+.slider-wrap.min-eln { width: 150px; }
+.slider-wrap.topn { width: 120px; }
+.slider-wrap.max-comp { width: 150px; }
+
+.checklist-item { margin-right: 32px; }
+.download-btn-gap { margin-right: 16px; }
+
+/* ================================================================== */
+/* 8. PLOTS & STATS                                                   */
+/* ================================================================== */
+
+.plot-container { height: 800px; width: 100%; }
+.stats-container { width: 100%; padding: 12px 0; }
+
+.dash-graph {
+    background: var(--color-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 24px;
+    margin-top: 24px;
 }
 
-.filter-options-row.downloads {
-    margin-top: 16px;
+/* Stats badges below dropdowns */
+.stats-badge { display: none; margin-top: 4px; text-align: center; }
+.stats-badge-content { font-size: 11px; color: #6c757d; }
+
+/* ================================================================== */
+/* 9. UPLOAD COMPONENTS                                               */
+/* ================================================================== */
+
+.upload-container {
+    position: relative;
+    display: inline-block;
 }
 
-.filter-options-row label {
-    margin-right: 8px;
+.upload-container > div { display: inline-block; }
+
+.presentation-toggle-container .upload-btn {
+    height: 44px;
+    box-sizing: border-box;
 }
 
-.slider-wrap {
-    margin-right: 32px;
+.upload-btn {
+    background: var(--color-bg) !important;
+    color: var(--color-primary) !important;
+    border: 1px solid var(--color-border-btn) !important;
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: background 0.2s, box-shadow 0.2s !important;
+    cursor: pointer !important;
+    white-space: nowrap;
 }
 
-.slider-wrap.min-eln {
-    width: 150px;
+.upload-btn:hover {
+    background: var(--color-bg-hover) !important;
+    box-shadow: var(--shadow-lg) !important;
 }
 
-.slider-wrap.topn {
-    width: 120px;
+.upload-btn:active { background: #e8e8ed !important; }
+
+.upload-status {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.slider-wrap.max-comp {
-    width: 150px;
+.upload-status:empty { display: none; }
+.upload-status i { font-size: 12px; }
+
+.upload-status.success {
+    background: var(--color-success-bg);
+    color: var(--color-success-text);
+    border: 1px solid #c3e6cb;
 }
 
-.checklist-item {
-    margin-right: 32px;
+.upload-status.error {
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
+    border: 1px solid #f5c6cb;
 }
 
-.download-btn-gap {
-    margin-right: 16px;
+.presentation-toggle-btn {
+    background: var(--color-bg) !important;
+    color: var(--color-primary) !important;
+    border: 1px solid var(--color-border-btn) !important;
+    padding: 12px 20px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: background 0.2s, box-shadow 0.2s !important;
+    cursor: pointer !important;
 }
 
-/* Plot containers */
-.plot-container {
-    height: 800px;
+.presentation-toggle-btn:hover {
+    background: var(--color-bg-hover) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.presentation-toggle-btn.active {
+    background: var(--color-primary-light) !important;
+    color: var(--color-tag-text) !important;
+    border-color: var(--color-primary-border) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.presentation-toggle-btn.active:hover {
+    background: #e2eeff !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* ================================================================== */
+/* 10. UPLOAD ERROR MODAL                                             */
+/* ================================================================== */
+
+.upload-error-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.upload-error-panel {
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 550px;
     width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.2s ease-out;
 }
 
-.stats-container {
-    width: 100%;
-    padding: 12px 0;
+@keyframes modalSlideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Upload error modal content */
-.upload-error-header h3 {
+.upload-error-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+    background: #fff5f5;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.upload-error-header h3 { margin: 0; color: var(--color-danger); }
+
+.upload-error-close-btn {
+    background: none !important;
+    border: none !important;
+    font-size: 28px !important;
+    color: #999 !important;
+    cursor: pointer !important;
+    padding: 0 8px !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+}
+
+.upload-error-close-btn:hover {
+    color: var(--color-danger) !important;
+    background: none !important;
+}
+
+.upload-error-body {
+    padding: 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.upload-error-body p { margin: 8px 0; line-height: 1.5; }
+
+.upload-error-footer {
+    padding: 16px 20px 20px;
+    background: var(--color-bg-panel);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.upload-error-footer h4 {
+    color: #333;
+    font-size: 14px;
+    margin: 0 0 8px 16px;
+}
+
+.upload-error-footer ul {
     margin: 0;
-    color: #dc3545;
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
 }
 
-.required-columns-code {
-    display: block;
-    padding: 12px;
-    background: #f5f5f5;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
+.upload-error-footer li { margin: 4px 0; }
+
+.upload-error-footer button {
+    background: var(--color-primary) !important;
+    color: white !important;
+    border: none !important;
 }
 
 .upload-error-footer .close-btn-full {
@@ -924,15 +669,272 @@ button.tutorial-highlight, .dash-button.tutorial-highlight, #toggle-filters-btn.
     width: 100%;
 }
 
-.upload-error-footer h4 {
-    margin-bottom: 8px;
-    margin-top: 16px;
+.required-columns-code {
+    display: block;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
-/* Tutorial button row */
+/* ================================================================== */
+/* 11. TUTORIAL OVERLAY                                               */
+/* ================================================================== */
+
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 9995;
+    display: none;
+    pointer-events: none;
+}
+
+.tutorial-panel {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 520px;
+    max-width: calc(100% - 48px);
+    background: var(--color-bg);
+    border-radius: 14px;
+    border: 1px solid #e6e6ea;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 16px 16px 12px 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+    z-index: 10000;
+    pointer-events: auto;
+}
+
+.tutorial-panel h3 { margin: 0 0 8px 0; }
+
 .tutorial-btn-row {
     display: flex;
     justify-content: space-between;
     gap: 8px;
     margin-top: 12px;
+}
+
+.tutorial-highlight {
+    position: relative;
+    z-index: 9998 !important;
+    outline: 3px solid #4c9ffe !important;
+    box-shadow: 0 0 0 6px rgba(76, 159, 254, 0.25) !important;
+    border-radius: 8px !important;
+}
+
+button.tutorial-highlight,
+.dash-button.tutorial-highlight,
+#toggle-filters-btn.tutorial-highlight {
+    outline: 3px solid #4c9ffe !important;
+    box-shadow: 0 0 0 6px rgba(76, 159, 254, 0.25) !important;
+}
+
+.Select.tutorial-highlight,
+.dash-dropdown.tutorial-highlight,
+.Select-control.tutorial-highlight {
+    z-index: 9998 !important;
+}
+
+/* ================================================================== */
+/* 12. PRESENTATION MODE                                              */
+/* ================================================================== */
+
+.app-container.presentation-mode .dropdown-col label,
+.app-container.presentation-mode .functional-group-row label {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    color: var(--color-text-secondary) !important;
+    margin-bottom: 6px !important;
+}
+
+.app-container.presentation-mode .dash-dropdown {
+    font-size: 22px !important;
+    min-height: 65px !important;
+    border: 2px solid var(--color-pres-accent) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+}
+
+.app-container.presentation-mode .Select-control {
+    font-size: 22px !important;
+    min-height: 65px !important;
+    height: auto !important;
+    max-height: none !important;
+    border: 2px solid var(--color-pres-accent) !important;
+    padding: 8px 16px !important;
+}
+
+.app-container.presentation-mode .Select-menu-outer {
+    font-size: 20px !important;
+    border: 2px solid var(--color-pres-accent) !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+.app-container.presentation-mode .Select-option {
+    font-size: 20px !important;
+    padding: 12px 16px !important;
+    line-height: 1.4 !important;
+}
+
+.app-container.presentation-mode .dropdown-row {
+    gap: 32px !important;
+    margin-bottom: 32px !important;
+}
+
+.app-container.presentation-mode .dropdown-col {
+    min-width: 250px !important;
+    max-width: 400px !important;
+}
+
+.app-container.presentation-mode .functional-group-row {
+    gap: 32px !important;
+    margin: 24px 0 !important;
+}
+
+.app-container.presentation-mode .functional-group-row .dash-dropdown {
+    min-width: 280px !important;
+}
+
+.app-container.presentation-mode .title {
+    font-size: 36px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+}
+
+.app-container.presentation-mode .header {
+    margin-bottom: 50px !important;
+    padding: 20px 0 !important;
+}
+
+.app-container.presentation-mode button:not(.presentation-toggle-btn) {
+    font-size: 20px !important;
+    padding: 16px 32px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    min-height: 55px !important;
+}
+
+.app-container.presentation-mode #reset-btn {
+    font-size: 20px !important;
+    padding: 16px 32px !important;
+    font-weight: 700 !important;
+}
+
+.app-container.presentation-mode .dash-tabs { margin-top: 40px !important; }
+
+.app-container.presentation-mode .dash-tabs .tab {
+    font-size: 24px !important;
+    padding: 20px 35px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+    margin-right: 4px !important;
+}
+
+.app-container.presentation-mode #toggle-filters-btn {
+    font-size: 18px !important;
+    padding: 12px 24px !important;
+    font-weight: 600 !important;
+}
+
+.app-container.presentation-mode .rc-slider { height: 8px !important; }
+
+.app-container.presentation-mode .rc-slider-handle {
+    width: 20px !important;
+    height: 20px !important;
+    border-width: 3px !important;
+}
+
+.app-container.presentation-mode .rc-slider-mark-text {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+.app-container.presentation-mode .dash-checklist label {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+.app-container.presentation-mode .dash-checklist input[type="checkbox"] {
+    transform: scale(1.5) !important;
+    margin-right: 12px !important;
+}
+
+.app-container.presentation-mode .Select-control .Select-value-wrapper {
+    min-height: 56px !important;
+    padding: 6px 12px !important;
+    gap: 6px !important;
+}
+
+.app-container.presentation-mode .Select-control .Select-multi-value-wrapper {
+    min-height: 52px !important;
+    padding: 4px !important;
+    gap: 6px !important;
+}
+
+.app-container.presentation-mode .Select-control .Select-value {
+    margin: 3px !important;
+    padding: 8px 12px !important;
+    font-size: 18px !important;
+    line-height: 1.4 !important;
+    border-radius: 8px !important;
+    background-color: var(--color-primary-light) !important;
+    border: 2px solid var(--color-primary-border) !important;
+}
+
+.app-container.presentation-mode .Select-control .Select-value-label {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+.app-container.presentation-mode .Select-control .Select-value-icon {
+    padding: 0 6px !important;
+    font-size: 16px !important;
+}
+
+.app-container.presentation-mode .Select-control .Select-input {
+    margin: 3px !important;
+    padding: 6px !important;
+    min-height: 36px !important;
+    font-size: 22px !important;
+}
+
+.app-container.presentation-mode .upload-btn {
+    font-size: 20px !important;
+    padding: 16px 32px !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    min-height: 55px !important;
+}
+
+.app-container.presentation-mode .upload-status {
+    font-size: 13px;
+    padding: 4px 10px;
+}
+
+/* ================================================================== */
+/* 13. TEXT SELECTION (tooltips & plotly)                              */
+/* ================================================================== */
+
+.dash-tooltip, .dash-tooltip *,
+[class*="tooltip"], [class*="tooltip"] *,
+[class*="hover"], [class*="hover"] *,
+.js-plotly-plot text,
+.js-plotly-plot svg text {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
+    pointer-events: auto !important;
+}
+
+.dash-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
 }

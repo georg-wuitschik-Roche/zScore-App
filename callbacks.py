@@ -15,6 +15,7 @@ by having a clean, top-level entry point.
 import io
 import base64
 import logging
+from urllib.parse import parse_qs, urlencode
 
 import numpy as np
 import pandas as pd
@@ -43,6 +44,18 @@ DEFAULT_MAX_COMPONENTS = 10
 
 # Maximum upload size in bytes (50 MB)
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+# Precompute default dropdown options at import time (data already loaded)
+_default_df = du.DF[du.DF['Reaction Type'].isin(DEFAULT_REACTION_TYPES)]
+_all_fgs = pd.concat([_default_df['FG A'], _default_df['FG B']]).dropna().unique()
+_DEFAULT_FG_OPTIONS = [{'label': v, 'value': v} for v in ['All'] + sorted(_all_fgs.tolist())]
+_DEFAULT_REACTANT_OPTIONS = [
+    {'label': c, 'value': c}
+    for c in du.CATEGORY_OPTIONS
+    if c not in ['Functional Group A', 'Functional Group B']
+    and c in _default_df.columns and _default_df[c].notna().any()
+]
+del _default_df, _all_fgs
 
 # Shared filter inputs used by multiple callbacks
 FILTER_INPUTS = [
@@ -162,9 +175,127 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     """
 
     # ------------------------------------------------------------------
-    # Presentation mode callbacks ------------------------------------------
+    # URL routing (toggle visibility of landing / dashboard) ---------------
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(pathname) {
+            if (pathname === '/dashboard') {
+                return [{display: 'none'}, {display: 'block'}];
+            }
+            return [{display: 'block'}, {display: 'none'}];
+        }
+        """,
+        Output('landing-page', 'style'),
+        Output('dashboard-page', 'style'),
+        Input('url', 'pathname'),
+    )
+
+    # ------------------------------------------------------------------
+    # Dashboard logo → landing page navigation ----------------------------
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(n) {
+            var nu = window.dash_clientside.no_update;
+            if (!n) return [nu, nu, nu];
+            return ['/', '', []];
+        }
+        """,
+        Output('url', 'pathname', allow_duplicate=True),
+        Output('url', 'search', allow_duplicate=True),
+        Output('landing-reaction-dropdown', 'value'),
+        Input('dashboard-logo', 'n_clicks'),
+        prevent_initial_call=True,
+    )
+
+    # ------------------------------------------------------------------
+    # Landing page → dashboard navigation ---------------------------------
     # ------------------------------------------------------------------
     @app.callback(
+        Output('url', 'pathname'),
+        Output('url', 'search'),
+        Input('landing-explore-btn', 'n_clicks'),
+        Input('landing-reaction-dropdown', 'value'),
+        prevent_initial_call=True,
+    )
+    def _navigate_to_dashboard(n_clicks, selected_reactions):
+        """Navigate to the dashboard when a reaction is selected or Explore is clicked."""
+        if not selected_reactions and not n_clicks:
+            return no_update, no_update
+        search = ''
+        if selected_reactions:
+            search = '?' + urlencode(
+                {'reaction': selected_reactions}, doseq=True,
+            )
+        return '/dashboard', search
+
+    # ------------------------------------------------------------------
+    # Pre-select reaction types from URL query params --------------------
+    # ------------------------------------------------------------------
+    @app.callback(
+        Output('reaction-type-dropdown', 'value', allow_duplicate=True),
+        Input('url', 'search'),
+        State('reaction-type-dropdown', 'value'),
+        prevent_initial_call=True,
+    )
+    def _set_reaction_from_url(search, current_value):
+        """Set the reaction type dropdown from URL query parameters."""
+        if not search:
+            return no_update
+        params = parse_qs(search.lstrip('?'))
+        reactions = params.get('reaction', [])
+        if reactions:
+            valid = [r for r in reactions if r in du.REACTION_TYPES]
+            if valid and sorted(valid) != sorted(current_value or []):
+                return valid
+        return no_update
+
+    # ------------------------------------------------------------------
+    # Background preloading of default data on landing page ---------------
+    # ------------------------------------------------------------------
+    @app.callback(
+        Output('preload-sink', 'children'),
+        Input('preload-interval', 'n_intervals'),
+        prevent_initial_call=True,
+    )
+    def _preload_default_data(_n):
+        """Warm the filter cache with default Buchwald-Hartwig settings."""
+        try:
+            # Must match exactly what _compute_stats will call on dashboard load
+            du.filter_data(
+                reactant_types=['Catalyst'],
+                reaction_types=DEFAULT_REACTION_TYPES,
+                fg_a=DEFAULT_FG_A,
+                fg_b=DEFAULT_FG_B,
+                exclude_cui=['exclude_cui'],
+                exclude_scaleup=[True],
+                include_null_categories=[True],
+                min_eln=DEFAULT_MIN_ELN,
+                topn_zscore=DEFAULT_TOPN_ZSCORE,
+                max_components=DEFAULT_MAX_COMPONENTS,
+                return_stats=True,
+            )
+        except Exception:
+            logger.debug('Preload cache warming failed (non-critical)')
+        return no_update
+
+    # ------------------------------------------------------------------
+    # Presentation mode callbacks ------------------------------------------
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(n_clicks, is_presentation_mode) {
+            if (!n_clicks || n_clicks === 0) {
+                return [false, "Presentation Mode", "presentation-toggle-btn", "app-container"];
+            }
+            var newMode = !is_presentation_mode;
+            if (newMode) {
+                return [true, "Exit Presentation", "presentation-toggle-btn active", "app-container presentation-mode"];
+            }
+            return [false, "Presentation Mode", "presentation-toggle-btn", "app-container"];
+        }
+        """,
         [Output('presentation-mode-store', 'data'),
          Output('presentation-mode-toggle', 'children'),
          Output('presentation-mode-toggle', 'className'),
@@ -172,26 +303,6 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         [Input('presentation-mode-toggle', 'n_clicks')],
         [State('presentation-mode-store', 'data')]
     )
-    def _toggle_presentation_mode(n_clicks, is_presentation_mode):
-        """Toggle presentation mode on and off."""
-        if n_clicks is None or n_clicks == 0:
-            return False, "Presentation Mode", "presentation-toggle-btn", "app-container"
-        
-        # Toggle the mode
-        new_mode = not is_presentation_mode
-        
-        if new_mode:
-            # Entering presentation mode
-            button_text = "Exit Presentation"
-            button_class = "presentation-toggle-btn active"
-            container_class = "app-container presentation-mode"
-        else:
-            # Exiting presentation mode
-            button_text = "Presentation Mode"
-            button_class = "presentation-toggle-btn"
-            container_class = "app-container"
-        
-        return new_mode, button_text, button_class, container_class
 
 
     # ------------------------------------------------------------------
@@ -389,25 +500,26 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     # Close upload error modal ------------------------------------------
     # ------------------------------------------------------------------
-    @app.callback(
+    app.clientside_callback(
+        "function() { return {display: 'none'}; }",
         Output('upload-error-modal', 'style', allow_duplicate=True),
         [Input('upload-error-close', 'n_clicks'),
          Input('upload-error-close-btn', 'n_clicks')],
         prevent_initial_call=True
     )
-    def _close_upload_error_modal(close_x, close_btn):
-        """Close the upload error modal."""
-        return {'display': 'none'}
 
     # ------------------------------------------------------------------
     # Update reaction type dropdown options on data upload --------------
     # ------------------------------------------------------------------
     @app.callback(
         Output('reaction-type-dropdown', 'options'),
-        [Input('uploaded-data-store', 'data')]
+        [Input('uploaded-data-store', 'data'),
+         Input('url', 'pathname')]
     )
-    def _update_reaction_type_options(uploaded_data):
+    def _update_reaction_type_options(uploaded_data, pathname):
         """Update reaction type dropdown options based on uploaded or default data."""
+        if pathname != '/dashboard':
+            return [{"label": rt, "value": rt} for rt in du.REACTION_TYPES]
         source_df = du.get_active_dataframe(uploaded_data)
         reaction_types = du.get_reaction_types_from_data(source_df)
         return [{"label": rt, "value": rt} for rt in reaction_types]
@@ -417,11 +529,14 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     @app.callback(
         Output('filter-stats-store', 'data'),
-        FILTER_INPUTS,
+        FILTER_INPUTS + [Input('url', 'pathname')],
     )
     def _compute_stats(*args):
         """Compute filtered dataset and stats, return only stats to client."""
-        fkw = _parse_filter_args(args)
+        pathname = args[-1]
+        if pathname != '/dashboard':
+            return {}
+        fkw = _parse_filter_args(args[:-1])
         _dff, stats = _call_filter_data(fkw, return_stats=True)
         return stats
 
@@ -431,10 +546,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         Output('reactant-types-dropdown', 'options'),
         [Input('reaction-type-dropdown', 'value'),
-         Input('uploaded-data-store', 'data')]
+         Input('uploaded-data-store', 'data'),
+         Input('url', 'pathname')]
     )
-    def _update_reactant_types_options(reaction_types, uploaded_data):
+    def _update_reactant_types_options(reaction_types, uploaded_data, pathname):
         """Update reactant types dropdown options based on selected reaction types."""
+        if pathname != '/dashboard':
+            return _DEFAULT_REACTANT_OPTIONS
         # Get source DataFrame (uploaded or default)
         source_df = du.get_active_dataframe(uploaded_data)
         
@@ -463,11 +581,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         Output('functional-group-a-dropdown', 'options'),
         [Input('reaction-type-dropdown', 'value'),
-         Input('uploaded-data-store', 'data')]
+         Input('uploaded-data-store', 'data'),
+         Input('url', 'pathname')]
     )
-    def _update_fg_a_options(reaction_types, uploaded_data):
+    def _update_fg_a_options(reaction_types, uploaded_data, pathname):
         """Populate *Functional Group A* dropdown based on chosen reaction types."""
-
+        if pathname != '/dashboard':
+            return _DEFAULT_FG_OPTIONS
         if not reaction_types:
             return [{'label': 'All', 'value': 'All'}]
 
@@ -490,11 +610,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         Output('functional-group-b-dropdown', 'options'),
         [Input('reaction-type-dropdown', 'value'),
          Input('functional-group-a-dropdown', 'value'),
-         Input('uploaded-data-store', 'data')]
+         Input('uploaded-data-store', 'data'),
+         Input('url', 'pathname')]
     )
-    def _update_fg_b_options(reaction_types, fg_a, uploaded_data):
+    def _update_fg_b_options(reaction_types, fg_a, uploaded_data, pathname):
         """Return Functional-group B options conditioned on *FG A* selection."""
-
+        if pathname != '/dashboard':
+            return _DEFAULT_FG_OPTIONS
         if not reaction_types:
             return [{'label': 'All', 'value': 'All'}]
 
@@ -709,44 +831,30 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     # Filter panel toggle ----------------------------------------------
     # ------------------------------------------------------------------
-    @app.callback(
+    app.clientside_callback(
+        """
+        function(n_clicks, current_style) {
+            if (!n_clicks) return window.dash_clientside.no_update;
+            var s = Object.assign({}, current_style || {});
+            if (s.maxHeight === '0px' || s.display === 'none') {
+                Object.assign(s, {
+                    display: 'block', maxHeight: '200px', padding: '20px',
+                    margin: '0', border: '1px solid #e0e0e0', borderTop: 'none',
+                    borderRadius: '0 0 8px 8px', background: '#fafbfc',
+                    overflow: 'hidden',
+                    transition: 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out'
+                });
+            } else {
+                Object.assign(s, {maxHeight: '0px', padding: '0 20px', overflow: 'hidden'});
+            }
+            return s;
+        }
+        """,
         Output('filter-panel-container', 'style'),
         [Input('toggle-filters-btn', 'n_clicks')],
         [State('filter-panel-container', 'style')],
         prevent_initial_call=True
     )
-    def _toggle_filter_panel(n_clicks, current_style):
-        """Toggle the filter panel visibility with smooth animation."""
-        if n_clicks is None:
-            return no_update
-        
-        if current_style is None:
-            current_style = {}
-        
-        # Toggle visibility with smooth animation
-        if current_style.get('maxHeight') == '0px' or current_style.get('display') == 'none':
-            # Show panel
-            current_style.update({
-                'display': 'block',
-                'maxHeight': '200px',  # Adjust based on content height
-                'padding': '20px',
-                'margin': '0',
-                'border': '1px solid #e0e0e0',
-                'borderTop': 'none',
-                'borderRadius': '0 0 8px 8px',
-                'background': '#fafbfc',
-                'overflow': 'hidden',
-                'transition': 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out'
-            })
-        else:
-            # Hide panel
-            current_style.update({
-                'maxHeight': '0px',
-                'padding': '0 20px',
-                'overflow': 'hidden'
-            })
-        
-        return current_style
 
     # ------------------------------------------------------------------
     # Tabs management --------------------------------------------------
@@ -836,11 +944,14 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     @app.callback(
         Output('stats-content', 'children'),
-        FILTER_INPUTS + [Input('analysis-tabs', 'value')],
+        FILTER_INPUTS + [Input('analysis-tabs', 'value'), Input('url', 'pathname')],
     )
     def _update_stats_table(*args):
-        # Last arg is active_tab (appended after FILTER_INPUTS)
-        active_tab = args[-1]
+        pathname = args[-1]
+        if pathname != '/dashboard':
+            return []
+        # Second-to-last arg is active_tab
+        active_tab = args[-2]
         if active_tab != 'tab-stats':
             return no_update
 
@@ -1011,7 +1122,37 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     # Statistics updates -----------------------------------------------
     # ------------------------------------------------------------------
-    @app.callback(
+    app.clientside_callback(
+        """
+        function(stats, reactant_types) {
+            var hidden = {display: 'none'};
+            var visible = {display: 'block'};
+            var noSel = 'No selection';
+
+            if (!stats || !Object.keys(stats).length || !reactant_types || !reactant_types.length) {
+                return [hidden, [], hidden, [], hidden, []];
+            }
+
+            function elnText(stage) {
+                return 'ELNs: ' + (stage.elns || 0).toLocaleString();
+            }
+            function noSelContent() {
+                return [{namespace:'dash_html_components', type:'Div',
+                         props:{children:noSel, style:{marginBottom:'2px',color:'#adb5bd',fontStyle:'italic'}}},
+                        {namespace:'dash_html_components', type:'Div',
+                         props:{children:'', style:{color:'#adb5bd'}}}];
+            }
+            function elnDiv(text) {
+                return [{namespace:'dash_html_components', type:'Div', props:{children:text}}];
+            }
+
+            var wsContent = stats.whole_dataset ? elnDiv(elnText(stats.whole_dataset)) : [];
+            var fgaContent = stats.after_fg_a ? elnDiv(elnText(stats.after_fg_a)) : noSelContent();
+            var fgbContent = stats.after_fg_b ? elnDiv(elnText(stats.after_fg_b)) : noSelContent();
+
+            return [visible, wsContent, visible, fgaContent, visible, fgbContent];
+        }
+        """,
         [Output('whole-dataset-stats', 'style'),
          Output('whole-dataset-stats-content', 'children'),
          Output('functional-group-a-stats', 'style'),
@@ -1021,67 +1162,17 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         [Input('filter-stats-store', 'data'),
          Input('reactant-types-dropdown', 'value')]
     )
-    def _update_filtering_statistics(stats, reactant_types):
-        """Update the filtering statistics display."""
-        # Check if we have the minimum required filters
-        if not stats or not reactant_types:
-            # Hide all stat containers
-            hidden_style = {
-                'display': 'none'
-            }
-            return (hidden_style, [], hidden_style, [], hidden_style, [])
-        
-        # Base style for visible containers
-        visible_style = {
-            'display': 'block'
-        }
-        
-        # Whole dataset stats
-        whole_dataset_style = visible_style.copy()
-        whole_dataset_content = []
-        if 'whole_dataset' in stats:
-            stage_stats = stats['whole_dataset']
-            whole_dataset_content = [
-                html.Div(f"ELNs: {stage_stats['elns']:,}")
-            ]
-        
-        # Functional Group A stats
-        fg_a_style = visible_style.copy()
-        fg_a_content = []
-        if 'after_fg_a' in stats:
-            stage_stats = stats['after_fg_a']
-            fg_a_content = [
-                html.Div(f"ELNs: {stage_stats['elns']:,}")
-            ]
-        else:
-            fg_a_content = [
-                html.Div("No selection", style={'marginBottom': '2px', 'color': '#adb5bd', 'fontStyle': 'italic'}),
-                html.Div("", style={'color': '#adb5bd'})
-            ]
-        
-        # Functional Group B stats
-        fg_b_style = visible_style.copy()
-        fg_b_content = []
-        if 'after_fg_b' in stats:
-            stage_stats = stats['after_fg_b']
-            fg_b_content = [
-                html.Div(f"ELNs: {stage_stats['elns']:,}")
-            ]
-        else:
-            fg_b_content = [
-                html.Div("No selection", style={'marginBottom': '2px', 'color': '#adb5bd', 'fontStyle': 'italic'}),
-                html.Div("", style={'color': '#adb5bd'})
-            ]
-        
-        return (whole_dataset_style, whole_dataset_content,
-                fg_a_style, fg_a_content,
-                fg_b_style, fg_b_content)
 
     # ------------------------------------------------------------------
     # Reactive boxplot --------------------------------------------------
     # ------------------------------------------------------------------
     def _update_plot(plot_fn, expected_tab, *args):
         """Shared logic for boxplot and heatmap callbacks."""
+        # Last arg is pathname (Input – triggers recompute on navigation)
+        pathname = args[-1]
+        if pathname != '/dashboard':
+            return {}, {'height': '800px', 'width': '100%'}
+
         fkw = _parse_filter_args(args[:len(FILTER_INPUTS)])
         active_tab = args[len(FILTER_INPUTS)]
         presentation_mode = args[len(FILTER_INPUTS) + 1]
@@ -1108,6 +1199,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         FILTER_INPUTS + [
             Input('analysis-tabs', 'value'),
             Input('presentation-mode-store', 'data'),
+            Input('url', 'pathname'),
         ],
     )
     def _update_boxplot(*args):
@@ -1122,14 +1214,11 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         FILTER_INPUTS + [
             Input('analysis-tabs', 'value'),
             Input('presentation-mode-store', 'data'),
+            Input('url', 'pathname'),
         ],
     )
     def _update_heatmap(*args):
         return _update_plot(pu.create_heatmap, 'tab-heatmap', *args)
-
-
-
-
 
 
     # ------------------------------------------------------------------
@@ -1330,12 +1419,15 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             cls_for('analysis-tabs'),
         )
 
-    @app.callback(
+    app.clientside_callback(
+        """
+        function(data) {
+            var active = data && data.active;
+            return active ? 'Restart Tutorial' : 'Start Tutorial';
+        }
+        """,
         Output('start-tutorial-btn', 'children'),
         [Input('tutorial-store', 'data')]
     )
-    def _tutorial_label(data):
-        active = bool(data and data.get('active'))
-        return 'Restart Tutorial' if active else 'Start Tutorial'
 
 
