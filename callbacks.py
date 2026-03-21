@@ -14,7 +14,7 @@ by having a clean, top-level entry point.
 
 import io
 import base64
-from typing import Tuple, List
+import logging
 
 import pandas as pd
 from dash import Input, Output, State, callback_context, dcc, html, no_update
@@ -22,12 +22,131 @@ from dash import Input, Output, State, callback_context, dcc, html, no_update
 import data_utils as du
 import plot_utils as pu
 
+logger = logging.getLogger(__name__)
+
 # Required columns for uploaded datasets
 REQUIRED_COLUMNS = [
     'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
     'Base', 'Catalyst', 'Solvent', 'Ligand', 'Reaction Type',
     'FG A', 'FG B', 'FG_sorted', 'z-Score'
 ]
+
+# Default filter values — single source of truth
+DEFAULT_REACTION_TYPES = ['Buchwald-Hartwig']
+DEFAULT_FG_A = ['RNH2 a-branch', 'RNH2']
+DEFAULT_FG_B = ['ArBr', 'ArCl']
+DEFAULT_REACTANT_FALLBACK = ['Ligand']
+DEFAULT_MIN_ELN = 5
+DEFAULT_TOPN_ZSCORE = 5
+DEFAULT_MAX_COMPONENTS = 10
+
+# Maximum upload size in bytes (50 MB)
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
+# Shared filter inputs used by multiple callbacks
+FILTER_INPUTS = [
+    Input('reactant-types-dropdown', 'value'),
+    Input('reaction-type-dropdown', 'value'),
+    Input('functional-group-a-dropdown', 'value'),
+    Input('functional-group-b-dropdown', 'value'),
+    Input('exclude-cui-checkbox', 'value'),
+    Input('include-scaleup-checkbox', 'value'),
+    Input('include-null-categories-checkbox', 'value'),
+    Input('min-eln-input', 'value'),
+    Input('topn-zscore-input', 'value'),
+    Input('max-components-input', 'value'),
+    Input('uploaded-data-store', 'data'),
+]
+
+# Same inputs but as State (for download callbacks)
+FILTER_STATES = [
+    State('reactant-types-dropdown', 'value'),
+    State('reaction-type-dropdown', 'value'),
+    State('functional-group-a-dropdown', 'value'),
+    State('functional-group-b-dropdown', 'value'),
+    State('exclude-cui-checkbox', 'value'),
+    State('include-scaleup-checkbox', 'value'),
+    State('include-null-categories-checkbox', 'value'),
+    State('min-eln-input', 'value'),
+    State('topn-zscore-input', 'value'),
+    State('max-components-input', 'value'),
+    State('uploaded-data-store', 'data'),
+]
+
+_FILTER_KEYS = [
+    'reactant_types', 'reaction_types', 'fg_a', 'fg_b',
+    'exclude_cui', 'exclude_scaleup', 'include_null_categories',
+    'min_eln', 'topn_zscore', 'max_components', 'uploaded_data',
+]
+
+
+def _parse_filter_args(args: tuple) -> dict:
+    """Convert positional filter args into a kwargs dict for filter_data.
+
+    Returns a dict with keys matching ``du.filter_data`` parameters plus
+    ``'uploaded_data'`` (the raw JSON string from ``dcc.Store``).
+    """
+    return dict(zip(_FILTER_KEYS, args))
+
+
+def _call_filter_data(fkw: dict, **overrides) -> pd.DataFrame:
+    """Call ``du.filter_data`` using a dict from ``_parse_filter_args``.
+
+    *overrides* are forwarded to ``du.filter_data`` and take precedence
+    (e.g. ``return_stats=True``, ``min_eln=None``).
+    """
+    uploaded_data = fkw['uploaded_data']
+    source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
+    kwargs = {k: fkw[k] for k in _FILTER_KEYS if k != 'uploaded_data'}
+    kwargs['source_df'] = source_df
+    kwargs.update(overrides)
+    return du.filter_data(**kwargs)
+
+
+def _is_tutorial_step_satisfied(
+    step_idx: int,
+    *,
+    reaction_types,
+    reactant_types,
+    fg_a_vals,
+    fg_b_vals,
+    filter_panel_style,
+    min_eln,
+    topn,
+    max_comp,
+    exclude_cui_val,
+    tabs_value,
+) -> bool:
+    """Check whether a tutorial step's gating condition is met."""
+    try:
+        if step_idx == 0:
+            return bool(reaction_types)
+        if step_idx == 1:
+            return bool(reactant_types)
+        if step_idx == 2:
+            return bool(fg_a_vals)
+        if step_idx == 3:
+            return bool(fg_b_vals)
+        if step_idx == 4:
+            if not filter_panel_style:
+                return False
+            return (filter_panel_style.get('maxHeight') != '0px'
+                    and filter_panel_style.get('display') != 'none')
+        if step_idx == 5:
+            return min_eln is not None and min_eln != 10
+        if step_idx == 6:
+            return topn is not None and topn != 3
+        if step_idx == 7:
+            return max_comp is not None and max_comp != 10
+        if step_idx == 8:
+            return isinstance(exclude_cui_val, list) and ('exclude_cui' not in exclude_cui_val)
+        if step_idx == 9:
+            return tabs_value == 'tab-heatmap'
+        if step_idx == 10:
+            return True
+    except Exception:
+        return False
+    return False
 
 ## ---------------------------------------------------------------------------
 # Public – callback registration
@@ -98,7 +217,25 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             # Decode the base64 content
             content_type, content_string = contents.split(',')
             decoded = base64.b64decode(content_string)
-            
+
+            # Enforce upload size limit
+            if len(decoded) > MAX_UPLOAD_BYTES:
+                size_mb = len(decoded) / (1024 * 1024)
+                error_content = html.Div([
+                    html.P([html.Strong('File: '), filename]),
+                    html.P([
+                        html.Strong('Error: '),
+                        f'File size ({size_mb:.1f} MB) exceeds the 50 MB limit.'
+                    ]),
+                ])
+                return (
+                    None,
+                    html.Span('File too large'),
+                    'upload-status error',
+                    modal_visible,
+                    error_content,
+                )
+
             # Try to read CSV with encoding and delimiter detection
             encodings_to_try = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
             delimiters_to_try = [',', ';', '\t']
@@ -222,16 +359,17 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
                 []
             )
             
-        except Exception as e:
+        except Exception:
+            logger.exception("Upload processing failed for file: %s", filename)
             error_content = html.Div([
                 html.P([
                     html.Strong('File: '), filename if filename else 'Unknown'
                 ]),
                 html.P([
-                    html.Strong('Error: '), 
-                    str(e)
+                    html.Strong('Error: '),
+                    'An unexpected error occurred while processing your file.'
                 ]),
-                html.P('Please check that your file is a valid CSV file.')
+                html.P('Please check that your file is a valid CSV file with the required columns.')
             ])
             return (
                 None,
@@ -272,29 +410,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     @app.callback(
         Output('filter-stats-store', 'data'),
-        [Input('reactant-types-dropdown', 'value'),
-         Input('reaction-type-dropdown', 'value'),
-         Input('functional-group-a-dropdown', 'value'),
-         Input('functional-group-b-dropdown', 'value'),
-         Input('exclude-cui-checkbox', 'value'),
-         Input('include-scaleup-checkbox', 'value'),
-         Input('include-null-categories-checkbox', 'value'),
-         Input('min-eln-input', 'value'),
-         Input('topn-zscore-input', 'value'),
-         Input('max-components-input', 'value'),
-         Input('uploaded-data-store', 'data')]
+        FILTER_INPUTS,
     )
-    def _compute_stats(reactant_types, reaction_types, fg_a, fg_b,
-                       exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components,
-                       uploaded_data):
-        # Get source DataFrame (uploaded or default)
-        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
-        
-        # Compute filtered dataset and stats in a single call, return only stats to client
-        _dff, stats = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
-                                     exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                                     min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components,
-                                     return_stats=True, source_df=source_df)
+    def _compute_stats(*args):
+        """Compute filtered dataset and stats, return only stats to client."""
+        fkw = _parse_filter_args(args)
+        _dff, stats = _call_filter_data(fkw, return_stats=True)
         return stats
 
     # ------------------------------------------------------------------
@@ -430,8 +551,8 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     )
     def _set_initial_fg_a_values(fg_a_options, current_fg_a):
         """Set initial values for functional group A dropdown when options are populated."""
-        desired_fg_a = ['RNH2 a-branch', 'RNH2']
-        
+        desired_fg_a = DEFAULT_FG_A
+
         # Only set defaults if current values are truly empty (None or []), not if explicitly set to ['All']
         if not current_fg_a:  # This covers None, [], or empty list
             if fg_a_options:
@@ -455,8 +576,8 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     )
     def _set_initial_fg_b_values(fg_b_options, current_fg_b):
         """Set initial values for functional group B dropdown when options are populated."""
-        desired_fg_b = ['ArBr', 'ArCl']
-        
+        desired_fg_b = DEFAULT_FG_B
+
         # Only set defaults if current values are truly empty (None or []), not if explicitly set to ['All']
         if not current_fg_b:  # This covers None, [], or empty list
             if fg_b_options:
@@ -528,16 +649,12 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             default_exclude_cui = ['exclude_cui']
             default_exclude_scaleup = [True]
             default_include_null_categories = [True]
-            
-            # Set min ELN to constant value
-            default_min_eln = 5
-            
-            default_topn_zscore = 5
-            default_max_components = 10
-            
-            # Reset functional groups to defaults
-            desired_fg_a = ['RNH2 a-branch', 'RNH2']
-            desired_fg_b = ['ArBr', 'ArCl']
+            default_min_eln = DEFAULT_MIN_ELN
+            default_topn_zscore = DEFAULT_TOPN_ZSCORE
+            default_max_components = DEFAULT_MAX_COMPONENTS
+
+            desired_fg_a = DEFAULT_FG_A
+            desired_fg_b = DEFAULT_FG_B
             
             # Reset FG A
             default_fg_a = ['All']  # Default fallback
@@ -555,8 +672,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
                 if valid_fg_b:
                     default_fg_b = valid_fg_b
             
-            # Reset reaction type to default
-            default_reaction_types = ['Buchwald-Hartwig']
+            default_reaction_types = DEFAULT_REACTION_TYPES
             
             return (default_reaction_types, default_reactant_types, default_fg_a, default_fg_b,
                     default_exclude_cui, default_exclude_scaleup, default_include_null_categories, default_min_eln, default_topn_zscore, default_max_components)
@@ -581,8 +697,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     )
     def _update_min_eln_on_fg_change(fg_a_values, fg_b_values, reaction_types):
         """Update min ELN when functional group selections change."""
-        # Always use 5 as the default min ELN
-        return 5
+        return DEFAULT_MIN_ELN
 
     # ------------------------------------------------------------------
     # Filter panel toggle ----------------------------------------------
@@ -714,33 +829,16 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     @app.callback(
         Output('stats-content', 'children'),
-        [Input('reactant-types-dropdown', 'value'),
-         Input('reaction-type-dropdown', 'value'),
-         Input('functional-group-a-dropdown', 'value'),
-         Input('functional-group-b-dropdown', 'value'),
-         Input('exclude-cui-checkbox', 'value'),
-         Input('include-scaleup-checkbox', 'value'),
-         Input('include-null-categories-checkbox', 'value'),
-         Input('min-eln-input', 'value'),
-         Input('topn-zscore-input', 'value'),
-         Input('max-components-input', 'value'),
-         Input('analysis-tabs', 'value'),
-         Input('uploaded-data-store', 'data')]
+        FILTER_INPUTS + [Input('analysis-tabs', 'value')],
     )
-    def _update_stats_table(reactant_types, reaction_types, fg_a, fg_b,
-                            exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab,
-                            uploaded_data):
-        # Only update if statistics tab is active
+    def _update_stats_table(*args):
+        # Last arg is active_tab (appended after FILTER_INPUTS)
+        active_tab = args[-1]
         if active_tab != 'tab-stats':
             return no_update
-        
-        # Get source DataFrame (uploaded or default)
-        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
-        
-        # Compute filtered data server-side
-        dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
-                             exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                             min_eln=None, topn_zscore=topn_zscore, max_components=None, source_df=source_df)
+
+        fkw = _parse_filter_args(args[:len(FILTER_INPUTS)])
+        dff = _call_filter_data(fkw, min_eln=None, max_components=None)
         
         if dff is None or dff.empty:
             return html.Div('No data available for the current filters.', style={'color': '#6c757d'})
@@ -848,33 +946,18 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         Output("download-csv", "data"),
         Input("download-csv-btn", "n_clicks"),
-        State('reactant-types-dropdown', 'value'),
-        State('reaction-type-dropdown', 'value'),
-        State('functional-group-a-dropdown', 'value'),
-        State('functional-group-b-dropdown', 'value'),
-        State('exclude-cui-checkbox', 'value'),
-        State('include-scaleup-checkbox', 'value'),
-        State('include-null-categories-checkbox', 'value'),
-        State('min-eln-input', 'value'),
-        State('topn-zscore-input', 'value'),
-        State('max-components-input', 'value'),
-        State('uploaded-data-store', 'data'),
+        *FILTER_STATES,
         prevent_initial_call=True,
     )
-    def _download_csv(n_clicks, reactant_types, reaction_types, fg_a, fg_b,
-                      exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components,
-                      uploaded_data):
+    def _download_csv(n_clicks, *args):
         if not n_clicks:
             return no_update
         try:
-            # Get source DataFrame (uploaded or default)
-            source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
-            
-            dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
-                                 exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                                 min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
+            fkw = _parse_filter_args(args)
+            dff = _call_filter_data(fkw)
             return dcc.send_data_frame(dff.to_csv, "filtered_data.csv", index=False)
         except Exception:
+            logger.exception("CSV download failed")
             return no_update
 
     # ------------------------------------------------------------------
@@ -883,42 +966,27 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         Output("download-png", "data"),
         Input("download-png-btn", "n_clicks"),
-        State('reactant-types-dropdown', 'value'),
-        State('reaction-type-dropdown', 'value'),
-        State('functional-group-a-dropdown', 'value'),
-        State('functional-group-b-dropdown', 'value'),
-        State('exclude-cui-checkbox', 'value'),
-        State('include-scaleup-checkbox', 'value'),
-        State('include-null-categories-checkbox', 'value'),
-        State('min-eln-input', 'value'),
-        State('topn-zscore-input', 'value'),
-        State('max-components-input', 'value'),
+        *FILTER_STATES,
         State("analysis-tabs", "value"),
         State('presentation-mode-store', 'data'),
-        State('uploaded-data-store', 'data'),
         prevent_initial_call=True,
     )
-    def _download_png(n_clicks, reactant_types, reaction_types, fg_a, fg_b,
-                      exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode,
-                      uploaded_data):
+    def _download_png(n_clicks, *args):
         if not n_clicks:
             return no_update
-        
-        # Ensure reactant_types is not empty
-        if not reactant_types or len(reactant_types) == 0:
-            reactant_types = ['Ligand']  # Default fallback
-        
-        # Do not generate a PNG for the Statistics tab
+
+        fkw = _parse_filter_args(args[:len(FILTER_STATES)])
+        active_tab = args[len(FILTER_STATES)]
+        presentation_mode = args[len(FILTER_STATES) + 1]
+
+        reactant_types = fkw['reactant_types'] or DEFAULT_REACTANT_FALLBACK
+
         if active_tab == 'tab-stats':
             return no_update
-        
-        # Get source DataFrame (uploaded or default)
-        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
-            
+
         try:
-            dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
-                                 exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                                 min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
+            fkw['reactant_types'] = reactant_types
+            dff = _call_filter_data(fkw)
             if active_tab == 'tab-heatmap':
                 fig, adaptive_height = pu.create_heatmap(dff, reactant_types, presentation_mode=presentation_mode)
                 filename = 'heatmap.png'
@@ -930,6 +998,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             buf.seek(0)
             return dcc.send_bytes(buf.getvalue(), filename)
         except Exception:
+            logger.exception("PNG download failed")
             return no_update
 
     # ------------------------------------------------------------------
@@ -1004,52 +1073,38 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     # Reactive boxplot --------------------------------------------------
     # ------------------------------------------------------------------
-    @app.callback(
-        [Output('boxplot', 'figure'),
-         Output('boxplot-container', 'style')],
-        [Input('reactant-types-dropdown', 'value'),
-         Input('reaction-type-dropdown', 'value'),
-         Input('functional-group-a-dropdown', 'value'),
-         Input('functional-group-b-dropdown', 'value'),
-         Input('exclude-cui-checkbox', 'value'),
-         Input('include-scaleup-checkbox', 'value'),
-         Input('include-null-categories-checkbox', 'value'),
-         Input('min-eln-input', 'value'),
-         Input('topn-zscore-input', 'value'),
-         Input('max-components-input', 'value'),
-         Input('analysis-tabs', 'value'),
-         Input('presentation-mode-store', 'data'),
-         Input('uploaded-data-store', 'data')]
-    )
-    def _update_boxplot(reactant_types, reaction_types, fg_a, fg_b,
-                        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode,
-                        uploaded_data):
-        # Only update if boxplot tab is active
-        if active_tab != 'tab-graph':
+    def _update_plot(plot_fn, expected_tab, *args):
+        """Shared logic for boxplot and heatmap callbacks."""
+        fkw = _parse_filter_args(args[:len(FILTER_INPUTS)])
+        active_tab = args[len(FILTER_INPUTS)]
+        presentation_mode = args[len(FILTER_INPUTS) + 1]
+
+        if active_tab != expected_tab:
             return no_update, no_update
-        
-        # Ensure reactant_types is not empty
-        if not reactant_types or len(reactant_types) == 0:
-            reactant_types = ['Ligand']  # Default fallback
-        
-        # Get source DataFrame (uploaded or default)
-        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
-            
-        # Compute filtered data server-side
-        dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
-                             exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                             min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
-        fig, adaptive_height = pu.create_boxplot(dff, reactant_types, presentation_mode=presentation_mode)
-        
-        # Calculate container height based on adaptive_height
-        container_height = max(800, adaptive_height + 100)  # Add some padding
-        
+
+        reactant_types = fkw['reactant_types'] or DEFAULT_REACTANT_FALLBACK
+        fkw['reactant_types'] = reactant_types
+
+        dff = _call_filter_data(fkw)
+        fig, adaptive_height = plot_fn(dff, reactant_types, presentation_mode=presentation_mode)
+
+        container_height = max(800, adaptive_height + 100)
         container_style = {
             'height': f'{container_height}px',
             'width': '100%'
         }
-        
         return fig, container_style
+
+    @app.callback(
+        [Output('boxplot', 'figure'),
+         Output('boxplot-container', 'style')],
+        FILTER_INPUTS + [
+            Input('analysis-tabs', 'value'),
+            Input('presentation-mode-store', 'data'),
+        ],
+    )
+    def _update_boxplot(*args):
+        return _update_plot(pu.create_boxplot, 'tab-graph', *args)
 
     # ------------------------------------------------------------------
     # Reactive heatmap -------------------------------------------------
@@ -1057,49 +1112,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         [Output('heatmap', 'figure'),
          Output('heatmap-container', 'style')],
-        [Input('reactant-types-dropdown', 'value'),
-         Input('reaction-type-dropdown', 'value'),
-         Input('functional-group-a-dropdown', 'value'),
-         Input('functional-group-b-dropdown', 'value'),
-         Input('exclude-cui-checkbox', 'value'),
-         Input('include-scaleup-checkbox', 'value'),
-         Input('include-null-categories-checkbox', 'value'),
-         Input('min-eln-input', 'value'),
-         Input('topn-zscore-input', 'value'),
-         Input('max-components-input', 'value'),
-         Input('analysis-tabs', 'value'),
-         Input('presentation-mode-store', 'data'),
-         Input('uploaded-data-store', 'data')]
+        FILTER_INPUTS + [
+            Input('analysis-tabs', 'value'),
+            Input('presentation-mode-store', 'data'),
+        ],
     )
-    def _update_heatmap(reactant_types, reaction_types, fg_a, fg_b,
-                        exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, active_tab, presentation_mode,
-                        uploaded_data):
-        # Only update if heatmap tab is active
-        if active_tab != 'tab-heatmap':
-            return no_update, no_update
-        
-        # Ensure reactant_types is not empty
-        if not reactant_types or len(reactant_types) == 0:
-            reactant_types = ['Ligand']  # Default fallback
-        
-        # Get source DataFrame (uploaded or default)
-        source_df = du.parse_uploaded_data(uploaded_data) if uploaded_data else None
-            
-        # Compute filtered data server-side
-        dff = du.filter_data(reactant_types=reactant_types, reaction_types=reaction_types, fg_a=fg_a, fg_b=fg_b,
-                             exclude_cui=exclude_cui, exclude_scaleup=exclude_scaleup, include_null_categories=include_null_categories, 
-                             min_eln=min_eln, topn_zscore=topn_zscore, max_components=max_components, source_df=source_df)
-        fig, adaptive_height = pu.create_heatmap(dff, reactant_types, presentation_mode=presentation_mode)
-        
-        # Calculate container height based on adaptive_height
-        container_height = max(800, adaptive_height + 100)  # Add some padding
-        
-        container_style = {
-            'height': f'{container_height}px',
-            'width': '100%'
-        }
-        
-        return fig, container_style
+    def _update_heatmap(*args):
+        return _update_plot(pu.create_heatmap, 'tab-heatmap', *args)
 
 
 
@@ -1141,36 +1160,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
 
         steps_count = 11  # 0..10
 
-        def is_step_satisfied(step_idx: int) -> bool:
-            try:
-                if step_idx == 0:
-                    return bool(reaction_types)
-                if step_idx == 1:
-                    return bool(reactant_types)
-                if step_idx == 2:
-                    return bool(fg_a_vals)
-                if step_idx == 3:
-                    return bool(fg_b_vals)
-                if step_idx == 4:
-                    # Options panel opened
-                    if not filter_panel_style:
-                        return False
-                    return (filter_panel_style.get('maxHeight') != '0px' and filter_panel_style.get('display') != 'none')
-                if step_idx == 5:
-                    return min_eln is not None and min_eln != 10
-                if step_idx == 6:
-                    return topn is not None and topn != 3
-                if step_idx == 7:
-                    return max_comp is not None and max_comp != 10
-                if step_idx == 8:
-                    return isinstance(exclude_cui_val, list) and ('exclude_cui' not in exclude_cui_val)
-                if step_idx == 9:
-                    return tabs_value in ('tab-heatmap')
-                if step_idx == 10:
-                    return True
-            except Exception:
-                return False
-            return False
+        _step_kw = dict(
+            reaction_types=reaction_types, reactant_types=reactant_types,
+            fg_a_vals=fg_a_vals, fg_b_vals=fg_b_vals,
+            filter_panel_style=filter_panel_style, min_eln=min_eln,
+            topn=topn, max_comp=max_comp, exclude_cui_val=exclude_cui_val,
+            tabs_value=tabs_value,
+        )
 
         if trigger == 'start-tutorial-btn':
             return {'active': True, 'step': 0}
@@ -1208,7 +1204,7 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
             # Extract triggering component id (without property)
             trigger_id = trigger.split('.')[0]
             if trigger_id in step_to_triggers.get(current_step, []):
-                if is_step_satisfied(current_step):
+                if _is_tutorial_step_satisfied(current_step, **_step_kw):
                     # If last step reached, finish, otherwise advance
                     if current_step >= steps_count - 1:
                         return {'active': False, 'step': 0}
@@ -1272,42 +1268,20 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         ]
 
         # Gating – determine if action complete for current step
-        def satisfied(idx: int) -> bool:
-            try:
-                if idx == 0:
-                    return bool(reaction_types)
-                if idx == 1:
-                    return bool(reactant_types)
-                if idx == 2:
-                    return bool(fg_a_vals)
-                if idx == 3:
-                    return bool(fg_b_vals)
-                if idx == 4:
-                    if not filter_panel_style:
-                        return False
-                    return (filter_panel_style.get('maxHeight') != '0px' and filter_panel_style.get('display') != 'none')
-                if idx == 5:
-                    return min_eln is not None and min_eln != 10
-                if idx == 6:
-                    return topn is not None and topn != 3
-                if idx == 7:
-                    return max_comp is not None and max_comp != 10
-                if idx == 8:
-                    return isinstance(exclude_cui_val, list) and ('exclude_cui' not in exclude_cui_val)
-                if idx == 9:
-                    return tabs_value in ('tab-heatmap')
-                if idx == 10:
-                    return True
-            except Exception:
-                return False
-            return False
+        _step_kw = dict(
+            reaction_types=reaction_types, reactant_types=reactant_types,
+            fg_a_vals=fg_a_vals, fg_b_vals=fg_b_vals,
+            filter_panel_style=filter_panel_style, min_eln=min_eln,
+            topn=topn, max_comp=max_comp, exclude_cui_val=exclude_cui_val,
+            tabs_value=tabs_value,
+        )
 
         # Next is always enabled; label reflects completion state
         disabled_next = False
         if step >= len(steps) - 1:
             next_label = 'Finish'
         else:
-            next_label = 'Next' if satisfied(step) else 'Skip'
+            next_label = 'Next' if _is_tutorial_step_satisfied(step, **_step_kw) else 'Skip'
 
         # Clamp step to valid range to avoid indexing errors
         if step < 0:

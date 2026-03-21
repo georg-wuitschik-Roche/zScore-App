@@ -21,10 +21,10 @@ quickly understand *why* a certain transformation exists.
 """
 
 from pathlib import Path
-from typing import List
-import os
-from functools import lru_cache
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 import pandas as pd
 import requests
@@ -279,7 +279,7 @@ DF: pd.DataFrame = _load_and_prepare()
 
 # Hard-coded options used in dropdowns.  Having them here again keeps all
 # data-related constants in a single file.
-CATEGORY_OPTIONS: List[str] = [
+CATEGORY_OPTIONS: list[str] = [
     "Additive",
     "Base",
     "Catalyst",
@@ -294,7 +294,7 @@ CATEGORY_OPTIONS: List[str] = [
 # The available reaction types are directly derived from the dataset so
 # they do **not** have to be updated manually once a new reaction shows
 # up in the csv.
-REACTION_TYPES: List[str] = DF["Reaction Type"].dropna().unique().tolist()
+REACTION_TYPES: list[str] = DF["Reaction Type"].dropna().unique().tolist()
 
 
 
@@ -303,317 +303,335 @@ REACTION_TYPES: List[str] = DF["Reaction Type"].dropna().unique().tolist()
 # 4. FILTERING FUNCTIONS
 # ---------------------------------------------------------------------------
 
-def _convert_checkbox_to_bool(checkbox_value):
+def _convert_checkbox_to_bool(checkbox_value: list | None) -> bool:
     """Convert checkbox value to boolean."""
-    return checkbox_value is not None and len(checkbox_value) > 0
+    return bool(checkbox_value)
 
-def _create_cache_key(*args):
+def _create_cache_key(*args: object) -> str:
     """Create a hashable cache key from filter parameters."""
-    # Convert all arguments to strings and create a hash
     key_str = str(args)
     return hashlib.md5(key_str.encode()).hexdigest()
 
+
+def _normalize_fg_input(fg_input: str | list | None) -> list[str]:
+    """Normalize functional group input to a list, filtering out 'All'."""
+    if not fg_input:
+        return []
+    if isinstance(fg_input, str):
+        return [fg_input] if fg_input != 'All' else []
+    if isinstance(fg_input, list):
+        return [fg for fg in fg_input if fg != 'All']
+    return []
+
+
+def _mask_contains_fg(df: pd.DataFrame, fg: str) -> pd.Series:
+    """Return a boolean mask where *fg* appears in either FG column."""
+    return (df['FG A'] == fg) | (df['FG B'] == fg)
+
+
+# ---------------------------------------------------------------------------
+# Individual filter steps
+# ---------------------------------------------------------------------------
+
+def _filter_by_reaction_types(dff: pd.DataFrame, reaction_types: list | None) -> pd.DataFrame:
+    """Step 1: Keep only rows matching the selected reaction types."""
+    if reaction_types:
+        return dff[dff['Reaction Type'].isin(reaction_types)]
+    return dff
+
+
+def _filter_by_reactant_columns(
+    dff: pd.DataFrame, reactant_types: list | None, include_null: bool
+) -> pd.DataFrame:
+    """Step 2: Ensure selected reactant-type columns are populated."""
+    if not reactant_types or include_null:
+        return dff
+    for rt in reactant_types:
+        if rt:
+            dff = dff[dff[rt].notnull() & (dff[rt] != '')]
+    return dff
+
+
+def _filter_exclude_cui(dff: pd.DataFrame, exclude_cui: list | None) -> pd.DataFrame:
+    """Step 3: Exclude CuI catalyst entries when requested."""
+    if 'Catalyst' in dff.columns and exclude_cui and 'exclude_cui' in exclude_cui:
+        dff = dff[(dff['Catalyst'].isnull()) | (dff['Catalyst'] != 'CuI')]
+    return dff
+
+
+def _filter_fg_a(dff: pd.DataFrame, fg_a: str | list | None) -> tuple[pd.DataFrame, list[str]]:
+    """Step 4: Filter by Functional Group A. Returns (filtered_df, normalised_fg_a_list)."""
+    fg_a_list = _normalize_fg_input(fg_a)
+    if fg_a_list:
+        mask = pd.Series(False, index=dff.index)
+        for fg in fg_a_list:
+            mask |= _mask_contains_fg(dff, fg)
+        dff = dff[mask]
+    return dff, fg_a_list
+
+
+def _filter_fg_b(
+    dff: pd.DataFrame, fg_b: str | list | None, fg_a_list: list[str]
+) -> tuple[pd.DataFrame, list[str]]:
+    """Step 5: Filter by Functional Group B, considering FG A pairs."""
+    fg_b_list = _normalize_fg_input(fg_b)
+    if not fg_b_list:
+        return dff, fg_b_list
+
+    if fg_a_list:
+        # Both specified: match any combination pair
+        mask = pd.Series(False, index=dff.index)
+        for fa in fg_a_list:
+            for fb in fg_b_list:
+                pair = ', '.join(sorted([fa, fb]))
+                mask |= (dff['FG_PAIR_SORTED'] == pair)
+        dff = dff[mask]
+    else:
+        mask = pd.Series(False, index=dff.index)
+        for fg in fg_b_list:
+            mask |= _mask_contains_fg(dff, fg)
+        dff = dff[mask]
+    return dff, fg_b_list
+
+
+def _filter_scaleup_plates(dff: pd.DataFrame, exclude_scaleup: list | None) -> pd.DataFrame:
+    """Step 6: Remove scale-up plates (plates with no reagent variability)."""
+    if not _convert_checkbox_to_bool(exclude_scaleup):
+        return dff
+
+    reagent_cols = [
+        col for col in [
+            'Additive', 'Base', 'Catalyst', 'Coupling Reagent',
+            'Solvent', 'Ligand', 'Secondary Solvent', 'Tertiary Solvent'
+        ] if col in dff.columns
+    ]
+    if not reagent_cols:
+        return dff
+
+    plate_variability = (
+        dff.groupby(['ELN_ID', 'PLATENUMBER'])[reagent_cols]
+        .nunique()
+        .reset_index()
+    )
+    has_variability = (plate_variability[reagent_cols] > 1).any(axis=1)
+    plates_to_keep = plate_variability[has_variability][['ELN_ID', 'PLATENUMBER']]
+    return dff.merge(plates_to_keep, on=['ELN_ID', 'PLATENUMBER'], how='inner')
+
+
+_REAGENT_COLS = [
+    'Additive', 'Base', 'Catalyst', 'Coupling Reagent',
+    'Solvent', 'Ligand', 'Secondary Solvent', 'Tertiary Solvent',
+]
+_NAN_SENTINEL = '__NAN__'
+_NULL_SENTINEL = '__NULL_CATEGORY__'
+
+
+def _deduplicate_best_zscore(dff: pd.DataFrame) -> pd.DataFrame:
+    """Step 7: Keep the best z-Score per unique reagent combination."""
+    dedup_cols = ['ELN_ID'] + [c for c in _REAGENT_COLS if c in dff.columns]
+
+    # Fill NaN only on the groupby columns (avoids full DataFrame copy)
+    fill_map = {c: _NAN_SENTINEL for c in dedup_cols if c in dff.columns}
+    filled = dff[dedup_cols].fillna(fill_map)
+    filled['z-Score'] = dff['z-Score']
+
+    rank = filled.groupby(dedup_cols)['z-Score'].rank(method='first', ascending=False)
+    dff = dff[rank == 1].copy()
+
+    # Restore NaN values
+    for col in dedup_cols:
+        if col in dff.columns:
+            dff[col] = dff[col].replace(_NAN_SENTINEL, pd.NA)
+    return dff
+
+
+def _filter_topn_zscore(
+    dff: pd.DataFrame,
+    topn_zscore: int | None,
+    reactant_types: list | None,
+    include_null: bool,
+) -> pd.DataFrame:
+    """Step 8: Keep only the top-N z-scores per ELN + reactant combination."""
+    if not topn_zscore or not reactant_types:
+        return dff
+
+    rank_cols = [c for c in ['ELN_ID'] + reactant_types if c in dff.columns]
+    if len(rank_cols) < 2:
+        return dff
+
+    if include_null:
+        filled = dff[rank_cols].fillna(_NULL_SENTINEL)
+        filled['z-Score'] = dff['z-Score']
+        rank = filled.groupby(rank_cols)['z-Score'].rank(method='first', ascending=False)
+    else:
+        rank = dff.groupby(rank_cols)['z-Score'].rank(method='first', ascending=False)
+
+    return dff[rank <= topn_zscore]
+
+
+def _filter_min_eln(
+    dff: pd.DataFrame,
+    min_eln: int | None,
+    reactant_types: list | None,
+    include_null: bool,
+) -> pd.DataFrame:
+    """Step 9: Require a minimum number of unique ELNs per category group."""
+    if not min_eln or not reactant_types:
+        return dff
+
+    group_cols = ['Reaction Type'] + [rt for rt in reactant_types if rt]
+    if include_null:
+        filled = dff[group_cols].fillna(_NULL_SENTINEL)
+        filled['ELN_ID'] = dff['ELN_ID']
+        counts = filled.groupby(group_cols)['ELN_ID'].transform('nunique')
+    else:
+        counts = dff.groupby(group_cols)['ELN_ID'].transform('nunique')
+
+    return dff[counts >= min_eln]
+
+
+def _filter_max_components(
+    dff: pd.DataFrame,
+    max_components: int | None,
+    reactant_types: list | None,
+    include_null: bool,
+) -> pd.DataFrame:
+    """Step 10: Cap the number of displayed components by median z-Score."""
+    if not max_components or max_components <= 0 or not reactant_types:
+        return dff
+
+    key_cols = [rt for rt in reactant_types if rt]
+    try:
+        unique_count = int(dff[key_cols].drop_duplicates().shape[0])
+    except Exception:
+        return dff
+
+    if max_components >= unique_count:
+        return dff
+
+    medians = (
+        dff.groupby(key_cols, dropna=not include_null)['z-Score']
+        .median()
+        .sort_values(ascending=False)
+    )
+    top_df = medians.head(max_components).reset_index()[key_cols].drop_duplicates()
+
+    if len(key_cols) == 1:
+        if include_null:
+            left = dff[key_cols[0]].fillna(_NULL_SENTINEL)
+            right = top_df[key_cols[0]].fillna(_NULL_SENTINEL)
+            return dff[left.isin(right)]
+        return dff[dff[key_cols[0]].isin(top_df[key_cols[0]].tolist())]
+
+    if include_null:
+        left_keys = dff[key_cols].fillna(_NULL_SENTINEL).reset_index()
+        right_keys = top_df[key_cols].fillna(_NULL_SENTINEL).drop_duplicates()
+        matched = left_keys.merge(right_keys, on=key_cols, how='inner')
+        return dff.loc[matched['index'].unique().tolist()]
+    return dff.merge(top_df, on=key_cols, how='inner')
+
+
 # Cache for filtered data - stores (cache_key -> (dataframe, stats))
-_FILTER_CACHE = {}
-_CACHE_MAX_SIZE = 50  # Maximum number of cached filter results
+_FILTER_CACHE: dict[str, dict] = {}
+_CACHE_MAX_SIZE = 50
+
 
 def filter_data(
-    reactant_types: list = None,  # List of selected reactant types (categories)
-    reaction_types: list = None,
-    fg_a: str | list = None,
-    fg_b: str | list = None,
-    exclude_cui = None,  # list, checked if 'exclude_cui' in list
-    exclude_scaleup = None,  # list, checked if True in list
-    include_null_categories = None,  # list, checked if True in list
-    min_eln: int = None,
-    topn_zscore: int = None,
-    max_components: int = None,
+    reactant_types: list | None = None,
+    reaction_types: list | None = None,
+    fg_a: str | list | None = None,
+    fg_b: str | list | None = None,
+    exclude_cui: list | None = None,
+    exclude_scaleup: list | None = None,
+    include_null_categories: list | None = None,
+    min_eln: int | None = None,
+    topn_zscore: int | None = None,
+    max_components: int | None = None,
     return_stats: bool = False,
-    source_df: pd.DataFrame = None,  # Optional: use this DataFrame instead of global DF
+    source_df: pd.DataFrame | None = None,
 ) -> pd.DataFrame | tuple[pd.DataFrame, dict]:
-    """Return a filtered dataframe according to the business logic used by the app, with user-customizable filters.
+    """Return a filtered DataFrame using the app's 10-step filter chain.
 
-    Args:
-        reactant_types: List of selected reactant types (categories) to filter by
-        reaction_types: List of reaction types to filter by
-        fg_a, fg_b: Functional group filters
-        exclude_cui: Whether to exclude CuI catalyst
-        exclude_scaleup: Whether to exclude scale-up plates
-        include_null_categories: Whether to include null category values
-        min_eln, topn_zscore, max_components: Additional filtering parameters
-        return_stats: Whether to return statistics along with filtered data
-        source_df: Optional DataFrame to use instead of the default global DF.
-                   Use this for user-uploaded datasets.
-
-    If the special keyword argument ``return_stats`` is provided as True (via **kwargs),
-    the function returns a tuple ``(filtered_df, stats)`` where ``stats`` mirrors
-    the information previously produced by ``get_filtering_statistics``. This allows
-    callers to compute filtered data and the statistics in a single function call.
+    When *return_stats* is ``True`` the return value is a tuple
+    ``(filtered_df, stats_dict)``.
     """
-    
-    # Determine if we're using uploaded data (skip cache for uploaded data)
     using_uploaded = source_df is not None
-    
-    # Check cache first (only for default data)
+
+    # --- cache lookup (default data only) ---
     if not using_uploaded:
         cache_key = _create_cache_key(
             reactant_types, reaction_types, fg_a, fg_b,
-            exclude_cui, exclude_scaleup, include_null_categories, min_eln, topn_zscore, max_components, return_stats
+            exclude_cui, exclude_scaleup, include_null_categories,
+            min_eln, topn_zscore, max_components, return_stats,
         )
-        
         if cache_key in _FILTER_CACHE:
-            cached_result = _FILTER_CACHE[cache_key]
+            cached = _FILTER_CACHE[cache_key]
             if return_stats:
-                return cached_result['dataframe'].copy(), cached_result['stats'].copy()
-            else:
-                return cached_result['dataframe'].copy()
-    
-    # Use provided source_df or fall back to global DF
-    dff = source_df.copy() if using_uploaded else DF.copy()
-    
-    # 1. Filter by Reaction Types (cheap)
-    if reaction_types and len(reaction_types) > 0:
-        dff = dff[dff['Reaction Type'].isin(reaction_types)]
+                return cached['dataframe'].copy(), cached['stats'].copy()
+            return cached['dataframe'].copy()
 
-    # init simple stats collection
+    dff = source_df.copy() if using_uploaded else DF.copy()
+    include_null = _convert_checkbox_to_bool(include_null_categories)
     stats: dict | None = {} if return_stats else None
+
+    # Step 1: Reaction types
+    dff = _filter_by_reaction_types(dff, reaction_types)
     if stats is not None:
         stats['whole_dataset'] = {'elns': dff['ELN_ID'].nunique()}
 
-    # Convert include_null_categories checkbox to boolean
-    include_null_categories_bool = _convert_checkbox_to_bool(include_null_categories)
+    # Step 2: Reactant columns populated
+    dff = _filter_by_reactant_columns(dff, reactant_types, include_null)
+    if stats is not None and reactant_types:
+        stats['after_reactant_filters'] = {'elns': dff['ELN_ID'].nunique()}
 
-    # 2. Filter: ensure the selected reactant type columns are populated (cheap)
-    # Unless include_null_categories is checked, exclude null/empty values
-    if reactant_types and len(reactant_types) > 0:
-        if not include_null_categories_bool:
-            for reactant_type in reactant_types:
-                if reactant_type and reactant_type != '':
-                    dff = dff[dff[reactant_type].notnull() & (dff[reactant_type] != '')]
-        
-        # 2a. Filter: reactant types summary for stats
-        if stats is not None:
-            stats['after_reactant_filters'] = {'elns': dff['ELN_ID'].nunique()}
+    # Step 3: CuI exclusion
+    dff = _filter_exclude_cui(dff, exclude_cui)
 
-    # 5. Filter: Catalyst not CuI (cheap)
-    if 'Catalyst' in dff.columns and exclude_cui and ('exclude_cui' in exclude_cui):
-        dff = dff[(dff['Catalyst'].isnull()) | (dff['Catalyst'] != 'CuI')]
-
-    # 6 & 7 -------------  FUNCTIONAL-GROUP FILTERS  ------------------ (cheap)
-    def _mask_contains_fg(df: pd.DataFrame, fg: str) -> pd.Series:
-        return (df['FG A'] == fg) | (df['FG B'] == fg)
-    
-    def _normalize_fg_input(fg_input):
-        """Normalize functional group input to a list, handling both string and list inputs."""
-        if not fg_input:
-            return []
-        if isinstance(fg_input, str):
-            return [fg_input] if fg_input != 'All' else []
-        elif isinstance(fg_input, list):
-            return [fg for fg in fg_input if fg != 'All']
-        return []
-
-    # 6. FG_A filter 
-    fg_a_list = _normalize_fg_input(fg_a)
-    if fg_a_list:
-        fg_a_mask = pd.Series([False] * len(dff), index=dff.index)
-        for fg in fg_a_list:
-            fg_a_mask |= _mask_contains_fg(dff, fg)
-        dff = dff[fg_a_mask]
+    # Step 4: Functional Group A
+    dff, fg_a_list = _filter_fg_a(dff, fg_a)
     if stats is not None and fg_a_list:
         stats['after_fg_a'] = {'elns': dff['ELN_ID'].nunique()}
 
-    # 7. FG_B filter 
-    fg_b_list = _normalize_fg_input(fg_b)
-    if fg_b_list:
-        if fg_a_list:
-            # When both FG A and FG B are specified with multiple selections,
-            # we look for any combination of the specified groups
-            combined_mask = pd.Series([False] * len(dff), index=dff.index)
-            for fg_a_val in fg_a_list:
-                for fg_b_val in fg_b_list:
-                    wanted_pair = sorted([fg_a_val, fg_b_val])
-                    combined_mask |= (dff['FG_PAIR_SORTED'] == ', '.join(wanted_pair))
-            dff = dff[combined_mask]
-        else:
-            # If only FG B is specified, check any of the selected groups
-            fg_b_mask = pd.Series([False] * len(dff), index=dff.index)
-            for fg in fg_b_list:
-                fg_b_mask |= _mask_contains_fg(dff, fg)
-            dff = dff[fg_b_mask]
+    # Step 5: Functional Group B
+    dff, fg_b_list = _filter_fg_b(dff, fg_b, fg_a_list)
     if stats is not None and fg_b_list:
         stats['after_fg_b'] = {'elns': dff['ELN_ID'].nunique()}
-    
-    # 8. Filter: Scale-up plates (moderate)
-    # Scale-up plates are identified as plates with no experimental variability
-    # (all wells have identical conditions across reagent columns)
-    exclude_scaleup_bool = _convert_checkbox_to_bool(exclude_scaleup)
-    if exclude_scaleup_bool:
-        # Define reagent columns that should show variability in non-scale-up plates
-        reagent_cols = [
-            col for col in [
-                'Additive', 'Base', 'Catalyst', 'Coupling Reagent',
-                'Solvent', 'Ligand', 'Secondary Solvent', 'Tertiary Solvent'
-            ] if col in dff.columns
-        ]
-        
-        if reagent_cols:
-            # Group by plate and count unique non-null values per reagent column
-            plate_variability = (
-                dff.groupby(['ELN_ID', 'PLATENUMBER'])[reagent_cols]
-                .nunique()
-                .reset_index()
-            )
-            
-            # Keep plates where at least one reagent column has >1 unique value
-            has_variability = (plate_variability[reagent_cols] > 1).any(axis=1)
-            plates_to_keep = plate_variability[has_variability][['ELN_ID', 'PLATENUMBER']]
-            
-            # Filter original dataframe to keep only variable plates
-            dff = dff.merge(plates_to_keep, on=['ELN_ID', 'PLATENUMBER'], how='inner')
 
-    # 9. Deduplication: keep best z-Score for unique columns (heavy)
-    dedup_cols = ['ELN_ID']
-    for col in ['Additive', 'Base', 'Catalyst', 'Coupling Reagent', 'Solvent', 'Ligand', 'Secondary Solvent', 'Tertiary Solvent']:
-        if col in dff.columns:
-            dedup_cols.append(col)
+    # Step 6: Scale-up plates
+    dff = _filter_scaleup_plates(dff, exclude_scaleup)
 
-    # Fill NaN values with a placeholder to avoid grouping issues
-    dff_filled = dff.copy()
-    for col in dedup_cols:
-        if col in dff_filled.columns:
-            dff_filled[col] = dff_filled[col].fillna('__NAN__')
+    # Step 7: Deduplication
+    dff = _deduplicate_best_zscore(dff)
 
-    dff_filled['z-Score_rank'] = dff_filled.groupby(dedup_cols)['z-Score'].rank(
-        method='first', ascending=False
-    )
-    dff = dff_filled[dff_filled['z-Score_rank'] == 1].drop(columns=['z-Score_rank'])
+    # Step 8: Top-N z-scores
+    dff = _filter_topn_zscore(dff, topn_zscore, reactant_types, include_null)
 
-    # Restore NaN values in the result
-    for col in dedup_cols:
-        if col in dff.columns:
-            dff[col] = dff[col].replace('__NAN__', pd.NA)
+    # Step 9: Min ELN count
+    dff = _filter_min_eln(dff, min_eln, reactant_types, include_null)
+    if stats is not None:
+        stats['after_min_eln'] = {'elns': dff['ELN_ID'].nunique()}
 
-    # 10. Filter: Top-N z-scores per (ELN_ID, reactant_type combination) (heavy)
-    if topn_zscore and reactant_types and len(reactant_types) > 0:
-        # Build rank columns based on selected reactant types
-        rank_cols = ['ELN_ID'] + reactant_types
-        
-        # Only include columns that exist in the dataframe
-        rank_cols = [col for col in rank_cols if col in dff.columns]
-        
-        # Only proceed if we have at least ELN_ID and one reactant type column
-        if len(rank_cols) >= 2:
-            # Handle null values in ranking when include_null_categories is True
-            if include_null_categories_bool:
-                # Create a temporary dataframe with filled null values for groupby operations
-                dff_rank = dff.copy()
-                for col in rank_cols:
-                    if col in dff_rank.columns:
-                        dff_rank[col] = dff_rank[col].fillna('__NULL_CATEGORY__')
-                
-                dff['z-Score_rank_2'] = dff_rank.groupby(rank_cols)['z-Score'].rank(
-                    method='first', ascending=False
-                )
-            else:
-                dff['z-Score_rank_2'] = dff.groupby(rank_cols)['z-Score'].rank(
-                    method='first', ascending=False
-                )
-            
-            dff = dff[dff['z-Score_rank_2'] <= topn_zscore]
-    
-    # 11. Filter: Minimum number of ELNs per category combination (heavy)
-    if min_eln and reactant_types:
-        group_cols = ['Reaction Type'] + [rt for rt in reactant_types if rt and rt != '']
-        
-        # Handle null values in groupby when include_null_categories is True
-        if include_null_categories_bool:
-            # Create a temporary dataframe with filled null values for groupby operations
-            dff_group = dff.copy()
-            for col in group_cols:
-                if col in dff_group.columns:
-                    dff_group[col] = dff_group[col].fillna('__NULL_CATEGORY__')
-            
-            group_counts = dff_group.groupby(group_cols)['ELN_ID'].transform('nunique')
-        else:
-            group_counts = dff.groupby(group_cols)['ELN_ID'].transform('nunique')
-        
-        dff = dff[group_counts >= min_eln]
-        if stats is not None:
-            stats['after_min_eln'] = {'elns': dff['ELN_ID'].nunique()}
-
-    # Expose the dynamic cap for the "Max components to display" slider.
-    # If multiple categories are selected, treat each unique combination
-    # as a component so the cap reflects what is actually visualised.
+    # Compute max-components cap for the slider
     if stats is not None and reactant_types:
         try:
-            key_cols = [rt for rt in reactant_types if rt and rt != '']
+            key_cols = [rt for rt in reactant_types if rt]
             stats['max_components_cap'] = int(dff[key_cols].drop_duplicates().shape[0])
         except Exception:
-            # Be defensive – if any column is missing for any reason, fall back to 1
             stats['max_components_cap'] = 1
-    
-    # 12. Filter: Max components to display (if specified)
-    # Works on combined categories when multiple are selected.
-    if max_components and max_components > 0 and reactant_types:
-        # Use reactant_types system only
-        key_cols = [rt for rt in reactant_types if rt and rt != '']
 
-        try:
-            unique_components = int(dff[key_cols].drop_duplicates().shape[0])
-        except Exception:
-            unique_components = 0
+    # Step 10: Max components
+    dff = _filter_max_components(dff, max_components, reactant_types, include_null)
 
-        if unique_components and max_components < unique_components:
-            # Order components by median z-Score (desc) and keep the top-N
-            if include_null_categories_bool:
-                # Include groups with null keys
-                medians = (
-                    dff.groupby(key_cols, dropna=False)['z-Score']
-                    .median()
-                    .sort_values(ascending=False)
-                )
-            else:
-                medians = (
-                    dff.groupby(key_cols)['z-Score']
-                    .median()
-                    .sort_values(ascending=False)
-                )
-
-            # Build a dataframe of the top combinations for a robust join-based filter
-            top_df = medians.head(max_components).reset_index()[key_cols].drop_duplicates()
-
-            NULL_SENTINEL = '__NULL_CATEGORY__'
-            if len(key_cols) == 1:
-                if include_null_categories_bool:
-                    left_series = dff[key_cols[0]].fillna(NULL_SENTINEL)
-                    right_series = top_df[key_cols[0]].fillna(NULL_SENTINEL)
-                    dff = dff[left_series.isin(right_series)]
-                else:
-                    dff = dff[dff[key_cols[0]].isin(top_df[key_cols[0]].tolist())]
-            else:
-                if include_null_categories_bool:
-                    left_keys = dff[key_cols].fillna(NULL_SENTINEL).reset_index()
-                    right_keys = top_df[key_cols].fillna(NULL_SENTINEL).drop_duplicates()
-                    matched = left_keys.merge(right_keys, on=key_cols, how='inner')
-                    matched_idx = matched['index'].unique().tolist()
-                    dff = dff.loc[matched_idx]
-                else:
-                    dff = dff.merge(top_df, on=key_cols, how='inner')
-
-    # Store result in cache (with size limit) - only for default data
+    # --- cache store ---
     if not using_uploaded:
         if len(_FILTER_CACHE) >= _CACHE_MAX_SIZE:
-            # Remove oldest entries (simple FIFO)
             oldest_key = next(iter(_FILTER_CACHE))
             del _FILTER_CACHE[oldest_key]
-        
         _FILTER_CACHE[cache_key] = {
             'dataframe': dff.copy(),
-            'stats': stats.copy() if stats else {}
+            'stats': stats.copy() if stats else {},
         }
-    
-    # If no statistics requested, short-circuit
+
     if not return_stats:
         return dff
     return dff, stats or {}
@@ -675,7 +693,7 @@ def get_active_dataframe(uploaded_data_json: str = None) -> pd.DataFrame:
     return DF
 
 
-def get_reaction_types_from_data(df: pd.DataFrame = None) -> List[str]:
+def get_reaction_types_from_data(df: pd.DataFrame = None) -> list[str]:
     """Get available reaction types from a DataFrame.
     
     Args:
@@ -690,7 +708,7 @@ def get_reaction_types_from_data(df: pd.DataFrame = None) -> List[str]:
     return []
 
 
-def get_category_options_from_data(df: pd.DataFrame = None) -> List[str]:
+def get_category_options_from_data(df: pd.DataFrame = None) -> list[str]:
     """Get available category options from a DataFrame.
     
     This checks which of the standard category columns exist and have data.

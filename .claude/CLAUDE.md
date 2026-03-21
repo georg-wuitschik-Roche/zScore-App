@@ -4,6 +4,7 @@
 - **Goal:** Interactive dashboard for analyzing z-score data from chemical reaction screening experiments (HTE)
 - **Users:** Chemists at Roche Pharma R&D (Team RoSL) analyzing reaction conditions
 - **Status:** Production — deployed on Google Cloud Run, actively used for research publications
+- **Environment:** Dev container — always assume we are working in a development environment
 
 ## Tech Stack
 - **Framework:** Dash 2.x + Plotly 5.x (Python)
