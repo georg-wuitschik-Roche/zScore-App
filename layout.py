@@ -24,6 +24,12 @@ import data_utils as du
 REACTION_TYPE_OPTIONS = [{'label': rt, 'value': rt} for rt in du.REACTION_TYPES]
 CATEGORY_OPTIONS = [{'label': c, 'value': c} for c in du.CATEGORY_OPTIONS]
 
+# Precompute FG options from default reaction types so initial dropdown values are valid
+_bh_df = du.DF[du.DF['Reaction Type'] == 'Buchwald-Hartwig']
+_all_fgs = sorted(set(_bh_df['FG A'].dropna()) | set(_bh_df['FG B'].dropna()))
+INITIAL_FG_OPTIONS = [{'label': v, 'value': v} for v in ['All'] + _all_fgs]
+del _bh_df, _all_fgs
+
 
 # ---------------------------------------------------------------------------
 # 2. COMPONENT HELPERS
@@ -111,7 +117,7 @@ def dashboard_layout() -> html.Div:
                         className='navbar-inner',
                         children=[
                             html.Img(
-                                src='assets/logo.png',
+                                src='assets/hiker.png',
                                 className='logo',
                                 id='dashboard-logo',
                             ),
@@ -202,7 +208,7 @@ def dashboard_layout() -> html.Div:
                             html.Label('Functional Group(s) A:'),
                             dcc.Dropdown(
                                 id='functional-group-a-dropdown',
-                                options=[{'label': 'All', 'value': 'All'}],
+                                options=INITIAL_FG_OPTIONS,
                                 value=['RNH2 a-branch', 'RNH2'],
                                 multi=True,
                                 className='fg-dropdown',
@@ -217,7 +223,7 @@ def dashboard_layout() -> html.Div:
                             html.Label('Functional Group(s) B:'),
                             dcc.Dropdown(
                                 id='functional-group-b-dropdown',
-                                options=[{'label': 'All', 'value': 'All'}],
+                                options=INITIAL_FG_OPTIONS,
                                 value=['ArBr', 'ArCl'],
                                 multi=True,
                                 className='fg-dropdown',
@@ -480,6 +486,7 @@ def serve_layout() -> html.Div:
             dcc.Store(id='uploaded-data-store', storage_type='memory'),
             dcc.Store(id='upload-status-store', storage_type='memory'),
             dcc.Store(id='upload-error-store', storage_type='memory'),
+            dcc.Store(id='url-restore-flag', data=False),
             # ---- both pages always in DOM; visibility toggled by callback ----
             html.Div(id='landing-page', children=landing_layout()),
             html.Div(id='dashboard-page', style={'display': 'none'}, children=dashboard_layout()),

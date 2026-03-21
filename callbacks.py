@@ -15,7 +15,7 @@ by having a clean, top-level entry point.
 import base64
 import io
 import logging
-from urllib.parse import parse_qs, urlencode
+from urllib.parse import urlencode
 
 import numpy as np
 import pandas as pd
@@ -214,25 +214,125 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     # ------------------------------------------------------------------
     # Filter debounce – consolidate cascading filter changes into one
     # trigger so plot callbacks fire only once per user action.
-    # Listens to all FILTER_INPUTS; on each change clears the pending
-    # timer and sets a new 250 ms timeout.  When the timeout fires,
-    # set_props updates the trigger store, which is the sole Input
-    # the plot / stats callbacks listen to.
+    # Also serialises current filter state into URL search params via
+    # set_props('url', {search}) so that dcc.Location pushes a browser
+    # history entry (refresh=False → pushState, no page reload).
     # ------------------------------------------------------------------
     app.clientside_callback(
         """
-        function() {
+        function(rct, rt, fga, fgb, cui, su, nc, me, tn, mc, _upl,
+                 tabVal, restoreFlag, pathname) {
+            if (pathname !== '/dashboard') return window.dash_clientside.no_update;
+            if (restoreFlag) return window.dash_clientside.no_update;
+
             if (window._fdb) clearTimeout(window._fdb);
             window._fdb = setTimeout(function() {
-                window.dash_clientside.set_props(
-                    'filter-trigger-store', {data: Date.now()}
-                );
+                var sp = window.dash_clientside.set_props;
+                sp('filter-trigger-store', {data: Date.now()});
+
+                var p = new URLSearchParams();
+                if (rt && rt.length) rt.forEach(function(v){ p.append('rt', v); });
+                if (rct && rct.length) rct.forEach(function(v){ p.append('cat', v); });
+                if (fga && fga.length && !(fga.length===1 && fga[0]==='All'))
+                    fga.forEach(function(v){ p.append('fga', v); });
+                if (fgb && fgb.length && !(fgb.length===1 && fgb[0]==='All'))
+                    fgb.forEach(function(v){ p.append('fgb', v); });
+                if (cui && cui.indexOf('exclude_cui') !== -1) p.set('cui','1');
+                else p.set('nocui','1');
+                if (su && su.length) p.set('su','1');
+                else p.set('nosu','1');
+                if (nc && nc.length) p.set('nc','1');
+                else p.set('nonc','1');
+                if (me != null) p.set('me', String(me));
+                if (tn != null) p.set('tn', String(tn));
+                if (mc != null) p.set('mc', String(mc));
+                var tm = {'tab-graph':'graph','tab-heatmap':'heatmap','tab-stats':'stats'};
+                if (tabVal && tm[tabVal]) p.set('tab', tm[tabVal]);
+
+                var ns = '?' + p.toString();
+                if (window.location.search !== ns) {
+                    window._urlForward = true;
+                    sp('url', {search: ns});
+                }
             }, 250);
             return window.dash_clientside.no_update;
         }
         """,
         Output('filter-debounce-sink', 'children'),
-        FILTER_INPUTS,
+        FILTER_INPUTS + [Input('analysis-tabs', 'value')],
+        [State('url-restore-flag', 'data'), State('url', 'pathname')],
+        prevent_initial_call=True,
+    )
+
+    # ------------------------------------------------------------------
+    # URL → filters restore (back/forward & deep-link) --------------------
+    # Fires on every url.search change.  Forward updates (from the
+    # debounce callback above) set window._urlForward=true so they are
+    # skipped here.  Only popstate (browser back/forward) and initial
+    # page-load with search params trigger actual restoration.
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(search, pathname) {
+            var nu = window.dash_clientside.no_update;
+            if (window._urlForward) { window._urlForward = false; return false; }
+            if (pathname !== '/dashboard' || !search) return nu;
+
+            var p = new URLSearchParams(search.replace(/^\\?/, ''));
+            if (!p.toString()) return nu;
+            var sp = window.dash_clientside.set_props;
+
+            var rt = p.getAll('rt');
+            if (rt.length) sp('reaction-type-dropdown', {value: rt});
+            var cat = p.getAll('cat');
+            if (cat.length) sp('reactant-types-dropdown', {value: cat});
+            var fga = p.getAll('fga');
+            if (fga.length) sp('functional-group-a-dropdown', {value: fga});
+            var fgb = p.getAll('fgb');
+            if (fgb.length) sp('functional-group-b-dropdown', {value: fgb});
+
+            if (p.has('cui')) sp('exclude-cui-checkbox', {value: ['exclude_cui']});
+            else if (p.has('nocui')) sp('exclude-cui-checkbox', {value: []});
+            if (p.has('su')) sp('include-scaleup-checkbox', {value: [true]});
+            else if (p.has('nosu')) sp('include-scaleup-checkbox', {value: []});
+            if (p.has('nc')) sp('include-null-categories-checkbox', {value: [true]});
+            else if (p.has('nonc')) sp('include-null-categories-checkbox', {value: []});
+
+            var me = p.get('me'); if (me) sp('min-eln-input', {value: parseInt(me,10)});
+            var tn = p.get('tn'); if (tn) sp('topn-zscore-input', {value: parseInt(tn,10)});
+            var mc = p.get('mc'); if (mc) sp('max-components-input', {value: parseInt(mc,10)});
+
+            var tl = {graph:'tab-graph', heatmap:'tab-heatmap', stats:'tab-stats'};
+            var tab = p.get('tab');
+            if (tab && tl[tab]) sp('analysis-tabs', {value: tl[tab]});
+
+            return true;
+        }
+        """,
+        Output('url-restore-flag', 'data'),
+        Input('url', 'search'),
+        State('url', 'pathname'),
+        prevent_initial_call=True,
+    )
+
+    # ------------------------------------------------------------------
+    # Guard-flag auto-reset – clears url-restore-flag after dependent
+    # callbacks have settled (500 ms).
+    # ------------------------------------------------------------------
+    app.clientside_callback(
+        """
+        function(flag) {
+            if (!flag) return window.dash_clientside.no_update;
+            setTimeout(function() {
+                window.dash_clientside.set_props(
+                    'url-restore-flag', {data: false}
+                );
+            }, 500);
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output('filter-debounce-sink', 'children', allow_duplicate=True),
+        Input('url-restore-flag', 'data'),
         prevent_initial_call=True,
     )
 
@@ -272,31 +372,10 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
         search = ''
         if selected_reactions:
             search = '?' + urlencode(
-                {'reaction': selected_reactions},
+                {'rt': selected_reactions},
                 doseq=True,
             )
         return '/dashboard', search
-
-    # ------------------------------------------------------------------
-    # Pre-select reaction types from URL query params --------------------
-    # ------------------------------------------------------------------
-    @app.callback(
-        Output('reaction-type-dropdown', 'value', allow_duplicate=True),
-        Input('url', 'search'),
-        State('reaction-type-dropdown', 'value'),
-        prevent_initial_call=True,
-    )
-    def _set_reaction_from_url(search, current_value):
-        """Set the reaction type dropdown from URL query parameters."""
-        if not search:
-            return no_update
-        params = parse_qs(search.lstrip('?'))
-        reactions = params.get('reaction', [])
-        if reactions:
-            valid = [r for r in reactions if r in du.REACTION_TYPES]
-            if valid and sorted(valid) != sorted(current_value or []):
-                return valid
-        return no_update
 
     # ------------------------------------------------------------------
     # Background preloading of default data on landing page ---------------
@@ -724,12 +803,17 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         [Output('functional-group-a-dropdown', 'value'), Output('functional-group-b-dropdown', 'value')],
         [Input('reaction-type-dropdown', 'value')],
-        [State('functional-group-a-dropdown', 'options'), State('functional-group-b-dropdown', 'options')],
+        [
+            State('functional-group-a-dropdown', 'options'),
+            State('functional-group-b-dropdown', 'options'),
+            State('url-restore-flag', 'data'),
+        ],
         prevent_initial_call=True,
     )
-    def _reset_functional_groups_on_reaction_change(reaction_types, fg_a_options, fg_b_options):
+    def _reset_functional_groups_on_reaction_change(reaction_types, fg_a_options, fg_b_options, is_restoring):
         """Clear both functional group dropdowns when reaction types change."""
-        # Clear functional groups to 'All' when reaction types change
+        if is_restoring:
+            return no_update, no_update
         return ['All'], ['All']
 
     # ------------------------------------------------------------------
@@ -925,11 +1009,13 @@ def register(app):  # noqa: C901 – complexity is mostly decorator noise
     @app.callback(
         Output('min-eln-input', 'value', allow_duplicate=True),
         [Input('functional-group-a-dropdown', 'value'), Input('functional-group-b-dropdown', 'value')],
-        [State('reaction-type-dropdown', 'value')],
+        [State('reaction-type-dropdown', 'value'), State('url-restore-flag', 'data')],
         prevent_initial_call='initial_duplicate',
     )
-    def _update_min_eln_on_fg_change(fg_a_values, fg_b_values, reaction_types):
+    def _update_min_eln_on_fg_change(fg_a_values, fg_b_values, reaction_types, is_restoring):
         """Update min ELN when functional group selections change."""
+        if is_restoring:
+            return no_update
         return DEFAULT_MIN_ELN
 
     # ------------------------------------------------------------------
