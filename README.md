@@ -80,29 +80,17 @@ This application is designed for chemists and researchers to analyze experimenta
 
 ### Google Cloud Run Deployment
 
-1. **Prerequisites:**
-   - Google Cloud Platform account
-   - Google Cloud SDK installed
-   - Project with Cloud Run API enabled
-   - Google Cloud Bucket to store the data csv-file and set the name as GCS_BUCKET_NAME in data_util.py
-   - set the path to the csv-file on the Google Cloud bucket as GCS_FILE_PATH in data_util.py
+Deploy to Cloud Run from [Google Cloud Shell](https://shell.cloud.google.com):
 
-2. **Deploy to Cloud Run:**
-   ```bash
-   # Set your project ID
-   export GOOGLE_CLOUD_PROJECT=your-project-id
+```bash
+git clone https://github.com/georg-wuitschik-Roche/zScore-App.git
+cd zScore-App
+bash deploy.sh
+```
 
-   # Deploy the container
-   gcloud run deploy zscore-dashboard \
-     --source . \
-     --platform managed \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --port 8080
-   ```
+The script clones/updates the repo, builds the Docker image, and deploys to Cloud Run. If already cloned previously, it pulls the latest changes automatically.
 
-3. **Access your deployed app:**
-   Your application will be available at the provided URL after deployment.
+Your application will be available at the provided URL after deployment.
 
 
 
