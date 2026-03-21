@@ -50,10 +50,10 @@ cloud_csv = Path("zscore_peaks_data.csv")
 # Check if we're running locally (local CSV exists) or in production
 if local_csv.exists():
     CSV_PATH = local_csv
-    print("Using local CSV file for development")
+    logger.info("Using local CSV file for development")
 else:
     CSV_PATH = cloud_csv
-    print("Using cloud CSV configuration")
+    logger.info("Using cloud CSV configuration")
 
 # Google Cloud Storage configuration
 GCS_BUCKET_NAME = "zscore_csv_storage"
@@ -62,57 +62,46 @@ GCS_FILE_PATH = "z-Score Peaks with FG.csv"
 def download_csv_from_gcs():
     """Download the CSV file from Google Cloud Storage if it doesn't exist locally."""
     if CSV_PATH.exists():
-        print(f"CSV file {CSV_PATH} already exists locally")
-        return
-    
+        logger.info("CSV file %s already exists locally", CSV_PATH)
+        return True
+
     try:
-        # Try using the public URL approach first (simpler)
         gcs_url = f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{GCS_FILE_PATH}"
-        print(f"Downloading CSV from GCS: {gcs_url}")
-        
+        logger.info("Downloading CSV from GCS: %s", gcs_url)
+
         response = requests.get(gcs_url, timeout=60)
         response.raise_for_status()
-        
-        # Write the content as binary first
+
         with open(CSV_PATH, "wb") as f:
             f.write(response.content)
-        
-        print(f"Successfully downloaded {len(response.content)} bytes to {CSV_PATH}")
-        
-        # Validate the downloaded file can be read as CSV
+
+        logger.info("Successfully downloaded %d bytes to %s", len(response.content), CSV_PATH)
         _validate_csv_file(CSV_PATH)
-        
+
     except Exception as e:
-        print(f"Failed to download from public URL: {e}")
-        print("Trying authenticated GCS client...")
-        
+        logger.warning("Failed to download from public URL: %s", e)
+        logger.info("Trying authenticated GCS client...")
+
         try:
-            # Lazily import the Google Cloud Storage client so local runs
-            # without the package installed don't fail on module import.
             try:
                 from google.cloud import storage  # type: ignore
             except Exception as import_error:
-                print(
+                logger.warning(
                     "google-cloud-storage not installed or unavailable; "
-                    "skipping authenticated GCS download."
-                )
-                print(f"Import error: {import_error}")
+                    "skipping authenticated GCS download: %s", import_error)
                 return False
 
-            # Fallback to authenticated client
             client = storage.Client()
             bucket = client.bucket(GCS_BUCKET_NAME)
             blob = bucket.blob(GCS_FILE_PATH)
-            
+
             blob.download_to_filename(str(CSV_PATH))
-            print(f"Successfully downloaded via GCS client to {CSV_PATH}")
-            
-            # Validate the downloaded file can be read as CSV
+            logger.info("Successfully downloaded via GCS client to %s", CSV_PATH)
             _validate_csv_file(CSV_PATH)
-            
+
         except Exception as e2:
-            print(f"Failed to download via GCS client: {e2}")
-            print("Will use sample data instead")
+            logger.error("Failed to download via GCS client: %s", e2)
+            logger.warning("Will use sample data instead")
             return False
     
     return True
@@ -123,22 +112,22 @@ def _validate_csv_file(csv_path: Path):
     try:
         # Try to read just the header to validate encoding and format
         test_df = pd.read_csv(csv_path, nrows=1, encoding='utf-8')
-        print(f"CSV validation successful - found {len(test_df.columns)} columns")
+        logger.info("CSV validation successful - found %d columns", len(test_df.columns))
         return True
     except UnicodeDecodeError as e:
-        print(f"UTF-8 encoding failed: {e}")
-        # Try common alternative encodings
+        logger.debug("UTF-8 encoding failed: %s", e)
         for encoding in ['utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']:
             try:
                 test_df = pd.read_csv(csv_path, nrows=1, encoding=encoding)
-                print(f"CSV validation successful with {encoding} encoding - found {len(test_df.columns)} columns")
+                logger.info("CSV validation successful with %s encoding - found %d columns",
+                            encoding, len(test_df.columns))
                 return True
             except Exception:
                 continue
-        print("Failed to read CSV with any common encoding")
+        logger.error("Failed to read CSV with any common encoding")
         raise
     except Exception as e:
-        print(f"CSV validation failed: {e}")
+        logger.error("CSV validation failed: %s", e)
         raise
 
 
@@ -148,15 +137,16 @@ def _read_csv_with_encoding(csv_path: Path) -> pd.DataFrame:
     
     for encoding in encodings_to_try:
         try:
-            print(f"Attempting to read CSV with {encoding} encoding...")
+            logger.info("Attempting to read CSV with %s encoding...", encoding)
             df = pd.read_csv(csv_path, encoding=encoding)
-            print(f"Successfully read CSV with {encoding} encoding - {len(df)} rows, {len(df.columns)} columns")
+            logger.info("Successfully read CSV with %s encoding - %d rows, %d columns",
+                         encoding, len(df), len(df.columns))
             return df
         except UnicodeDecodeError as e:
-            print(f"Failed with {encoding}: {e}")
+            logger.debug("Failed with %s: %s", encoding, e)
             continue
         except Exception as e:
-            print(f"Unexpected error with {encoding}: {e}")
+            logger.warning("Unexpected error with %s: %s", encoding, e)
             continue
     
     # If all encodings fail, raise the original error
@@ -187,12 +177,12 @@ def _load_and_prepare(csv_path: Path = CSV_PATH) -> pd.DataFrame:
     
     # Try to download from GCS first if file doesn't exist
     if not csv_path.exists():
-        print("CSV file not found locally, attempting to download from GCS...")
+        logger.info("CSV file not found locally, attempting to download from GCS...")
         download_success = download_csv_from_gcs()
     
     # Check if CSV file exists (either was there or downloaded), if not create sample data
     if not csv_path.exists():
-        print(f"Warning: CSV file '{csv_path}' not found. Creating sample data for demo purposes.")
+        logger.warning("CSV file '%s' not found. Creating sample data for demo purposes.", csv_path)
         # Create simple sample data without numpy dependency
         
         fg_options = ['OH', 'CH3', 'NH2', 'COOH', 'CHO', 'CH2', 'Ph', 'Cl', 'F', 'Br']
@@ -219,7 +209,7 @@ def _load_and_prepare(csv_path: Path = CSV_PATH) -> pd.DataFrame:
             })
         
         df = pd.DataFrame(sample_data)
-        print(f"Created sample dataset with {len(df)} rows")
+        logger.info("Created sample dataset with %d rows", len(df))
     else:
         # Try to read the CSV with proper encoding handling
         df = _read_csv_with_encoding(csv_path)
@@ -966,21 +956,20 @@ def compute_permutation_test(
     """
     from scipy import stats
     import numpy as np
-    
-    np.random.seed(random_state)
-    
+
+    rng = np.random.default_rng(random_state)
+
     # Get observed Kruskal-Wallis H statistic
     categories = dff[category_col].unique()
     groups = [dff[dff[category_col] == cat][value_col].values for cat in categories]
     observed_h, observed_p = stats.kruskal(*groups)
-    
+
     # Permutation test: shuffle category labels, recalculate H
     permuted_h_values = []
     values = dff[value_col].values.copy()
-    
+
     for _ in range(n_permutations):
-        # Shuffle the values (equivalent to shuffling labels)
-        np.random.shuffle(values)
+        rng.shuffle(values)
         
         # Recalculate H with shuffled values
         start_idx = 0

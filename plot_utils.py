@@ -8,17 +8,130 @@ existing callbacks can simply `import plot_utils as pu` and call
 `pu.create_boxplot(...)`.
 """
 
-from typing import Dict, Tuple
+from scipy import stats as sp_stats
 
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 
-import data_utils as du
+
+# ---------------------------------------------------------------------------
+# Shared constants
+# ---------------------------------------------------------------------------
+
+_FONT_FAMILY = 'Helvetica Neue'
+_PLOT_BG = 'white'
+_GRID_COLOR = '#d0d0d0'
+_LINE_COLOR = '#cccccc'
+_TITLE_COLOR = '#1d1d1f'
+_ANNOTATION_BG = 'rgba(255, 255, 255, 0.9)'
+_HISTOGRAM_BINS = 50
+_DIAGNOSTIC_PLOT_HEIGHT = 500
+_SHAPIRO_MAX_SAMPLES = 5000
+_MAX_PAIRWISE_DISPLAY = 15
+_TABLE_HEADER_COLOR = '#4A90D9'
 
 
-def _safe_str_conversion(series):
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+def _font_sizes(presentation_mode: bool, variant: str = 'main') -> dict:
+    """Return a dict of font sizes for *variant* (main | diagnostic | table).
+
+    Centralises the repeated ternary expressions that were scattered
+    across every plot function.
+    """
+    if variant == 'main':
+        return {
+            'title': 32 if presentation_mode else 22,
+            'base': 20 if presentation_mode else 14,
+            'tick': 18 if presentation_mode else 14,
+            'axis_title': 22 if presentation_mode else 16,
+            'colorbar_title': 18 if presentation_mode else 14,
+            'colorbar_tick': 16 if presentation_mode else 12,
+            'text': 14 if presentation_mode else 10,
+        }
+    if variant == 'diagnostic':
+        return {
+            'title': 28 if presentation_mode else 20,
+            'base': 18 if presentation_mode else 14,
+            'tick': 16 if presentation_mode else 12,
+            'annotation': 14 if presentation_mode else 11,
+        }
+    # table
+    return {
+        'title': 20 if presentation_mode else 16,
+        'font': 14 if presentation_mode else 11,
+        'header': 16 if presentation_mode else 12,
+    }
+
+
+def _apply_common_layout(fig: go.Figure, *, title: str, fs: dict, height: int,
+                          margin: dict | None = None) -> None:
+    """Apply the shared layout styling (background, title, font)."""
+    fig.update_layout(
+        title=dict(text=title, font=dict(
+            size=fs['title'], family=_FONT_FAMILY, color=_TITLE_COLOR)),
+        plot_bgcolor=_PLOT_BG,
+        paper_bgcolor=_PLOT_BG,
+        font=dict(family=_FONT_FAMILY, size=fs.get('base', fs.get('font', 14))),
+        margin=margin or dict(l=60, r=60, t=100, b=60),
+        height=height,
+    )
+
+
+def _style_diagnostic_axes(fig: go.Figure, fs: dict, **x_extra) -> None:
+    """Apply shared axis styling for diagnostic plots (histogram, QQ)."""
+    common = dict(showgrid=True, gridwidth=1, gridcolor='#e0e0e0',
+                  showline=True, linewidth=2, linecolor=_LINE_COLOR,
+                  tickfont=dict(size=fs['tick']))
+    fig.update_xaxes(**common, **x_extra)
+    fig.update_yaxes(**common)
+
+
+def _filter_diagnostic_data(
+    dff: pd.DataFrame, value_col: str, group_col: str | None,
+    group_value: str | None, plot_label: str,
+) -> tuple[pd.Series, str]:
+    """Filter data and build a default title for diagnostic plots."""
+    if group_col and group_value:
+        data = dff[dff[group_col] == group_value][value_col].dropna()
+        default_title = f'{plot_label} of {value_col} for {group_value}'
+    else:
+        data = dff[value_col].dropna()
+        default_title = f'{plot_label} of {value_col}'
+    return data, default_title
+
+
+def _shapiro_wilk_summary(data: pd.Series) -> tuple[str, float | None, str | None]:
+    """Run Shapiro-Wilk test, return (formatted_text, p_value, status)."""
+    n = len(data)
+    sample = data.sample(min(_SHAPIRO_MAX_SAMPLES, n), random_state=42) if n > _SHAPIRO_MAX_SAMPLES else data
+    try:
+        _, p = sp_stats.shapiro(sample)
+        text = f'p={p:.2e}' if p < 0.001 else f'p={p:.4f}'
+        status = 'Normal' if p > 0.05 else 'Non-normal'
+        return text, p, status
+    except Exception:
+        return 'N/A', None, 'Unknown'
+
+
+def _add_stats_annotation(fig: go.Figure, text: str, fs: dict,
+                           x: float = 0.98, align: str = 'right') -> None:
+    """Add a bordered annotation box with statistics text."""
+    fig.add_annotation(
+        x=x, y=0.98, xref='paper', yref='paper',
+        text=text, showarrow=False,
+        font=dict(size=fs['annotation'], family=_FONT_FAMILY),
+        align=align,
+        bgcolor=_ANNOTATION_BG,
+        bordercolor=_LINE_COLOR, borderwidth=1, borderpad=8,
+    )
+
+
+def _safe_str_conversion(series: pd.Series) -> pd.Series:
     """Convert a pandas Series to string while handling null values gracefully."""
     return series.fillna('(no value)').astype(str)
 
@@ -29,7 +142,7 @@ def _safe_str_conversion(series):
 # A human readable mapping from *chemical entity* to *base colour*.  The
 # actual shade is then calculated via interpolation depending on the
 # number of ELNs present for that particular entity.
-BASE_COLOURS: Dict[str, Dict[str, str]] = {
+BASE_COLOURS: dict[str, dict[str, str]] = {
     "Catalyst": {"light": "#89CFF1", "dark": "#003A6B"},  # blue shades
     "Solvent": {"light": "#90EE90", "dark": "#006400"},  # green shades
     "Base": {"light": "#FFB347", "dark": "#CC5500"},  # orange shades
@@ -62,7 +175,7 @@ def _interpolate_hex(col1: str, col2: str, factor: float) -> str:
     return rgb_to_hex((r, g, b))
 
 
-def create_color_mapping(category: str, dff) -> Dict[str, str]:
+def create_color_mapping(category: str, dff) -> dict[str, str]:
     """Return a dict *category value -> colour*.
 
     The more ELNs a category value has the *darker* its colour becomes in
@@ -75,7 +188,7 @@ def create_color_mapping(category: str, dff) -> Dict[str, str]:
     eln_counts = dff.groupby(category)["ELN_ID"].nunique()
     max_elns, min_elns = eln_counts.max(), eln_counts.min()
 
-    colour_map: Dict[str, str] = {}
+    colour_map: dict[str, str] = {}
     for cat_val, cnt in eln_counts.items():
         factor = 0.5 if max_elns == min_elns else (cnt - min_elns) / (max_elns - min_elns)
         colour_map[cat_val] = _interpolate_hex(base["light"], base["dark"], factor)
@@ -88,7 +201,7 @@ def create_color_mapping(category: str, dff) -> Dict[str, str]:
 # ---------------------------------------------------------------------------
 
 
-def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentation_mode: bool = False, reaction_type: str = None, max_categories: int = None) -> Tuple[go.Figure, int]:
+def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentation_mode: bool = False, reaction_type: str = None, max_categories: int = None) -> tuple[go.Figure, int]:
     """Return `(figure, adaptive_height)` for the given dataframe.
 
     Args:
@@ -245,53 +358,23 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
         hoverinfo="all"
     )
 
-    # Adjust font sizes for presentation mode
-    title_size = 32 if presentation_mode else 22
-    base_font_size = 20 if presentation_mode else 14
-    tick_font_size = 18 if presentation_mode else 14
-    axis_title_size = 22 if presentation_mode else 16
-    
-    fig.update_layout(
-        showlegend=False,
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        title_font_size=title_size,
-        title_font_family="Helvetica Neue",
-        title_font_color="#1d1d1f",
-        margin=dict(l=60, r=60, t=100, b=60),
-        font=dict(family="Helvetica Neue", size=base_font_size),
-    )
+    fs = _font_sizes(presentation_mode, 'main')
+
+    _apply_common_layout(fig, title=title, fs=fs, height=height)
+    fig.update_layout(showlegend=False)
 
     fig.update_xaxes(
-        tickangle=0,
-        showgrid=True,
-        gridwidth=2,
-        gridcolor="#d0d0d0",
-        zeroline=False,
-        showline=True,
-        linewidth=3,
-        linecolor="#cccccc",
-        tickmode="auto",
-        nticks=6,
-        tickfont=dict(size=tick_font_size, weight="bold"),
-        title_font=dict(size=axis_title_size, weight="bold"),
-        # Make axis labels selectable
-        ticktext=None,  # Use default tick text
-        tickvals=None,  # Use default tick values
+        tickangle=0, showgrid=True, gridwidth=2, gridcolor=_GRID_COLOR,
+        zeroline=False, showline=True, linewidth=3, linecolor=_LINE_COLOR,
+        tickmode="auto", nticks=6,
+        tickfont=dict(size=fs['tick'], weight="bold"),
+        title_font=dict(size=fs['axis_title'], weight="bold"),
     )
-
     fig.update_yaxes(
-        tickangle=0,
-        showgrid=False,
-        zeroline=False,
-        showline=True,
-        linewidth=3,
-        linecolor="#cccccc",
-        tickfont=dict(size=tick_font_size, weight="bold"),
-        title_font=dict(size=axis_title_size, weight="bold"),
-        # Make axis labels selectable
-        ticktext=None,  # Use default tick text
-        tickvals=None,  # Use default tick values
+        tickangle=0, showgrid=False, zeroline=False,
+        showline=True, linewidth=3, linecolor=_LINE_COLOR,
+        tickfont=dict(size=fs['tick'], weight="bold"),
+        title_font=dict(size=fs['axis_title'], weight="bold"),
     )
 
     return fig, height
@@ -301,7 +384,7 @@ def create_boxplot(dff, reactant_types: list, base_height: int = 800, presentati
 # ---------------------------------------------------------------------------
 
 
-def create_heatmap(dff, reactant_types: list, base_height: int = 800, presentation_mode: bool = False) -> Tuple[go.Figure, int]:
+def create_heatmap(dff, reactant_types: list, base_height: int = 800, presentation_mode: bool = False) -> tuple[go.Figure, int]:
     """Return `(figure, adaptive_height)` for a heatmap visualization.
 
     Args:
@@ -314,17 +397,7 @@ def create_heatmap(dff, reactant_types: list, base_height: int = 800, presentati
     Requires at least two reactant types to be selected.
     """
 
-    import plotly.graph_objects as go
-    import numpy as np
-
-    # Adjust font sizes for presentation mode (must be defined FIRST)
-    title_size = 32 if presentation_mode else 22
-    base_font_size = 20 if presentation_mode else 14
-    tick_font_size = 18 if presentation_mode else 14
-    axis_title_size = 22 if presentation_mode else 16
-    colorbar_title_size = 18 if presentation_mode else 14
-    colorbar_tick_size = 16 if presentation_mode else 12
-    text_font_size = 14 if presentation_mode else 10
+    fs = _font_sizes(presentation_mode, 'main')
 
     # Require at least two reactant types for heatmap
     if not reactant_types or len(reactant_types) < 2:
@@ -434,15 +507,15 @@ def create_heatmap(dff, reactant_types: list, base_height: int = 800, presentati
             zmin=zmin,
             zmax=zmax,
             showscale=True,
-            text=[[f"{val:.2f}" if not np.isnan(val) else "" for _idx_val, val in enumerate(row)] for _idx_row, row in enumerate(heatmap_data)],
+            text=[[f"{val:.2f}" if not np.isnan(val) else "" for val in row] for row in heatmap_data],
             texttemplate="%{text}",
-            textfont={"size": text_font_size, "color": "black"},
+            textfont={"size": fs['text'], "color": "black"},
             colorbar=dict(
                 title=dict(
                     text="Median z-Score",
-                    font=dict(size=colorbar_title_size, family="Helvetica Neue")
+                    font=dict(size=fs['colorbar_title'], family=_FONT_FAMILY)
                 ),
-                tickfont=dict(size=colorbar_tick_size, family="Helvetica Neue")
+                tickfont=dict(size=fs['colorbar_tick'], family=_FONT_FAMILY)
             ),
             hovertemplate='<b>%{y}</b><br>' +
                          '<b>%{x}</b><br>' +
@@ -464,50 +537,23 @@ def create_heatmap(dff, reactant_types: list, base_height: int = 800, presentati
     num_y_categories = len(y_category_order)
     height = max(base_height, num_y_categories * 80)
 
-    # Styling
+    _apply_common_layout(fig, title=title, fs=fs, height=height)
     fig.update_layout(
-        title=title,
-        title_font_size=title_size,
-        title_font_family="Helvetica Neue",
-        title_font_color="#1d1d1f",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(l=60, r=60, t=100, b=60),
-        font=dict(family="Helvetica Neue", size=base_font_size),
-        height=height,
         xaxis=dict(
-            title=dict(
-                text=x_axis_title,
-                font=dict(size=axis_title_size, weight="bold", family="Helvetica Neue")
-            ),
-            tickfont=dict(size=tick_font_size, weight="bold", family="Helvetica Neue"),
-            showgrid=True,
-            gridwidth=1,
-            gridcolor="#d0d0d0",
-            zeroline=False,
-            showline=True,
-            linewidth=2,
-            linecolor="#cccccc",
-            side="top",  # Move x-axis labels to the top
-            # Make axis labels selectable
-            ticktext=None,  # Use default tick text
-            tickvals=None,  # Use default tick values
+            title=dict(text=x_axis_title,
+                       font=dict(size=fs['axis_title'], weight="bold", family=_FONT_FAMILY)),
+            tickfont=dict(size=fs['tick'], weight="bold", family=_FONT_FAMILY),
+            showgrid=True, gridwidth=1, gridcolor=_GRID_COLOR,
+            zeroline=False, showline=True, linewidth=2, linecolor=_LINE_COLOR,
+            side="top",
         ),
         yaxis=dict(
-            title=dict(
-                text=reactant_types[0],
-                font=dict(size=axis_title_size, weight="bold", family="Helvetica Neue")
-            ),
-            tickfont=dict(size=tick_font_size, weight="bold", family="Helvetica Neue"),
-            showgrid=False,
-            zeroline=False,
-            showline=True,
-            linewidth=2,
-            linecolor="#cccccc",
-            # Make axis labels selectable
-            ticktext=None,  # Use default tick text
-            tickvals=None,  # Use default tick values
-        )
+            title=dict(text=reactant_types[0],
+                       font=dict(size=fs['axis_title'], weight="bold", family=_FONT_FAMILY)),
+            tickfont=dict(size=fs['tick'], weight="bold", family=_FONT_FAMILY),
+            showgrid=False, zeroline=False,
+            showline=True, linewidth=2, linecolor=_LINE_COLOR,
+        ),
     )
 
     return fig, height
@@ -525,7 +571,7 @@ def create_distribution_plot(
     group_value: str = None,
     title: str = None,
     presentation_mode: bool = False
-) -> Tuple[go.Figure, int]:
+) -> tuple[go.Figure, int]:
     """Create a histogram for distribution analysis.
     
     This visualization shows the distribution of the data values.
@@ -541,101 +587,39 @@ def create_distribution_plot(
     Returns:
         Tuple of (figure, height)
     """
-    from scipy import stats
-    
-    # Filter data if group specified
-    if group_col and group_value:
-        data = dff[dff[group_col] == group_value][value_col].dropna()
-        default_title = f'Distribution of {value_col} for {group_value}'
-    else:
-        data = dff[value_col].dropna()
-        default_title = f'Distribution of {value_col}'
-    
+    data, default_title = _filter_diagnostic_data(
+        dff, value_col, group_col, group_value, 'Distribution')
     title = title or default_title
-    
-    # Font sizes
-    title_size = 28 if presentation_mode else 20
-    base_font_size = 18 if presentation_mode else 14
-    tick_font_size = 16 if presentation_mode else 12
-    annotation_size = 14 if presentation_mode else 11
-    
-    # Create figure with histogram
+    fs = _font_sizes(presentation_mode, 'diagnostic')
+
     fig = go.Figure()
-    
-    # Add histogram
     fig.add_trace(go.Histogram(
-        x=data,
-        nbinsx=50,
-        name='Observed',
-        opacity=0.7,
-        marker_color='#4A90D9',
-        histnorm='probability density'
+        x=data, nbinsx=_HISTOGRAM_BINS, name='Observed',
+        opacity=0.7, marker_color='#4A90D9', histnorm='probability density',
     ))
-    
-    # Calculate statistics for annotation
+
     if len(data) > 10:
-        skewness = data.skew()
-        kurtosis = data.kurtosis()
         n = len(data)
-        
-        # Shapiro-Wilk test (sample if too large)
-        sample_for_test = data.sample(min(5000, n), random_state=42) if n > 5000 else data
-        try:
-            _, shapiro_p = stats.shapiro(sample_for_test)
-            shapiro_text = f'p={shapiro_p:.2e}' if shapiro_p < 0.001 else f'p={shapiro_p:.4f}'
-        except Exception:
-            shapiro_text = 'N/A'
-        
-        # Add annotation with statistics
+        shapiro_text, _, _ = _shapiro_wilk_summary(data)
         stats_text = (
             f"<b>Distribution Statistics</b><br>"
             f"n = {n:,}<br>"
-            f"Skewness = {skewness:.3f}<br>"
-            f"Kurtosis = {kurtosis:.3f}<br>"
+            f"Skewness = {data.skew():.3f}<br>"
+            f"Kurtosis = {data.kurtosis():.3f}<br>"
             f"Shapiro-Wilk {shapiro_text}"
         )
-        
-        fig.add_annotation(
-            x=0.98,
-            y=0.98,
-            xref='paper',
-            yref='paper',
-            text=stats_text,
-            showarrow=False,
-            font=dict(size=annotation_size, family='Helvetica Neue'),
-            align='right',
-            bgcolor='rgba(255, 255, 255, 0.9)',
-            bordercolor='#cccccc',
-            borderwidth=1,
-            borderpad=8
-        )
-    
-    # Layout
+        _add_stats_annotation(fig, stats_text, fs, x=0.98, align='right')
+
+    _apply_common_layout(fig, title=title, fs=fs, height=_DIAGNOSTIC_PLOT_HEIGHT,
+                          margin=dict(l=60, r=60, t=80, b=60))
     fig.update_layout(
-        title=dict(text=title, font=dict(size=title_size, family='Helvetica Neue')),
-        xaxis_title=value_col,
-        yaxis_title='Density',
+        xaxis_title=value_col, yaxis_title='Density',
         showlegend=True,
         legend=dict(x=0.02, y=0.98, bgcolor='rgba(255,255,255,0.8)'),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        font=dict(family='Helvetica Neue', size=base_font_size),
-        margin=dict(l=60, r=60, t=80, b=60),
-        height=500
     )
-    
-    fig.update_xaxes(
-        showgrid=True, gridwidth=1, gridcolor='#e0e0e0',
-        showline=True, linewidth=2, linecolor='#cccccc',
-        tickfont=dict(size=tick_font_size)
-    )
-    fig.update_yaxes(
-        showgrid=True, gridwidth=1, gridcolor='#e0e0e0',
-        showline=True, linewidth=2, linecolor='#cccccc',
-        tickfont=dict(size=tick_font_size)
-    )
-    
-    return fig, 500
+    _style_diagnostic_axes(fig, fs)
+
+    return fig, _DIAGNOSTIC_PLOT_HEIGHT
 
 
 def create_qq_plot(
@@ -645,7 +629,7 @@ def create_qq_plot(
     group_value: str = None,
     title: str = None,
     presentation_mode: bool = False
-) -> Tuple[go.Figure, int]:
+) -> tuple[go.Figure, int]:
     """Create a Q-Q (quantile-quantile) plot to assess normality.
     
     A Q-Q plot compares the quantiles of the observed data against
@@ -663,120 +647,52 @@ def create_qq_plot(
     Returns:
         Tuple of (figure, height)
     """
-    from scipy import stats
-    
-    # Filter data if group specified
-    if group_col and group_value:
-        data = dff[dff[group_col] == group_value][value_col].dropna()
-        default_title = f'Q-Q Plot of {value_col} for {group_value}'
-    else:
-        data = dff[value_col].dropna()
-        default_title = f'Q-Q Plot of {value_col}'
-    
+    data, default_title = _filter_diagnostic_data(
+        dff, value_col, group_col, group_value, 'Q-Q Plot')
     title = title or default_title
-    
-    # Font sizes
-    title_size = 28 if presentation_mode else 20
-    base_font_size = 18 if presentation_mode else 14
-    tick_font_size = 16 if presentation_mode else 12
-    annotation_size = 14 if presentation_mode else 11
-    
-    # Calculate theoretical quantiles
+    fs = _font_sizes(presentation_mode, 'diagnostic')
+
     data_sorted = np.sort(data)
     n = len(data_sorted)
-    theoretical_quantiles = stats.norm.ppf(np.arange(1, n + 1) / (n + 1))
-    
-    # Create figure
+    theoretical_quantiles = sp_stats.norm.ppf(np.arange(1, n + 1) / (n + 1))
+
     fig = go.Figure()
-    
-    # Add scatter points
     fig.add_trace(go.Scatter(
-        x=theoretical_quantiles,
-        y=data_sorted,
-        mode='markers',
-        name='Data',
-        marker=dict(color='#4A90D9', size=6, opacity=0.6)
+        x=theoretical_quantiles, y=data_sorted,
+        mode='markers', name='Data',
+        marker=dict(color='#4A90D9', size=6, opacity=0.6),
     ))
-    
-    # Add reference line (y = x scaled to data)
+
     mu, std = data.mean(), data.std()
     line_x = np.array([theoretical_quantiles.min(), theoretical_quantiles.max()])
-    line_y = mu + std * line_x
-    
     fig.add_trace(go.Scatter(
-        x=line_x,
-        y=line_y,
-        mode='lines',
-        name='Normal Reference',
-        line=dict(color='#E74C3C', width=2, dash='dash')
+        x=line_x, y=mu + std * line_x,
+        mode='lines', name='Normal Reference',
+        line=dict(color='#E74C3C', width=2, dash='dash'),
     ))
-    
-    # Calculate statistics for annotation
-    skewness = data.skew()
-    kurtosis = data.kurtosis()
-    
-    # Shapiro-Wilk test
-    sample_for_test = data.sample(min(5000, n), random_state=42) if n > 5000 else data
-    try:
-        _, shapiro_p = stats.shapiro(sample_for_test)
-        normality_status = "Normal" if shapiro_p > 0.05 else "Non-normal"
-        shapiro_text = f'p={shapiro_p:.2e}' if shapiro_p < 0.001 else f'p={shapiro_p:.4f}'
-    except Exception:
-        normality_status = "Unknown"
-        shapiro_text = 'N/A'
-    
-    # Add annotation
+
+    shapiro_text, _, normality_status = _shapiro_wilk_summary(data)
     stats_text = (
         f"<b>Normality Assessment</b><br>"
         f"n = {n:,}<br>"
-        f"Skewness = {skewness:.3f}<br>"
-        f"Kurtosis = {kurtosis:.3f}<br>"
+        f"Skewness = {data.skew():.3f}<br>"
+        f"Kurtosis = {data.kurtosis():.3f}<br>"
         f"Shapiro-Wilk {shapiro_text}<br>"
         f"<b>Status: {normality_status}</b>"
     )
-    
-    fig.add_annotation(
-        x=0.02,
-        y=0.98,
-        xref='paper',
-        yref='paper',
-        text=stats_text,
-        showarrow=False,
-        font=dict(size=annotation_size, family='Helvetica Neue'),
-        align='left',
-        bgcolor='rgba(255, 255, 255, 0.9)',
-        bordercolor='#cccccc',
-        borderwidth=1,
-        borderpad=8
-    )
-    
-    # Layout
+    _add_stats_annotation(fig, stats_text, fs, x=0.02, align='left')
+
+    _apply_common_layout(fig, title=title, fs=fs, height=_DIAGNOSTIC_PLOT_HEIGHT,
+                          margin=dict(l=60, r=60, t=80, b=60))
     fig.update_layout(
-        title=dict(text=title, font=dict(size=title_size, family='Helvetica Neue')),
         xaxis_title='Theoretical Quantiles (Normal)',
         yaxis_title=f'Sample Quantiles ({value_col})',
         showlegend=True,
         legend=dict(x=0.7, y=0.15, bgcolor='rgba(255,255,255,0.8)'),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
-        font=dict(family='Helvetica Neue', size=base_font_size),
-        margin=dict(l=60, r=60, t=80, b=60),
-        height=500
     )
-    
-    fig.update_xaxes(
-        showgrid=True, gridwidth=1, gridcolor='#e0e0e0',
-        showline=True, linewidth=2, linecolor='#cccccc',
-        tickfont=dict(size=tick_font_size),
-        scaleanchor='y', scaleratio=1
-    )
-    fig.update_yaxes(
-        showgrid=True, gridwidth=1, gridcolor='#e0e0e0',
-        showline=True, linewidth=2, linecolor='#cccccc',
-        tickfont=dict(size=tick_font_size)
-    )
-    
-    return fig, 500
+    _style_diagnostic_axes(fig, fs, scaleanchor='y', scaleratio=1)
+
+    return fig, _DIAGNOSTIC_PLOT_HEIGHT
 
 
 def create_distribution_summary_table(
@@ -816,36 +732,26 @@ def create_distribution_summary_table(
             lambda x: '✓' if x == True else ('✗' if x == False else '?')
         )
     
-    # Create color coding for cells based on values
-    font_size = 14 if presentation_mode else 11
-    header_font_size = 16 if presentation_mode else 12
-    
-    # Create table
+    fs = _font_sizes(presentation_mode, 'table')
+
     fig = go.Figure(data=[go.Table(
         header=dict(
             values=['<b>' + col.replace('_', ' ').title() + '</b>' for col in display_df.columns],
-            fill_color='#4A90D9',
-            font=dict(color='white', size=header_font_size, family='Helvetica Neue'),
-            align='center',
-            height=40
+            fill_color=_TABLE_HEADER_COLOR,
+            font=dict(color='white', size=fs['header'], family=_FONT_FAMILY),
+            align='center', height=40,
         ),
         cells=dict(
             values=[display_df[col] for col in display_df.columns],
             fill_color=[['white', '#f9f9f9'] * (len(display_df) // 2 + 1)][:len(display_df)],
-            font=dict(size=font_size, family='Helvetica Neue'),
-            align='center',
-            height=30
-        )
-    )])
-    
-    fig.update_layout(
-        title=dict(
-            text='Distribution Statistics by Reaction Type',
-            font=dict(size=20 if presentation_mode else 16, family='Helvetica Neue')
+            font=dict(size=fs['font'], family=_FONT_FAMILY),
+            align='center', height=30,
         ),
-        margin=dict(l=20, r=20, t=60, b=20),
-        height=max(300, 50 + len(display_df) * 35)
-    )
+    )])
+
+    height = max(300, 50 + len(display_df) * 35)
+    _apply_common_layout(fig, title='Distribution Statistics by Reaction Type',
+                          fs=fs, height=height, margin=dict(l=20, r=20, t=60, b=20))
     
     return fig
 
@@ -864,10 +770,8 @@ def create_significance_summary_table(
         Plotly figure containing the results
     """
     from plotly.subplots import make_subplots
-    
-    font_size = 14 if presentation_mode else 11
-    header_font_size = 16 if presentation_mode else 12
-    title_size = 20 if presentation_mode else 16
+
+    fs = _font_sizes(presentation_mode, 'table')
     
     # Create subplots for different sections
     fig = make_subplots(
@@ -893,76 +797,54 @@ def create_significance_summary_table(
         'α (corrected)': f"{sig_results.get('alpha_corrected', 0.05):.4f}"
     }])
     
+    _hdr = dict(fill_color=_TABLE_HEADER_COLOR,
+                font=dict(color='white', size=fs['header'], family=_FONT_FAMILY),
+                align='center')
+    _cell_font = dict(size=fs['font'], family=_FONT_FAMILY)
+
+    def _stripe(n: int):
+        return [['white', '#f9f9f9'] * (n // 2 + 1)][:n]
+
     fig.add_trace(go.Table(
-        header=dict(
-            values=['<b>' + col + '</b>' for col in kw_data.columns],
-            fill_color='#4A90D9',
-            font=dict(color='white', size=header_font_size, family='Helvetica Neue'),
-            align='center'
-        ),
-        cells=dict(
-            values=[kw_data[col] for col in kw_data.columns],
-            fill_color='white',
-            font=dict(size=font_size, family='Helvetica Neue'),
-            align='center'
-        )
+        header=dict(values=['<b>' + c + '</b>' for c in kw_data.columns], **_hdr),
+        cells=dict(values=[kw_data[c] for c in kw_data.columns],
+                   fill_color='white', font=_cell_font, align='center'),
     ), row=1, col=1)
-    
+
     # 2. Group statistics
     group_stats = sig_results.get('group_stats', pd.DataFrame())
     if not group_stats.empty:
         fig.add_trace(go.Table(
-            header=dict(
-                values=['<b>' + col.replace('_', ' ').title() + '</b>' for col in group_stats.columns],
-                fill_color='#4A90D9',
-                font=dict(color='white', size=header_font_size, family='Helvetica Neue'),
-                align='center'
-            ),
-            cells=dict(
-                values=[group_stats[col] for col in group_stats.columns],
-                fill_color=[['white', '#f9f9f9'] * (len(group_stats) // 2 + 1)][:len(group_stats)],
-                font=dict(size=font_size, family='Helvetica Neue'),
-                align='center'
-            )
+            header=dict(values=['<b>' + c.replace('_', ' ').title() + '</b>'
+                                for c in group_stats.columns], **_hdr),
+            cells=dict(values=[group_stats[c] for c in group_stats.columns],
+                       fill_color=_stripe(len(group_stats)),
+                       font=_cell_font, align='center'),
         ), row=2, col=1)
-    
-    # 3. Pairwise comparisons (show top 10 most significant)
+
+    # 3. Pairwise comparisons
     pairwise = sig_results.get('pairwise', pd.DataFrame())
     if not pairwise.empty:
-        # Sort by p-value and take top entries
-        pairwise_display = pairwise.sort_values('p_value').head(15)
-        display_cols = ['group_1', 'group_2', 'p_value_formatted', 'significant', 'effect_size_r', 'effect_magnitude']
-        display_cols = [c for c in display_cols if c in pairwise_display.columns]
-        
-        # Format significant column
+        pairwise_display = pairwise.sort_values('p_value').head(_MAX_PAIRWISE_DISPLAY)
+        display_cols = [c for c in [
+            'group_1', 'group_2', 'p_value_formatted', 'significant',
+            'effect_size_r', 'effect_magnitude',
+        ] if c in pairwise_display.columns]
+
         pairwise_display = pairwise_display.copy()
         if 'significant' in pairwise_display.columns:
             pairwise_display['significant'] = pairwise_display['significant'].apply(
-                lambda x: '✓' if x else '✗'
-            )
-        
+                lambda x: '✓' if x else '✗')
+
         fig.add_trace(go.Table(
-            header=dict(
-                values=['<b>' + col.replace('_', ' ').title() + '</b>' for col in display_cols],
-                fill_color='#4A90D9',
-                font=dict(color='white', size=header_font_size, family='Helvetica Neue'),
-                align='center'
-            ),
-            cells=dict(
-                values=[pairwise_display[col] for col in display_cols],
-                fill_color=[['white', '#f9f9f9'] * (len(pairwise_display) // 2 + 1)][:len(pairwise_display)],
-                font=dict(size=font_size, family='Helvetica Neue'),
-                align='center'
-            )
+            header=dict(values=['<b>' + c.replace('_', ' ').title() + '</b>'
+                                for c in display_cols], **_hdr),
+            cells=dict(values=[pairwise_display[c] for c in display_cols],
+                       fill_color=_stripe(len(pairwise_display)),
+                       font=_cell_font, align='center'),
         ), row=3, col=1)
-    
-    fig.update_layout(
-        title=dict(
-            text='Statistical Significance Analysis',
-            font=dict(size=title_size, family='Helvetica Neue')
-        ),
-        height=800,
-        margin=dict(l=20, r=20, t=80, b=20)
-    )
-    
+
+    _apply_common_layout(fig, title='Statistical Significance Analysis',
+                          fs=fs, height=800, margin=dict(l=20, r=20, t=80, b=20))
+
     return fig
