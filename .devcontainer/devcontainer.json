@@ -6,15 +6,16 @@
 	"name": "zScore Dashboard",
 	"image": "eu.repository.roche.com/cde-gitpod-docker-prd-l/ona-base:2.0",
 	"forwardPorts": [8050],
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y tmux && pip install -r requirements-dev.txt && pre-commit install",
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
 				"ms-python.vscode-pylance",
-				"charliermarsh.ruff"
+				"charliermarsh.ruff",
+				"anthropic.claude-code"
 			]
 		}
 	},
-	"postCreateCommand": "pip install -r requirements-dev.txt && pre-commit install",
 	"postStartCommand": "python app.py &"
 }
