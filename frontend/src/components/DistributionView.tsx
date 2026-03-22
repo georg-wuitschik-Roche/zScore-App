@@ -1,20 +1,27 @@
 import Plot from './Plot';
 import { useFilteredData } from '../hooks/useFilteredData';
 import { useFilterStore } from '../stores/filterStore';
-import { createViolinConfig } from '../plots/violin';
+import type { PlotConfig } from '../plots/types';
+import type { Row } from '../data/types';
 
-export function ViolinView() {
+type ConfigBuilder = (rows: Row[], reactantTypes: string[], presentationMode: boolean) => PlotConfig;
+
+interface Props {
+  buildConfig: ConfigBuilder;
+  label: string;
+}
+
+export function DistributionView({ buildConfig, label }: Props) {
   const { rows } = useFilteredData();
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
   const presentationMode = useFilterStore((s) => s.presentationMode);
-
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     return (
       <div className="plot-container">
         <p className="no-data-message">
-          Select a reaction type and reactant type to display the violin plot.
+          Select a reaction type and reactant type to display the {label}.
         </p>
       </div>
     );
@@ -30,7 +37,7 @@ export function ViolinView() {
     );
   }
 
-  const config = createViolinConfig(rows, reactantTypes, presentationMode);
+  const config = buildConfig(rows, reactantTypes, presentationMode);
 
   return (
     <div className="plot-container">

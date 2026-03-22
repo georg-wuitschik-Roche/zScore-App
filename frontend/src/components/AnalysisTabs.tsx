@@ -1,6 +1,7 @@
 import { useFilterStore } from '../stores/filterStore';
-import { BoxplotView } from './BoxplotView';
-import { ViolinView } from './ViolinView';
+import { DistributionView } from './DistributionView';
+import { createBoxplotConfig } from '../plots/boxplot';
+import { createViolinConfig } from '../plots/violin';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
 
@@ -46,8 +47,8 @@ export function AnalysisTabs() {
       </div>
 
       <div className="view-content">
-        {activeTab === 'boxplot' && <BoxplotView />}
-        {activeTab === 'violin' && <ViolinView />}
+        {activeTab === 'boxplot' && <DistributionView buildConfig={createBoxplotConfig} label="boxplot" />}
+        {activeTab === 'violin' && <DistributionView buildConfig={createViolinConfig} label="violin plot" />}
         {activeTab === 'heatmap' && <HeatmapView />}
         {activeTab === 'stats' && <StatsTable />}
       </div>
