@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
+import { useTutorialStore } from '../hooks/useTutorial';
 import {
   getReactionTypes,
   getFgOptions,
@@ -58,6 +59,8 @@ export function LandingPage() {
     navigate(`/dashboard?${params.toString()}`);
   }
 
+  const startTutorial = useTutorialStore((s) => s.start);
+
   function handleStartTutorial() {
     setFilters({
       reactionTypes: ['Buchwald-Hartwig'],
@@ -65,6 +68,7 @@ export function LandingPage() {
       fgA: [],
       fgB: [],
     });
+    startTutorial();
     navigate('/dashboard?rt=Buchwald-Hartwig&cat=Catalyst');
   }
 

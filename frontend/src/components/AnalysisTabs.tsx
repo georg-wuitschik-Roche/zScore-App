@@ -39,7 +39,7 @@ export function AnalysisTabs() {
 
   return (
     <div className="analysis-view">
-      <div className="view-toggle">
+      <div className="view-toggle" id="view-toggle">
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}

@@ -47,7 +47,7 @@ export function FilterControls() {
   return (
     <div className="controls-row">
       {/* Reaction Type(s) */}
-      <div className="control-col">
+      <div className="control-col" id="reaction-type-dropdown">
         <label>Reaction Type(s):</label>
         <MultiSelect
           options={reactionTypeOptions}
@@ -64,7 +64,7 @@ export function FilterControls() {
       </div>
 
       {/* Functional Group(s) A */}
-      <div className="control-col">
+      <div className="control-col" id="fg-a-dropdown">
         <label>Functional Group(s) A:</label>
         <MultiSelect
           options={fgAOptions}
@@ -88,7 +88,7 @@ export function FilterControls() {
       </div>
 
       {/* Functional Group(s) B */}
-      <div className="control-col">
+      <div className="control-col" id="fg-b-dropdown">
         <label>Functional Group(s) B:</label>
         <MultiSelect
           options={fgBOptions}
@@ -111,7 +111,7 @@ export function FilterControls() {
       </div>
 
       {/* Reactant Type(s) */}
-      <div className="control-col">
+      <div className="control-col" id="reactant-types-dropdown">
         <label>Reactant Type(s):</label>
         <MultiSelect
           options={reactantTypeOptions}

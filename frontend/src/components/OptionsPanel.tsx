@@ -71,7 +71,7 @@ export function OptionsPanel() {
       {/* Toggle button */}
       <div className="filter-toggle-container">
         <div className="filter-toggle-line" />
-        <button className="filter-toggle-btn" id="toggle-filters-btn" onClick={toggleOptionsPanel}>
+        <button className="filter-toggle-btn" id="options-toggle" onClick={toggleOptionsPanel}>
           <svg
             width="14"
             height="14"
@@ -97,7 +97,7 @@ export function OptionsPanel() {
         {/* Sliders row */}
         <div className="filter-options-row sliders">
           <label>Minimum Number of ELNs:</label>
-          <div className="slider-wrap min-eln">
+          <div className="slider-wrap min-eln" id="min-eln-slider">
             <input
               type="range"
               min={1}
@@ -110,7 +110,7 @@ export function OptionsPanel() {
           </div>
 
           <label>Top-N z-Score per (ELN_ID, selected reactant type(s)):</label>
-          <div className="slider-wrap topn">
+          <div className="slider-wrap topn" id="topn-slider">
             <input
               type="range"
               min={1}
@@ -123,7 +123,7 @@ export function OptionsPanel() {
           </div>
 
           <label>Max Components to Display:</label>
-          <div className="slider-wrap max-comp">
+          <div className="slider-wrap max-comp" id="max-comp-slider">
             <input
               type="range"
               min={1}
@@ -140,7 +140,7 @@ export function OptionsPanel() {
 
         {/* Checkboxes row */}
         <div className="filter-options-row">
-          <label className="checklist-item">
+          <label className="checklist-item" id="exclude-cui-checkbox">
             <input
               type="checkbox"
               checked={excludeCui}
