@@ -116,17 +116,17 @@ export function createBoxplotConfig(
         .join('<br>');
 
       return (
-        `<span style="color:#999;font-size:10px;letter-spacing:0.05em">EXPERIMENT</span><br>` +
-        `<b style="font-size:13px">${s(row.ELN_ID)}</b>` +
+        `<span style="color:#999;font-size:12px;letter-spacing:0.05em">EXPERIMENT</span><br>` +
+        `<b style="font-size:15px">${s(row.ELN_ID)}</b>` +
         `<span style="color:#999"> · Plate ${s(row.PLATENUMBER)} · ${s(row.Coordinate)}</span><br>` +
         `<br>` +
-        `<span style="color:#999;font-size:10px;letter-spacing:0.05em">RESULTS</span><br>` +
+        `<span style="color:#999;font-size:12px;letter-spacing:0.05em">RESULTS</span><br>` +
         `z-Score: <b>${fmtZ(row['z-Score'])}</b> · Area: ${fmtArea(row.AREA_TOTAL_REDUCED)}<br>` +
         `<br>` +
-        `<span style="color:#999;font-size:10px;letter-spacing:0.05em">REAGENTS</span><br>` +
+        `<span style="color:#999;font-size:12px;letter-spacing:0.05em">REAGENTS</span><br>` +
         reagentLines +
         `<br><br>` +
-        `<span style="color:#999;font-size:10px;letter-spacing:0.05em">REACTION</span><br>` +
+        `<span style="color:#999;font-size:12px;letter-spacing:0.05em">REACTION</span><br>` +
         `${s(row['Reaction Type'])} · <b>${elnCount} ELNs</b>`
       );
     });
@@ -159,7 +159,7 @@ export function createBoxplotConfig(
       hoverlabel: {
         bgcolor: '#fff',
         bordercolor: '#e0e0e0',
-        font: { size: 12, family: '"JetBrains Mono", "Fira Code", monospace', color: '#222' },
+        font: { size: 14, family: '"JetBrains Mono", "Fira Code", monospace', color: '#222' },
         align: 'left' as const,
       },
     };
@@ -176,7 +176,7 @@ export function createBoxplotConfig(
       hoverlabel: {
         bgcolor: '#fff',
         bordercolor: '#e0e0e0',
-        font: { size: 13, family: '"JetBrains Mono", monospace', color: '#222' },
+        font: { size: 14, family: '"JetBrains Mono", monospace', color: '#222' },
         align: 'left' as const,
       },
     };

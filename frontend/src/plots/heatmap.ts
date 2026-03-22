@@ -202,7 +202,7 @@ export function createHeatmapConfig(
       hoverlabel: {
         bgcolor: '#fff',
         bordercolor: '#e0e0e0',
-        font: { size: 13, family: '"JetBrains Mono", monospace', color: '#222' },
+        font: { size: 14, family: '"JetBrains Mono", monospace', color: '#222' },
         align: 'left' as const,
       },
     },

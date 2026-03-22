@@ -6,6 +6,8 @@ interface MultiSelectProps {
   onChange: (values: string[]) => void;
   placeholder?: string;
   className?: string;
+  /** Close dropdown after each selection (useful for single-purpose selectors). */
+  autoClose?: boolean;
 }
 
 export function MultiSelect({
@@ -14,6 +16,7 @@ export function MultiSelect({
   onChange,
   placeholder = 'Select...',
   className = '',
+  autoClose = false,
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -48,7 +51,11 @@ export function MultiSelect({
   function handleAdd(item: string) {
     onChange([...value, item]);
     setSearch('');
-    inputRef.current?.focus();
+    if (autoClose) {
+      setIsOpen(false);
+    } else {
+      inputRef.current?.focus();
+    }
   }
 
   function handleInputFocus() {

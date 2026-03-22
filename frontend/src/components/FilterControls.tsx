@@ -54,6 +54,7 @@ export function FilterControls() {
           value={reactionTypes}
           onChange={setReactionTypes}
           placeholder="Select reaction types..."
+          autoClose
         />
         <div className="stats-badge">
           <div className="stats-badge-content">
@@ -117,6 +118,7 @@ export function FilterControls() {
           value={reactantTypes}
           onChange={setReactantTypes}
           placeholder="Select reactant types..."
+          autoClose
         />
       </div>
     </div>
