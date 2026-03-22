@@ -13,7 +13,7 @@
 - **Routing:** React Router v7
 - **Data:** Parquet format (0.5MB), parsed with hyparquet
 - **Styling:** CSS with custom properties (DM Sans + JetBrains Mono)
-- **Testing:** Vitest (3,192 golden tests)
+- **Testing:** Vitest
 
 ## Architecture
 ```
@@ -74,7 +74,7 @@ zScore-App/
 │   │   ├── data/z-score-peaks.parquet  # Dataset (gitignored, built from CSV)
 │   │   └── assets/              # Logo, hiker icon
 │   ├── golden/                  # Golden test fixtures (from Python)
-│   ├── src/__tests__/           # Vitest tests (3,192)
+│   ├── src/__tests__/           # Vitest tests
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── tsconfig.json
@@ -142,9 +142,9 @@ All filtering runs client-side in TypeScript (<50ms for 67K rows).
 `output_column`
 
 ## Testing
-- **3,192 TypeScript tests** (Vitest) validating filter chain parity with Python
-- **2,610 Python tests** (pytest) in `paper/tests/` for the publication scripts
-- Golden fixtures in `frontend/golden/` cover medians, dropdowns, heatmap pivots, stats
+- **TypeScript tests** (Vitest) — unit tests for filter steps, store, URL state, colors, boxplot config, plus golden fixtures for dropdowns and stats
+- **Python tests** (pytest) in `paper/tests/` for the publication scripts
+- Golden fixtures in `frontend/golden/` cover dropdowns and stats
 
 ## Skills
 Always follow the guidelines defined in these skill files:
