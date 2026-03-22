@@ -489,12 +489,19 @@ def _compute_medians(
     if not source_df.loc[rt_mask, reactant_type].notna().any():
         return None
 
+    # Call filter_data WITHOUT max_components first, then apply our own deterministic
+    # max_components selection with alphabetical tie-breaking. This avoids pandas'
+    # Categorical-order-dependent tiebreaking in _filter_max_components.
+    fkw = dict(filter_kwargs)
+    max_components = fkw.pop('max_components', None)
+
     try:
         result = du.filter_data(
             source_df=source_df,
             reaction_types=[reaction_type],
             reactant_types=[reactant_type],
-            **filter_kwargs,
+            max_components=None,
+            **fkw,
         )
     except Exception:
         return None
@@ -504,13 +511,26 @@ def _compute_medians(
     if dff is None or dff.empty or reactant_type not in dff.columns:
         return None
 
-    # Compute median z-score per category value
-    medians = dff.groupby(reactant_type)['z-Score'].median()
-    if medians.empty:
+    # Compute median z-score per category value (include null categories)
+    cat_series = dff[reactant_type].astype('object').fillna('(no value)').astype(str)
+    medians_raw = dff.groupby(cat_series)['z-Score'].median()
+    if medians_raw.empty:
         return None
 
-    # Sort by median descending (matches boxplot ordering)
-    medians = medians.sort_values(ascending=False)
+    # Sort by median descending, then alphabetically for deterministic tie-breaking.
+    medians_df = medians_raw.to_frame('median').reset_index()
+    medians_df.columns = ['category', 'median']
+    medians_df['sort_key'] = medians_df['median'].round(9)
+    medians_df = medians_df.sort_values(['sort_key', 'category'], ascending=[False, True])
+    medians_df = medians_df.drop(columns=['sort_key'])
+
+    # Apply max_components cap using the same deterministic ordering
+    if max_components and max_components > 0 and len(medians_df) > max_components:
+        top_categories = medians_df['category'].head(max_components).tolist()
+        dff = dff[cat_series.isin(top_categories)]
+        medians_df = medians_df.head(max_components)
+
+    medians = medians_df.set_index('category')['median']
 
     return {
         'row_count': len(dff),

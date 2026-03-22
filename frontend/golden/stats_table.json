@@ -1,0 +1,432 @@
+{
+  "buchwald_catalyst": {
+    "params": {
+      "reaction_types": [
+        "Buchwald-Hartwig"
+      ],
+      "reactant_types": [
+        "Catalyst"
+      ],
+      "exclude_cui": [
+        "exclude_cui"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 8906,
+    "eln_count": 174,
+    "columns": {
+      "z-Score": {
+        "count": 8906,
+        "mean": 0.318566,
+        "std": 1.112706,
+        "min": -2.45,
+        "25%": -0.46,
+        "50%": -0.09,
+        "75%": 0.98,
+        "max": 9.23
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 8906,
+        "mean": 26.070643,
+        "std": 30.086473,
+        "min": 0.0,
+        "25%": 0.6,
+        "50%": 11.98,
+        "75%": 46.2375,
+        "max": 100.0
+      }
+    }
+  },
+  "buchwald_ligand": {
+    "params": {
+      "reaction_types": [
+        "Buchwald-Hartwig"
+      ],
+      "reactant_types": [
+        "Ligand"
+      ],
+      "exclude_cui": [
+        "exclude_cui"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 8965,
+    "eln_count": 174,
+    "columns": {
+      "z-Score": {
+        "count": 8965,
+        "mean": 0.314596,
+        "std": 1.105788,
+        "min": -2.45,
+        "25%": -0.46,
+        "50%": -0.09,
+        "75%": 0.96,
+        "max": 9.23
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 8965,
+        "mean": 26.253081,
+        "std": 30.354921,
+        "min": 0.0,
+        "25%": 0.56,
+        "50%": 11.83,
+        "75%": 46.83,
+        "max": 100.0
+      }
+    }
+  },
+  "buchwald_fg_pair": {
+    "params": {
+      "reaction_types": [
+        "Buchwald-Hartwig"
+      ],
+      "reactant_types": [
+        "Catalyst"
+      ],
+      "fg_a": [
+        "RNH2",
+        "RNH2 a-branch"
+      ],
+      "fg_b": [
+        "ArBr",
+        "ArCl"
+      ],
+      "exclude_cui": [
+        "exclude_cui"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 2178,
+    "eln_count": 43,
+    "columns": {
+      "z-Score": {
+        "count": 2178,
+        "mean": 0.362792,
+        "std": 1.064788,
+        "min": -2.45,
+        "25%": -0.46,
+        "50%": 0.09,
+        "75%": 1.09,
+        "max": 8.13
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 2178,
+        "mean": 31.64989,
+        "std": 31.155366,
+        "min": 0.0,
+        "25%": 2.2425,
+        "50%": 22.335,
+        "75%": 56.455,
+        "max": 100.0
+      }
+    }
+  },
+  "suzuki_catalyst": {
+    "params": {
+      "reaction_types": [
+        "Suzuki-Miyaura"
+      ],
+      "reactant_types": [
+        "Catalyst"
+      ],
+      "exclude_cui": [
+        "exclude_cui"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 4628,
+    "eln_count": 114,
+    "columns": {
+      "z-Score": {
+        "count": 4628,
+        "mean": 0.413978,
+        "std": 1.059996,
+        "min": -3.73,
+        "25%": -0.42,
+        "50%": 0.34,
+        "75%": 1.11,
+        "max": 7.22
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 4628,
+        "mean": 39.09099,
+        "std": 33.318658,
+        "min": 0.0,
+        "25%": 7.12,
+        "50%": 32.095,
+        "75%": 69.2,
+        "max": 100.0
+      }
+    }
+  },
+  "suzuki_solvent": {
+    "params": {
+      "reaction_types": [
+        "Suzuki-Miyaura"
+      ],
+      "reactant_types": [
+        "Solvent"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 3101,
+    "eln_count": 114,
+    "columns": {
+      "z-Score": {
+        "count": 3101,
+        "mean": 0.784998,
+        "std": 1.043905,
+        "min": -2.35,
+        "25%": -0.01,
+        "50%": 0.8,
+        "75%": 1.44,
+        "max": 7.22
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 3101,
+        "mean": 45.424715,
+        "std": 33.642271,
+        "min": 0.0,
+        "25%": 11.97,
+        "50%": 45.31,
+        "75%": 76.22,
+        "max": 100.0
+      }
+    }
+  },
+  "amide_coupling_reagent": {
+    "params": {
+      "reaction_types": [
+        "Amide coupling"
+      ],
+      "reactant_types": [
+        "Coupling Reagent"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 901,
+    "eln_count": 22,
+    "columns": {
+      "z-Score": {
+        "count": 901,
+        "mean": 0.436071,
+        "std": 1.128439,
+        "min": -1.83,
+        "25%": -0.51,
+        "50%": 0.35,
+        "75%": 1.27,
+        "max": 4.27
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 901,
+        "mean": 38.91859,
+        "std": 33.642839,
+        "min": 0.0,
+        "25%": 7.14,
+        "50%": 31.6,
+        "75%": 66.73,
+        "max": 100.0
+      }
+    }
+  },
+  "ch_activation_catalyst": {
+    "params": {
+      "reaction_types": [
+        "CH-Activation"
+      ],
+      "reactant_types": [
+        "Catalyst"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 508,
+    "eln_count": 15,
+    "columns": {
+      "z-Score": {
+        "count": 508,
+        "mean": 0.438819,
+        "std": 1.278453,
+        "min": -1.17,
+        "25%": -0.4625,
+        "50%": 0.105,
+        "75%": 1.11,
+        "max": 6.98
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 508,
+        "mean": 21.441811,
+        "std": 20.982311,
+        "min": 0.0,
+        "25%": 2.7,
+        "50%": 17.585,
+        "75%": 32.9675,
+        "max": 98.13
+      }
+    }
+  },
+  "all_reactions_base": {
+    "params": {
+      "reactant_types": [
+        "Base"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 5
+    },
+    "row_count": 11066,
+    "eln_count": 530,
+    "columns": {
+      "z-Score": {
+        "count": 11066,
+        "mean": 0.878477,
+        "std": 1.315919,
+        "min": -2.73,
+        "25%": -0.26,
+        "50%": 0.8,
+        "75%": 1.6775,
+        "max": 9.64
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 11066,
+        "mean": 36.909114,
+        "std": 33.064961,
+        "min": 0.0,
+        "25%": 5.565,
+        "50%": 28.595,
+        "75%": 65.295,
+        "max": 100.0
+      }
+    }
+  },
+  "buchwald_strict": {
+    "params": {
+      "reaction_types": [
+        "Buchwald-Hartwig"
+      ],
+      "reactant_types": [
+        "Catalyst"
+      ],
+      "fg_a": [
+        "RNH2"
+      ],
+      "fg_b": [
+        "ArBr"
+      ],
+      "exclude_cui": [
+        "exclude_cui"
+      ],
+      "exclude_scaleup": [
+        true
+      ],
+      "topn_zscore": 3
+    },
+    "row_count": 261,
+    "eln_count": 9,
+    "columns": {
+      "z-Score": {
+        "count": 261,
+        "mean": 0.622299,
+        "std": 1.196361,
+        "min": -0.91,
+        "25%": -0.21,
+        "50%": 0.37,
+        "75%": 1.25,
+        "max": 8.13
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 261,
+        "mean": 29.715172,
+        "std": 27.978805,
+        "min": 0.0,
+        "25%": 2.29,
+        "50%": 26.64,
+        "75%": 54.2,
+        "max": 100.0
+      }
+    }
+  },
+  "buchwald_relaxed": {
+    "params": {
+      "reaction_types": [
+        "Buchwald-Hartwig"
+      ],
+      "reactant_types": [
+        "Catalyst"
+      ],
+      "include_null_categories": [
+        true
+      ],
+      "topn_zscore": 10
+    },
+    "row_count": 14271,
+    "eln_count": 178,
+    "columns": {
+      "z-Score": {
+        "count": 14271,
+        "mean": 0.059695,
+        "std": 1.053615,
+        "min": -3.34,
+        "25%": -0.62,
+        "50%": -0.32,
+        "75%": 0.58,
+        "max": 9.23
+      },
+      "AREA_TOTAL_REDUCED": {
+        "count": 14271,
+        "mean": 20.228669,
+        "std": 27.584121,
+        "min": 0.0,
+        "25%": 0.0,
+        "50%": 5.48,
+        "75%": 32.71,
+        "max": 100.0
+      }
+    }
+  }
+}
