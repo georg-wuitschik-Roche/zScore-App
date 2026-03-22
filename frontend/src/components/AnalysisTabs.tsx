@@ -1,9 +1,10 @@
 import { useFilterStore } from '../stores/filterStore';
 import { BoxplotView } from './BoxplotView';
+import { ViolinView } from './ViolinView';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
 
-type TabId = 'boxplot' | 'heatmap' | 'stats';
+type TabId = 'boxplot' | 'violin' | 'heatmap' | 'stats';
 
 interface TabDef {
   id: TabId;
@@ -13,6 +14,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { id: 'boxplot', label: 'Boxplot', requiresMultiReactant: false },
+  { id: 'violin', label: 'Violin', requiresMultiReactant: false },
   { id: 'heatmap', label: 'Heatmap', requiresMultiReactant: true },
   { id: 'stats', label: 'Stats', requiresMultiReactant: false },
 ];
@@ -45,6 +47,7 @@ export function AnalysisTabs() {
 
       <div className="view-content">
         {activeTab === 'boxplot' && <BoxplotView />}
+        {activeTab === 'violin' && <ViolinView />}
         {activeTab === 'heatmap' && <HeatmapView />}
         {activeTab === 'stats' && <StatsTable />}
       </div>

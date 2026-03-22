@@ -70,7 +70,7 @@ export function useUrlState(): void {
     if (me) partial.minEln = Number(me);
     if (tn) partial.topnZscore = Number(tn);
     if (mc) partial.maxComponents = Number(mc);
-    if (tab) partial.activeTab = tab as 'boxplot' | 'heatmap' | 'stats';
+    if (tab) partial.activeTab = tab as 'boxplot' | 'violin' | 'heatmap' | 'stats';
     if (cui !== null) partial.excludeCui = cui === '1';
     if (su !== null) partial.excludeScaleup = su === '1';
     if (nc !== null) partial.includeNullCategories = nc === '1';

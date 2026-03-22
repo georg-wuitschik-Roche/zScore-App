@@ -39,7 +39,7 @@ export interface FilterState {
   maxComponents: number;
 
   // UI state
-  activeTab: 'boxplot' | 'heatmap' | 'stats';
+  activeTab: 'boxplot' | 'violin' | 'heatmap' | 'stats';
   presentationMode: boolean;
   optionsPanelOpen: boolean;
   uploadError: string | null;
@@ -56,7 +56,7 @@ export interface FilterState {
   setMinEln: (val: number) => void;
   setTopnZscore: (val: number) => void;
   setMaxComponents: (val: number) => void;
-  setActiveTab: (tab: 'boxplot' | 'heatmap' | 'stats') => void;
+  setActiveTab: (tab: 'boxplot' | 'violin' | 'heatmap' | 'stats') => void;
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
   resetFilters: () => void;
