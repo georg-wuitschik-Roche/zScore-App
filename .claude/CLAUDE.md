@@ -3,147 +3,150 @@
 ## Project Overview
 - **Goal:** Interactive dashboard for analyzing z-score data from chemical reaction screening experiments (HTE)
 - **Users:** Chemists at Roche Pharma R&D (Team RoSL) analyzing reaction conditions
-- **Status:** Production — deployed on Google Cloud Run, actively used for research publications
-- **Environment:** Dev container — always assume we are working in a development environment
+- **Status:** Production — fully client-side React app, no backend needed
+- **Environment:** Dev container
 
 ## Tech Stack
-- **Framework:** Dash 2.x + Plotly 5.x (Python)
-- **Data:** Pandas, NumPy, SciPy (statistical analysis)
-- **Export:** Kaleido (plot images), ReportLab (PDF)
-- **Server:** Gunicorn (1 worker, 8 threads)
-- **Deploy:** Docker (python:3.11-slim) on Google Cloud Run, Heroku fallback
-- **Storage:** Local CSV + Google Cloud Storage fallback
-- **Python:** 3.11.7
+- **Framework:** React 19 + TypeScript + Vite
+- **Charts:** Plotly.js via react-plotly.js
+- **State:** Zustand (filter state, UI state)
+- **Routing:** React Router v7
+- **Data:** Parquet format (0.5MB), parsed with hyparquet
+- **Styling:** CSS with custom properties (DM Sans + JetBrains Mono)
+- **Testing:** Vitest (3,192 golden tests)
 
 ## Architecture
 ```
-Browser
+Static hosting (GitHub Pages / Cloudflare / GCS)
   │
-  ▼
-┌─────────────────────────────────────────┐
-│  app.py  (Dash bootstrap + server)      │
-│    ├── layout.py  (UI components)       │
-│    ├── callbacks.py  (event handlers)   │
-│    │     ├── data_utils.py  (filter/cache/load) ──► CSV / GCS
-│    │     └── plot_utils.py  (boxplots/heatmaps)    │
-│    └── assets/app.css  (custom UI)                 │
-├─────────────────────────────────────────┤
-│  Batch scripts (not served):            │
-│    export_boxplots.py                   │
-│    generate_supplementary_figures.py    │
-└─────────────────────────────────────────┘
+  ├── index.html + JS bundle (~300KB gzipped)
+  └── data/z-score-peaks.parquet (0.5MB)
+
+Browser
+  ├── Fetch Parquet once → parse with hyparquet → store in memory
+  ├── Filter chain (TypeScript) → <50ms for 67K rows
+  ├── Plotly.js → boxplots, heatmaps (same as original)
+  ├── URL state (React Router search params) → deep linking
+  └── PNG export via Plotly.toImage()
 ```
 
 ## Repository Structure
 ```
 zScore-App/
-├── app.py                    # Entry point, Dash app + server
-├── layout.py                 # UI layout (dropdowns, tabs, modals)
-├── callbacks.py              # All Dash callbacks (~1,360 lines)
-├── data_utils.py             # Data loading, filtering, caching (~1,072 lines)
-├── plot_utils.py             # Boxplot/heatmap generation (~968 lines)
-├── export_boxplots.py        # Batch PNG/SVG export
-├── generate_supplementary_figures.py  # Stats figures for papers
-├── assets/
-│   ├── app.css               # Custom styling
-│   └── logo.png              # App logo
-├── tests/                    # Test suite (2,610 tests)
-│   ├── conftest.py           # Shared fixtures
-│   ├── fixtures/golden/      # Golden snapshot JSON files
-│   ├── generate_*.py         # Scripts to regenerate golden files
-│   ├── test_data_utils.py    # Filter chain, cache, upload, stats
-│   ├── test_plot_utils.py    # Boxplot, heatmap, distribution, QQ
-│   ├── test_callbacks.py     # Callback helpers and logic
-│   ├── test_layout.py        # Component IDs, structure, defaults
-│   ├── test_median_consistency.py  # 1,912 median snapshots (35 filters)
-│   ├── test_dropdown_conditioning.py  # FG B options per FG A
-│   ├── test_heatmap_pivots.py  # Cell values, axis ordering
-│   ├── test_stats_table.py   # describe() output validation
-│   ├── test_edge_cases.py    # 0 rows, NaN, degenerate inputs
-│   └── e2e/                  # Playwright browser tests
-├── exports/                  # Generated images (boxplots, paper, supplementary)
-├── requirements.txt          # Python deps
-├── requirements-dev.txt      # Test deps (pytest, coverage, freezegun)
-├── Dockerfile                # Cloud Run container
-├── Procfile                  # Heroku deploy
-└── z-Score Peaks with FG.csv # Main dataset (~15 MB)
+├── frontend/                    # React application
+│   ├── src/
+│   │   ├── App.tsx              # Router + layout
+│   │   ├── main.tsx             # Entry point + error boundary
+│   │   ├── stores/
+│   │   │   └── filterStore.ts   # Zustand store (all state)
+│   │   ├── data/
+│   │   │   ├── types.ts         # Row interface, FilterParams
+│   │   │   ├── loader.ts        # Parquet fetch + CSV upload parsing
+│   │   │   ├── filterChain.ts   # 10-step filter orchestrator
+│   │   │   ├── filterSteps.ts   # Individual filter functions
+│   │   │   └── dropdownOptions.ts  # FG conditioning logic
+│   │   ├── plots/
+│   │   │   ├── boxplot.ts       # Plotly boxplot config
+│   │   │   ├── heatmap.ts       # Plotly heatmap config
+│   │   │   ├── colors.ts        # ELN density color mapping
+│   │   │   └── types.ts         # PlotConfig interface
+│   │   ├── components/
+│   │   │   ├── LandingPage.tsx  # Reaction type search + filter setup
+│   │   │   ├── Dashboard.tsx    # Main dashboard layout
+│   │   │   ├── Navbar.tsx       # Nav bar + settings + upload
+│   │   │   ├── FilterControls.tsx  # 4 multi-select dropdowns
+│   │   │   ├── OptionsPanel.tsx # Sliders, checkboxes, downloads
+│   │   │   ├── AnalysisTabs.tsx # Boxplot/Heatmap/Stats toggle
+│   │   │   ├── BoxplotView.tsx  # Plotly boxplot renderer
+│   │   │   ├── HeatmapView.tsx  # Plotly heatmap renderer
+│   │   │   ├── StatsTable.tsx   # Descriptive statistics table
+│   │   │   ├── MultiSelect.tsx  # Reusable dropdown component
+│   │   │   ├── TutorialOverlay.tsx  # 11-step guided tour
+│   │   │   ├── Plot.tsx         # Plotly wrapper (dist-min bundle)
+│   │   │   └── Footer.tsx       # Paper citation
+│   │   ├── hooks/
+│   │   │   ├── useFilteredData.ts  # useMemo wrapper for filter chain
+│   │   │   ├── useUrlState.ts   # Bidirectional URL ↔ state sync
+│   │   │   └── useTutorial.ts   # Tutorial state machine
+│   │   └── styles/
+│   │       └── app.css          # All styles
+│   ├── public/
+│   │   ├── data/z-score-peaks.parquet  # Dataset (gitignored, built from CSV)
+│   │   └── assets/              # Logo, hiker icon
+│   ├── golden/                  # Golden test fixtures (from Python)
+│   ├── src/__tests__/           # Vitest tests (3,192)
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tsconfig.json
+├── paper/                       # Publication scripts (not deployed)
+│   ├── data_utils.py            # Python filter chain (for stats)
+│   ├── plot_utils.py            # Python plot generation
+│   ├── stats.py                 # Scipy statistical tests
+│   ├── export_boxplots.py       # Batch PNG/SVG export
+│   ├── generate_supplementary_figures.py
+│   ├── requirements.txt         # Python deps (scipy, pandas, etc.)
+│   ├── tests/                   # Python test suite (2,610 tests)
+│   └── README.md
+├── z-Score Peaks with FG.csv    # Source dataset (~15MB)
+├── pyproject.toml               # Ruff/MyPy/pytest config
+├── .pre-commit-config.yaml
+└── LICENSE
 ```
 
 ## Development
 
-| Task       | Command                                      |
-|------------|-----------------------------------------------|
-| Install    | `pip install -r requirements.txt`             |
-| Install dev| `pip install -r requirements-dev.txt`         |
-| Dev server | `python app.py` (debug mode, port 8050)       |
-| Production | `gunicorn --bind :8080 -w1 --threads 8 app:server` |
-| Tests fast | `python -m pytest tests/ -m "not slow and not e2e"` |
-| Tests full | `python -m pytest tests/ -m "not e2e"`        |
-| Tests cov  | `python -m pytest tests/ -m "not e2e" --cov`  |
-| Regen gold | `python tests/generate_median_golden.py`      |
-| Export     | `python export_boxplots.py`                   |
-| Stats figs | `python generate_supplementary_figures.py`    |
+| Task | Command |
+|------|---------|
+| Install | `cd frontend && npm install` |
+| Dev server | `cd frontend && npm run dev` |
+| Build | `cd frontend && npm run build` |
+| TypeScript check | `cd frontend && npx tsc --noEmit` |
+| Tests (all) | `cd frontend && npx vitest run` |
+| Tests (watch) | `cd frontend && npx vitest` |
+| Regenerate Parquet | `python -c "import pandas as pd; ..."` (see below) |
 
-- Local URL: http://localhost:8050
-- Test suite: 2,610 tests (unit, integration, golden snapshots, edge cases)
+### Regenerating the Parquet file
+```bash
+python3 -c "
+import pandas as pd
+df = pd.read_csv('z-Score Peaks with FG.csv', encoding='utf-8')
+USED = ['ELN_ID','PLATENUMBER','Coordinate','AREA_TOTAL_REDUCED',
+        'Base','Catalyst','Solvent','Ligand','Additive',
+        'Coupling Reagent','Secondary Solvent','Tertiary Solvent',
+        'Reaction Type','FG A','FG B','FG_sorted','z-Score','output_column']
+df[[c for c in USED if c in df.columns]].to_parquet(
+    'frontend/public/data/z-score-peaks.parquet', compression='zstd', index=False)
+"
+```
 
-## Key Files
+## Filter Chain (10 steps)
+1. Reaction types → 2. Reactant columns → 3. CuI exclusion → 4. FG A mask →
+5. FG B pairs → 6. Scale-up exclusion → 7. Deduplication → 8. Top-N z-scores →
+9. Min ELN count → 10. Max components
 
-| Area       | File                 | Purpose                                    |
-|------------|----------------------|--------------------------------------------|
-| Entry      | `app.py`             | Dash app init, `server` for Gunicorn       |
-| UI         | `layout.py`          | All visual components, `serve_layout()`    |
-| Logic      | `callbacks.py`       | Event handlers, state management           |
-| Data       | `data_utils.py`      | CSV load, filter chain, LRU cache (50)     |
-| Viz        | `plot_utils.py`      | `create_boxplot()`, color mapping, hover    |
-| Style      | `assets/app.css`     | Custom design, responsive layout           |
-| Deploy     | `Dockerfile`         | Cloud Run container config                 |
+All filtering runs client-side in TypeScript (<50ms for 67K rows).
 
 ## Code Guidelines
-- **Separation of concerns:** Layout, callbacks, data, and plot logic live in separate modules. Never mix UI with data processing.
-- **Frontend-first filtering:** All filtering happens server-side in `data_utils.filter_data()` via a 10-step chain. Results are cached with MD5-hashed keys.
-- **No backwards compatibility:** Delete unused code entirely. No `_var` renames, no `# removed` comments, no re-exports.
-- **Type hints everywhere:** Use `from __future__ import annotations`. All functions have docstrings with param/return docs.
+- **TypeScript strict mode** — no `any` types, no `as any` casts
+- **No backwards compatibility** — delete unused code entirely
+- **Zustand for state** — single store, named selectors
+- **useMemo for derived data** — filter chain results memoized
+- **CSS custom properties** — all design tokens in `:root`
+- **Pipe separator** in URLs — avoids comma conflicts in reaction type names
 
 ## Data Model
+**18 columns in Parquet file:**
+`ELN_ID`, `PLATENUMBER`, `Coordinate`, `AREA_TOTAL_REDUCED`, `Base`, `Catalyst`,
+`Solvent`, `Ligand`, `Additive`, `Coupling Reagent`, `Secondary Solvent`,
+`Tertiary Solvent`, `Reaction Type`, `FG A`, `FG B`, `FG_sorted`, `z-Score`,
+`output_column`
 
-**Dataset columns (required):**
-`ELN_ID`, `PLATENUMBER`, `Coordinate`, `AREA_TOTAL_REDUCED`, `Base`, `Catalyst`, `Solvent`, `Ligand`, `Reaction Type`, `FG A`, `FG B`, `FG_sorted`, `z-Score`
-
-**9 category types:** Additive, Base, Catalyst, Coupling Reagent, Solvent, FG A, FG B, Ligand, Secondary Solvent
-
-**11 reaction types:** Buchwald-Hartwig, Suzuki-Miyaura, Amide Coupling, Arylation (acidic C-H), Borylation (Miyaura), C-H Activation, C-N Coupling, C-O Coupling, Condensation, Cyclization, Negishi (in-situ)
-
-## Filter Chain (data_utils.filter_data)
-1. Reaction types → 2. Reactant columns → 3. CuI exclusion → 4. FG A mask → 5. FG B pairs → 6. Scale-up exclusion → 7. Deduplication → 8. Top-N z-scores → 9. Min ELN count → 10. Max components
-
-## Performance Targets
-
-| Metric                | Target     |
-|-----------------------|------------|
-| Filter cache entries  | Max 50     |
-| Export scale factor   | 4x         |
-| Export resolution     | 1600px wide|
-| Upload max size       | 50 MB      |
-| Gunicorn workers      | 1          |
-| Gunicorn threads      | 8          |
-
-## Data Privacy
-- **User-uploaded data must never be persisted or shared.** Uploaded datasets transit through the server for processing but are held only in browser memory (`dcc.Store`) for the session.
-- Never log, write to disk, or transmit uploaded data to any external service.
-- The server must not persist uploaded data beyond the callback lifecycle.
-
-## Naming Conventions
-- Private functions: `_prefix` (e.g. `_load_and_prepare`)
-- Constants: `UPPER_SNAKE` at module top
-- Callbacks: underscore prefix (e.g. `_toggle_presentation_mode`)
-- Files: `snake_case.py`
+## Testing
+- **3,192 TypeScript tests** (Vitest) validating filter chain parity with Python
+- **2,610 Python tests** (pytest) in `paper/tests/` for the publication scripts
+- Golden fixtures in `frontend/golden/` cover medians, dropdowns, heatmap pivots, stats
 
 ## Skills
 Always follow the guidelines defined in these skill files:
 - `.claude/skills/git.md` — Git commit and branching rules
 - `.claude/skills/dev.md` — Development workflow
-- `.claude/skills/build.md` — Build and deployment
-- `.claude/skills/lint.md` — Linting and code quality
-- `.claude/skills/export.md` — Export and figure generation
-- `.claude/skills/frontend-design.md` — UI/UX design system

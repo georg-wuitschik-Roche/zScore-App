@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import shutil
+import sys
 from pathlib import Path
+
+# Ensure paper/ directory is on the path for local imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 import pandas as pd
 import plotly.graph_objects as go
 
-# Reuse app utilities
 import data_utils as du
 import plot_utils as pu
 

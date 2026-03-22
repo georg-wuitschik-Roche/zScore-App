@@ -15,20 +15,18 @@ select = [
 ]
 ignore = [
     "E501",   # line too long — handled by line-length setting
-    "N802",   # function name should be lowercase — Dash callbacks use mixed
+    "N802",   # function name should be lowercase
     "N803",   # argument name should be lowercase — DataFrame column names
     "N806",   # variable in function should be lowercase — DataFrame vars
-    "N999",   # invalid module name — existing file names
-    "B905",   # zip without strict= — not needed for data pipelines
+    "N999",   # invalid module name
+    "B905",   # zip without strict=
     "SIM108", # ternary operator — readability preference
-    "E402",   # module import not at top — all files use module docstrings
+    "E402",   # module import not at top
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["data_utils", "plot_utils", "layout", "callbacks"]
+known-first-party = ["data_utils", "plot_utils"]
 section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
-
-[tool.ruff.lint.per-file-ignores]
 
 [tool.ruff.format]
 quote-style = "single"
@@ -38,15 +36,13 @@ indent-style = "space"
 python_version = "3.11"
 ignore_missing_imports = true
 warn_unused_configs = true
-# Relaxed for now — tighten as type coverage improves:
 check_untyped_defs = false
 warn_return_any = false
 no_implicit_optional = false
-# Suppress pandas/numpy type-stub noise:
 disable_error_code = ["operator", "arg-type", "return-value", "assignment", "attr-defined", "str-bytes-safe"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["paper/tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 markers = [
@@ -61,8 +57,8 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["data_utils", "plot_utils", "callbacks", "layout", "app", "export_boxplots"]
-omit = ["tests/*"]
+source = ["paper/data_utils", "paper/plot_utils"]
+omit = ["paper/tests/*"]
 
 [tool.coverage.report]
 fail_under = 55
