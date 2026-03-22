@@ -70,7 +70,7 @@ export function createHeatmapConfig(
   const yVals = new Set<string>();
   const xVals = new Set<string>();
 
-  for (const [key, scores] of cellScores) {
+  for (const [key] of cellScores) {
     const [x, y] = key.split('|||');
     xVals.add(x);
     yVals.add(y);
@@ -180,7 +180,7 @@ export function createHeatmapConfig(
       zmin,
       zmax,
       showscale: true,
-      text: textMatrix,
+      text: textMatrix as unknown as string[],
       texttemplate: '%{text}',
       textfont: { size: presentationMode ? 14 : 11, color: 'black' },
       colorbar: {
@@ -190,7 +190,7 @@ export function createHeatmapConfig(
         },
       },
       hoverongaps: false,
-      customdata,
+      customdata: customdata as unknown as number[][],
       hovertemplate:
         '<span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">REAGENTS</span><br>' +
         '<b>%{y}</b><br>' +

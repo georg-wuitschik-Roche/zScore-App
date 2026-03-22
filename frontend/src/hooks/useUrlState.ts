@@ -26,7 +26,7 @@ function decodeArray(val: string | null): string[] | null {
 export function useUrlState(): void {
   const [searchParams, setSearchParams] = useSearchParams();
   const isRestoringRef = useRef(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const {
     reactionTypes,
@@ -41,7 +41,7 @@ export function useUrlState(): void {
     maxComponents,
     activeTab,
     setFilters,
-  } = useFilterStore();
+  } = useFilterStore((s) => s);
 
   // Restore from URL on mount (or browser back/forward)
   useEffect(() => {

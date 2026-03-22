@@ -28,15 +28,6 @@ export function AnalysisTabs() {
     (tab) => !tab.requiresMultiReactant || showHeatmap,
   );
 
-  // Cycle to next visible tab
-  function cycleTab() {
-    const currentIdx = visibleTabs.findIndex((t) => t.id === activeTab);
-    const nextIdx = (currentIdx + 1) % visibleTabs.length;
-    setActiveTab(visibleTabs[nextIdx].id);
-  }
-
-  const currentTab = visibleTabs.find((t) => t.id === activeTab) ?? visibleTabs[0];
-
   return (
     <div className="analysis-view">
       <div className="view-toggle" id="view-toggle">

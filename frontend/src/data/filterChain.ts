@@ -6,6 +6,8 @@
  */
 
 import type { Row, FilterParams, FilterStats } from './types';
+
+export type { FilterParams };
 import {
   filterByReactionTypes,
   filterByReactantColumns,
