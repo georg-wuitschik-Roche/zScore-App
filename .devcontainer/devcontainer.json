@@ -1,12 +1,13 @@
-// The Dev Container format allows you to configure your environment. At the heart of it
-// is a Docker image or Dockerfile which controls the tools available in your environment.
-//
-// See https://aka.ms/devcontainer.json for more information.
 {
 	"name": "zScore Dashboard",
 	"image": "eu.repository.roche.com/cde-gitpod-docker-prd-l/ona-base:2.0",
-	"forwardPorts": [8050],
-	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y tmux && pip install -r requirements-dev.txt && pre-commit install",
+	"features": {
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "22"
+		}
+	},
+	"forwardPorts": [5173],
+	"postCreateCommand": ".devcontainer/post-create.sh",
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -17,5 +18,5 @@
 			]
 		}
 	},
-	"postStartCommand": "python app.py &"
+	"postStartCommand": "nohup .devcontainer/start-dev.sh > /tmp/dev-server.log 2>&1 &"
 }

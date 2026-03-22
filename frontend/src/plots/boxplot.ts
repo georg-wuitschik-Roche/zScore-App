@@ -202,7 +202,7 @@ export function createBoxplotConfig(
         text: 'z-Score',
         font: {
           size: presentationMode ? 24 : 18,
-          family: '"DM Sans", "Helvetica Neue", sans-serif',
+          family: '"JetBrains Mono", "Fira Code", monospace',
         },
       },
       zeroline: true,
