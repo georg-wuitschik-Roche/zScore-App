@@ -54,8 +54,8 @@ export function OptionsPanel() {
   function handleDownloadPNG() {
     const plotEl = document.querySelector('.js-plotly-plot') as HTMLElement;
     if (!plotEl) return;
-    // Use Plotly's built-in download
-    import('plotly.js').then((Plotly) => {
+    // @ts-expect-error — plotly.js-dist-min has no type declarations
+    import('plotly.js-dist-min').then((Plotly) => {
       Plotly.downloadImage(plotEl, {
         format: 'png',
         width: 1600,

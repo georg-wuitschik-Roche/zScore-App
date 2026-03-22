@@ -41,6 +41,8 @@ export interface FilterState {
   activeTab: 'boxplot' | 'heatmap' | 'stats';
   presentationMode: boolean;
   optionsPanelOpen: boolean;
+  uploadError: string | null;
+  uploadFileName: string | null;
 
   // Actions
   setReactionTypes: (types: string[]) => void;
@@ -57,9 +59,10 @@ export interface FilterState {
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
   resetFilters: () => void;
+  clearUploadError: () => void;
   loadDataset: () => Promise<void>;
   setUploadedDataset: (rows: Row[] | null) => void;
-  uploadCSV: (text: string) => void;
+  uploadCSV: (text: string, fileName?: string) => void;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
@@ -88,6 +91,8 @@ export const useFilterStore = create<FilterState>((set) => ({
   activeTab: 'boxplot',
   presentationMode: false,
   optionsPanelOpen: false,
+  uploadError: null,
+  uploadFileName: null,
 
   // Actions
   setReactionTypes: (types) => set({ reactionTypes: types, fgA: [], fgB: [] }),
@@ -138,14 +143,44 @@ export const useFilterStore = create<FilterState>((set) => ({
 
   setUploadedDataset: (rows) => set({ uploadedDataset: rows }),
 
-  uploadCSV: (text) => {
+  uploadCSV: (text, fileName) => {
+    const REQUIRED_COLUMNS = [
+      'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
+      'Base', 'Catalyst', 'Solvent', 'Ligand',
+      'Reaction Type', 'FG A', 'FG B', 'FG_sorted', 'z-Score',
+    ];
+
     try {
       const rows = parseCSVText(text);
-      set({ uploadedDataset: rows });
+      if (rows.length === 0) {
+        set({ uploadError: 'The uploaded file contains no data rows.' });
+        return;
+      }
+
+      const columns = Object.keys(rows[0]);
+      const missing = REQUIRED_COLUMNS.filter((c) => !columns.includes(c));
+      if (missing.length > 0) {
+        set({ uploadError: `Missing required columns: ${missing.join(', ')}` });
+        return;
+      }
+
+      // Check z-Score has numeric values
+      const hasNumericZScore = rows.some((r) => {
+        const z = r['z-Score'];
+        return z !== null && z !== undefined && !isNaN(Number(z));
+      });
+      if (!hasNumericZScore) {
+        set({ uploadError: 'Column "z-Score" contains no valid numeric values.' });
+        return;
+      }
+
+      set({ uploadedDataset: rows, uploadError: null, uploadFileName: fileName ?? null });
     } catch {
-      // Parse failed — silently ignore (try/catch prevents crashes)
+      set({ uploadError: 'Failed to parse CSV file. Check the format and encoding.' });
     }
   },
+
+  clearUploadError: () => set({ uploadError: null }),
 
   setFilters: (partial) => set(partial),
 }));
