@@ -28,22 +28,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Generate Parquet data file
+      - name: Generate Parquet + dropdown index from CSV
         run: |
-          pip install pandas pyarrow
-          python3 -c "
-          import pandas as pd
-          df = pd.read_csv('z-Score Peaks with FG.csv', encoding='utf-8')
-          USED = ['ELN_ID','PLATENUMBER','Coordinate','AREA_TOTAL_REDUCED',
-                  'Base','Catalyst','Solvent','Ligand','Additive',
-                  'Coupling Reagent','Secondary Solvent','Tertiary Solvent',
-                  'Reaction Type','FG A','FG B','FG_sorted','z-Score','output_column']
-          df_slim = df[[c for c in USED if c in df.columns]].copy()
-          df_slim['z-Score'] = pd.to_numeric(df_slim['z-Score'].astype(str).str.replace(',','.').str.strip(), errors='coerce')
-          df_slim['AREA_TOTAL_REDUCED'] = pd.to_numeric(df_slim['AREA_TOTAL_REDUCED'].astype(str).str.replace(',','.').str.strip(), errors='coerce')
-          df_slim.to_parquet('frontend/public/data/z-score-peaks.parquet', compression='zstd', index=False)
-          print(f'Generated Parquet: {len(df_slim)} rows, {df_slim.shape[1]} cols')
-          "
+          pip install -r requirements.txt
+          python3 scripts/regenerate_from_csv.py
 
       - name: Build
         working-directory: frontend
