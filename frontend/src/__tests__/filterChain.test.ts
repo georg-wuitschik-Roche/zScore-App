@@ -37,7 +37,12 @@ describe('Filter chain basics', () => {
   });
 
   it('default filter produces non-empty result', () => {
-    const { rows } = filterData(dataset, DEFAULTS);
+    const params = {
+      ...DEFAULTS,
+      reactionTypes: ['Buchwald-Hartwig'],
+      reactantTypes: ['Catalyst'],
+    };
+    const { rows } = filterData(dataset, params);
     expect(rows.length).toBeGreaterThan(0);
   });
 
@@ -50,9 +55,8 @@ describe('Filter chain basics', () => {
   it('CuI exclusion removes CuI rows', () => {
     const params = {
       ...DEFAULTS,
+      reactionTypes: ['Buchwald-Hartwig'],
       excludeCui: true,
-      fgA: [],
-      fgB: [],
     };
     const { rows } = filterData(dataset, params);
     const cuiRows = rows.filter((r) => r.Catalyst === 'CuI');
@@ -62,6 +66,8 @@ describe('Filter chain basics', () => {
   it('stats contain expected keys', () => {
     const params = {
       ...DEFAULTS,
+      reactionTypes: ['Buchwald-Hartwig'],
+      reactantTypes: ['Catalyst'],
       fgA: ['RNH2', 'RNH2 a-branch'],
       fgB: ['ArBr', 'ArCl'],
     };

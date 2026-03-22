@@ -9,13 +9,20 @@ type ConfigBuilder = (rows: Row[], reactantTypes: string[], presentationMode: bo
 interface Props {
   buildConfig: ConfigBuilder;
   label: string;
+  /** When provided, bypasses useFilteredData (used by split mode). */
+  panelRows?: Row[];
+  /** When provided, overrides store reactantTypes (used by split mode). */
+  panelReactantTypes?: string[];
 }
 
-export function DistributionView({ buildConfig, label }: Props) {
-  const { rows } = useFilteredData();
-  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+export function DistributionView({ buildConfig, label, panelRows, panelReactantTypes }: Props) {
+  const fallback = useFilteredData();
+  const storeReactantTypes = useFilterStore((s) => s.reactantTypes);
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
+
+  const rows = panelRows ?? fallback.rows;
+  const reactantTypes = panelReactantTypes ?? storeReactantTypes;
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     return (

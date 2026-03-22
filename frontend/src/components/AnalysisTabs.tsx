@@ -4,6 +4,8 @@ import { createBoxplotConfig } from '../plots/boxplot';
 import { createViolinConfig } from '../plots/violin';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
+import { useSplitFilteredData } from '../hooks/useSplitFilteredData';
+import type { SplitPanel } from '../hooks/useSplitFilteredData';
 
 type TabId = 'boxplot' | 'violin' | 'heatmap' | 'stats';
 
@@ -20,12 +22,60 @@ const TABS: TabDef[] = [
   { id: 'stats', label: 'Stats', requiresMultiReactant: false },
 ];
 
+function renderPanel(tab: TabId, panel: SplitPanel) {
+  switch (tab) {
+    case 'boxplot':
+      return (
+        <DistributionView
+          buildConfig={createBoxplotConfig}
+          label="boxplot"
+          panelRows={panel.rows}
+          panelReactantTypes={panel.reactantTypes}
+        />
+      );
+    case 'violin':
+      return (
+        <DistributionView
+          buildConfig={createViolinConfig}
+          label="violin plot"
+          panelRows={panel.rows}
+          panelReactantTypes={panel.reactantTypes}
+        />
+      );
+    case 'heatmap':
+      return (
+        <HeatmapView
+          panelRows={panel.rows}
+          panelReactantTypes={panel.reactantTypes}
+        />
+      );
+    case 'stats':
+      return (
+        <StatsTable
+          panelRows={panel.rows}
+          panelReactantTypes={panel.reactantTypes}
+        />
+      );
+  }
+}
+
 export function AnalysisTabs() {
   const activeTab = useFilterStore((s) => s.activeTab);
   const setActiveTab = useFilterStore((s) => s.setActiveTab);
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
+  const splitSelector = useFilterStore((s) => s.splitSelector);
+  const panels = useSplitFilteredData();
 
-  const showHeatmap = reactantTypes.length >= 2;
+  const isSplit = panels.length > 1;
+
+  // Heatmap needs ≥2 reactant types per panel; when splitting by reactant types
+  // each panel has only 1, so hide heatmap
+  const showHeatmap =
+    reactantTypes.length >= 2 && splitSelector !== 'reactantTypes';
+
+  // If user was on heatmap and it becomes unavailable, fall back to boxplot
+  const effectiveTab =
+    activeTab === 'heatmap' && !showHeatmap ? 'boxplot' : activeTab;
 
   const visibleTabs = TABS.filter(
     (tab) => !tab.requiresMultiReactant || showHeatmap,
@@ -37,7 +87,7 @@ export function AnalysisTabs() {
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}
-            className={`view-toggle-btn${activeTab === tab.id ? ' active' : ''}`}
+            className={`view-toggle-btn${effectiveTab === tab.id ? ' active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
             title={tab.label}
           >
@@ -47,10 +97,18 @@ export function AnalysisTabs() {
       </div>
 
       <div className="view-content">
-        {activeTab === 'boxplot' && <DistributionView buildConfig={createBoxplotConfig} label="boxplot" />}
-        {activeTab === 'violin' && <DistributionView buildConfig={createViolinConfig} label="violin plot" />}
-        {activeTab === 'heatmap' && <HeatmapView />}
-        {activeTab === 'stats' && <StatsTable />}
+        {isSplit ? (
+          <div className="split-grid">
+            {panels.map((panel) => (
+              <div key={panel.label} className="split-panel">
+                <div className="split-panel-label">{panel.label}</div>
+                {renderPanel(effectiveTab, panel)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderPanel(effectiveTab, panels[0])
+        )}
       </div>
     </div>
   );

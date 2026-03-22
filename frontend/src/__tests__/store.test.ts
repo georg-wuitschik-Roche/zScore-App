@@ -18,16 +18,17 @@ const INITIAL_STATE: Partial<FilterState> = {
   isFullDataLoaded: false,
   dropdownIndex: null,
   loadError: null,
-  reactionTypes: ['Buchwald-Hartwig'],
-  reactantTypes: ['Catalyst'],
-  fgA: ['RNH2 a-branch', 'RNH2'],
-  fgB: ['ArBr', 'ArCl'],
+  reactionTypes: [],
+  reactantTypes: [],
+  fgA: [],
+  fgB: [],
   excludeCui: true,
   excludeScaleup: true,
   includeNullCategories: true,
   minEln: 5,
   topnZscore: 5,
   maxComponents: 10,
+  splitSelector: null,
   activeTab: 'boxplot',
   presentationMode: false,
   optionsPanelOpen: false,
@@ -46,7 +47,7 @@ beforeEach(() => {
 describe('initial state', () => {
   it('has correct default reactionTypes', () => {
     const state = useFilterStore.getState();
-    expect(state.reactionTypes).toEqual(['Buchwald-Hartwig']);
+    expect(state.reactionTypes).toEqual([]);
   });
 
   it('has excludeCui=true by default', () => {
@@ -69,13 +70,13 @@ describe('initial state', () => {
   });
 
   it('has correct default reactantTypes', () => {
-    expect(useFilterStore.getState().reactantTypes).toEqual(['Catalyst']);
+    expect(useFilterStore.getState().reactantTypes).toEqual([]);
   });
 
   it('has correct default fgA and fgB', () => {
     const state = useFilterStore.getState();
-    expect(state.fgA).toEqual(['RNH2 a-branch', 'RNH2']);
-    expect(state.fgB).toEqual(['ArBr', 'ArCl']);
+    expect(state.fgA).toEqual([]);
+    expect(state.fgB).toEqual([]);
   });
 
   it('has boxplot as default active tab', () => {
@@ -357,7 +358,7 @@ describe('setFilters', () => {
     const state = useFilterStore.getState();
     expect(state.minEln).toBe(99);
     // These should remain at defaults
-    expect(state.reactionTypes).toEqual(['Buchwald-Hartwig']);
+    expect(state.reactionTypes).toEqual([]);
     expect(state.topnZscore).toBe(5);
     expect(state.excludeCui).toBe(true);
   });

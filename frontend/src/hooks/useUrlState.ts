@@ -9,6 +9,21 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import type { FilterState } from '../stores/filterStore';
+import type { SplitSelector } from '../data/types';
+
+const SPLIT_TO_URL: Record<string, string> = {
+  reactionTypes: 'rt',
+  fgA: 'fga',
+  fgB: 'fgb',
+  reactantTypes: 'cat',
+};
+
+const URL_TO_SPLIT: Record<string, SplitSelector> = {
+  rt: 'reactionTypes',
+  fga: 'fgA',
+  fgb: 'fgB',
+  cat: 'reactantTypes',
+};
 
 /** Serialize a string array to a URL param (pipe-separated to avoid comma conflicts). */
 function encodeArray(arr: string[]): string {
@@ -40,6 +55,7 @@ export function useUrlState(): void {
     topnZscore,
     maxComponents,
     activeTab,
+    splitSelector,
     setFilters,
   } = useFilterStore((s) => s);
 
@@ -56,6 +72,7 @@ export function useUrlState(): void {
     const cui = searchParams.get('cui');
     const su = searchParams.get('su');
     const nc = searchParams.get('nc');
+    const split = searchParams.get('split');
 
     // Only restore if URL has params
     if (!rt && !cat && !fga && !fgb && !me) return;
@@ -74,6 +91,7 @@ export function useUrlState(): void {
     if (cui !== null) partial.excludeCui = cui === '1';
     if (su !== null) partial.excludeScaleup = su === '1';
     if (nc !== null) partial.includeNullCategories = nc === '1';
+    partial.splitSelector = split ? (URL_TO_SPLIT[split] ?? null) : null;
 
     setFilters(partial);
 
@@ -103,6 +121,7 @@ export function useUrlState(): void {
       params.set('su', excludeScaleup ? '1' : '0');
       params.set('nc', includeNullCategories ? '1' : '0');
       if (activeTab !== 'boxplot') params.set('tab', activeTab);
+      if (splitSelector) params.set('split', SPLIT_TO_URL[splitSelector]);
 
       setSearchParams(params, { replace: true });
     }, 250);
@@ -123,5 +142,6 @@ export function useUrlState(): void {
     topnZscore,
     maxComponents,
     activeTab,
+    splitSelector,
   ]);
 }

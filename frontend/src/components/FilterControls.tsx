@@ -8,6 +8,33 @@ import {
   getReactantOptions,
 } from '../data/dropdownOptions';
 import { MultiSelect } from './MultiSelect';
+import type { SplitSelector } from '../data/types';
+
+function SplitToggle({ selectorKey, values }: { selectorKey: SplitSelector; values: string[] }) {
+  const splitSelector = useFilterStore((s) => s.splitSelector);
+  const setSplitSelector = useFilterStore((s) => s.setSplitSelector);
+
+  if (values.length < 2) return null;
+
+  const isActive = splitSelector === selectorKey;
+
+  return (
+    <div className="split-toggle">
+      <button
+        className={`split-toggle-btn${!isActive ? ' active' : ''}`}
+        onClick={() => setSplitSelector(null)}
+      >
+        Combined
+      </button>
+      <button
+        className={`split-toggle-btn${isActive ? ' active' : ''}`}
+        onClick={() => setSplitSelector(isActive ? null : selectorKey)}
+      >
+        Split
+      </button>
+    </div>
+  );
+}
 
 export function FilterControls() {
   const dataset = useFilterStore((s) => s.dataset);
@@ -48,7 +75,10 @@ export function FilterControls() {
     <div className="controls-row">
       {/* Reaction Type(s) */}
       <div className="control-col" id="reaction-type-dropdown">
-        <label>Reaction Type(s):</label>
+        <div className="control-col-header">
+          <label>Reaction Type(s):</label>
+          <SplitToggle selectorKey="reactionTypes" values={reactionTypes} />
+        </div>
         <MultiSelect
           options={reactionTypeOptions}
           value={reactionTypes}
@@ -65,7 +95,10 @@ export function FilterControls() {
 
       {/* Functional Group(s) A */}
       <div className="control-col" id="fg-a-dropdown">
-        <label>Functional Group(s) A:</label>
+        <div className="control-col-header">
+          <label>Functional Group(s) A:</label>
+          <SplitToggle selectorKey="fgA" values={fgA} />
+        </div>
         <MultiSelect
           options={fgAOptions}
           value={fgA}
@@ -89,7 +122,10 @@ export function FilterControls() {
 
       {/* Functional Group(s) B */}
       <div className="control-col" id="fg-b-dropdown">
-        <label>Functional Group(s) B:</label>
+        <div className="control-col-header">
+          <label>Functional Group(s) B:</label>
+          <SplitToggle selectorKey="fgB" values={fgB} />
+        </div>
         <MultiSelect
           options={fgBOptions}
           value={fgB}
@@ -112,7 +148,10 @@ export function FilterControls() {
 
       {/* Reactant Type(s) */}
       <div className="control-col" id="reactant-types-dropdown">
-        <label>Reactant Type(s):</label>
+        <div className="control-col-header">
+          <label>Reactant Type(s):</label>
+          <SplitToggle selectorKey="reactantTypes" values={reactantTypes} />
+        </div>
         <MultiSelect
           options={reactantTypeOptions}
           value={reactantTypes}

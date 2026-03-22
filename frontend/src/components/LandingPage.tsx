@@ -14,6 +14,7 @@ import {
 } from '../data/dropdownOptions';
 import { MultiSelect } from './MultiSelect';
 import { Footer } from './Footer';
+import type { SplitSelector } from '../data/types';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -60,7 +61,23 @@ export function LandingPage() {
     [useIndex, dropdownIndex, rowData, reactionTypes],
   );
 
-  function handleExplore() {
+  // Determine which selector (if any) can be split
+  const splittableSelector: SplitSelector | null = useMemo(() => {
+    if (reactantTypes.length >= 2) return 'reactantTypes';
+    if (reactionTypes.length >= 2) return 'reactionTypes';
+    if (fgA.length >= 2) return 'fgA';
+    if (fgB.length >= 2) return 'fgB';
+    return null;
+  }, [reactionTypes, fgA, fgB, reactantTypes]);
+
+  const SPLIT_TO_URL: Record<string, string> = {
+    reactionTypes: 'rt',
+    fgA: 'fga',
+    fgB: 'fgb',
+    reactantTypes: 'cat',
+  };
+
+  function handleExplore(split: SplitSelector | null) {
     if (reactionTypes.length === 0) return;
 
     setFilters({
@@ -68,6 +85,7 @@ export function LandingPage() {
       fgA,
       fgB,
       reactantTypes,
+      splitSelector: split,
     });
 
     const params = new URLSearchParams();
@@ -75,6 +93,7 @@ export function LandingPage() {
     if (fgA.length > 0) params.set('fga', fgA.join('|'));
     if (fgB.length > 0) params.set('fgb', fgB.join('|'));
     if (reactantTypes.length > 0) params.set('cat', reactantTypes.join('|'));
+    if (split) params.set('split', SPLIT_TO_URL[split]);
     navigate(`/dashboard?${params.toString()}`);
   }
 
@@ -169,9 +188,20 @@ export function LandingPage() {
                 />
               </div>
             </div>
-            <button className="landing-explore-btn" onClick={handleExplore}>
-              Explore
-            </button>
+            {splittableSelector ? (
+              <div className="landing-explore-split">
+                <button className="landing-explore-btn" onClick={() => handleExplore(null)}>
+                  Combined
+                </button>
+                <button className="landing-explore-btn landing-explore-btn-split" onClick={() => handleExplore(splittableSelector)}>
+                  Split
+                </button>
+              </div>
+            ) : (
+              <button className="landing-explore-btn" onClick={() => handleExplore(null)}>
+                Explore
+              </button>
+            )}
           </>
         )}
       </div>

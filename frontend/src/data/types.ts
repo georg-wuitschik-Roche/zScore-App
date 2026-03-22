@@ -53,10 +53,10 @@ export interface FilterStats {
 
 /** Default filter values — single source of truth. */
 export const DEFAULTS: FilterParams = {
-  reactionTypes: ['Buchwald-Hartwig'],
-  reactantTypes: ['Catalyst'],
-  fgA: ['RNH2 a-branch', 'RNH2'],
-  fgB: ['ArBr', 'ArCl'],
+  reactionTypes: [],
+  reactantTypes: [],
+  fgA: [],
+  fgB: [],
   excludeCui: true,
   excludeScaleup: true,
   includeNullCategories: true,
@@ -102,6 +102,9 @@ export interface DropdownIndexEntry {
 
 /** Maps reaction type → pre-computed dropdown data. */
 export type DropdownIndex = Record<string, DropdownIndexEntry>;
+
+/** Which filter dropdown is in split mode (null = combined). */
+export type SplitSelector = 'reactionTypes' | 'fgA' | 'fgB' | 'reactantTypes';
 
 /** Reagent columns used in deduplication and scale-up detection. */
 export const REAGENT_COLS = [

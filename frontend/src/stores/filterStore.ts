@@ -6,14 +6,14 @@
  */
 
 import { create } from 'zustand';
-import type { Row, DropdownIndex } from '../data/types';
+import type { Row, DropdownIndex, SplitSelector } from '../data/types';
 import { fetchDropdownIndex, fetchParquetBuffer, parseDataset, parseCSVText } from '../data/loader';
 
-// Default filter values — matches callbacks.py defaults
-const DEFAULT_REACTION_TYPES = ['Buchwald-Hartwig'];
-const DEFAULT_FG_A = ['RNH2 a-branch', 'RNH2'];
-const DEFAULT_FG_B = ['ArBr', 'ArCl'];
-const DEFAULT_REACTANT_TYPES = ['Catalyst'];
+// Default filter values — empty until user selects on landing page
+const DEFAULT_REACTION_TYPES: string[] = [];
+const DEFAULT_FG_A: string[] = [];
+const DEFAULT_FG_B: string[] = [];
+const DEFAULT_REACTANT_TYPES: string[] = [];
 const DEFAULT_MIN_ELN = 5;
 const DEFAULT_TOPN_ZSCORE = 5;
 const DEFAULT_MAX_COMPONENTS = 10;
@@ -38,6 +38,9 @@ export interface FilterState {
   topnZscore: number;
   maxComponents: number;
 
+  // Split mode
+  splitSelector: SplitSelector | null;
+
   // UI state
   activeTab: 'boxplot' | 'violin' | 'heatmap' | 'stats';
   presentationMode: boolean;
@@ -56,6 +59,7 @@ export interface FilterState {
   setMinEln: (val: number) => void;
   setTopnZscore: (val: number) => void;
   setMaxComponents: (val: number) => void;
+  setSplitSelector: (selector: SplitSelector | null) => void;
   setActiveTab: (tab: 'boxplot' | 'violin' | 'heatmap' | 'stats') => void;
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
@@ -89,6 +93,9 @@ export const useFilterStore = create<FilterState>((set) => ({
   topnZscore: DEFAULT_TOPN_ZSCORE,
   maxComponents: DEFAULT_MAX_COMPONENTS,
 
+  // Split mode
+  splitSelector: null,
+
   // UI state
   activeTab: 'boxplot',
   presentationMode: false,
@@ -97,16 +104,46 @@ export const useFilterStore = create<FilterState>((set) => ({
   uploadFileName: null,
 
   // Actions
-  setReactionTypes: (types) => set({ reactionTypes: types, fgA: [], fgB: [] }),
-  setReactantTypes: (types) => set({ reactantTypes: types }),
-  setFgA: (fgs) => set({ fgA: fgs }),
-  setFgB: (fgs) => set({ fgB: fgs }),
+  setReactionTypes: (types) =>
+    set((s) => ({
+      reactionTypes: types,
+      fgA: [],
+      fgB: [],
+      // Auto-clear split if it was on reactionTypes (now <2) or fgA/fgB (just emptied)
+      splitSelector:
+        (s.splitSelector === 'reactionTypes' && types.length < 2) ||
+        s.splitSelector === 'fgA' ||
+        s.splitSelector === 'fgB'
+          ? null
+          : s.splitSelector,
+    })),
+  setReactantTypes: (types) =>
+    set((s) => ({
+      reactantTypes: types,
+      splitSelector:
+        s.splitSelector === 'reactantTypes' && types.length < 2
+          ? null
+          : s.splitSelector,
+    })),
+  setFgA: (fgs) =>
+    set((s) => ({
+      fgA: fgs,
+      splitSelector:
+        s.splitSelector === 'fgA' && fgs.length < 2 ? null : s.splitSelector,
+    })),
+  setFgB: (fgs) =>
+    set((s) => ({
+      fgB: fgs,
+      splitSelector:
+        s.splitSelector === 'fgB' && fgs.length < 2 ? null : s.splitSelector,
+    })),
   setExcludeCui: (val) => set({ excludeCui: val }),
   setExcludeScaleup: (val) => set({ excludeScaleup: val }),
   setIncludeNullCategories: (val) => set({ includeNullCategories: val }),
   setMinEln: (val) => set({ minEln: val }),
   setTopnZscore: (val) => set({ topnZscore: val }),
   setMaxComponents: (val) => set({ maxComponents: val }),
+  setSplitSelector: (selector) => set({ splitSelector: selector }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   togglePresentationMode: () =>
     set((s) => ({ presentationMode: !s.presentationMode })),
@@ -126,6 +163,7 @@ export const useFilterStore = create<FilterState>((set) => ({
       minEln: DEFAULT_MIN_ELN,
       topnZscore: DEFAULT_TOPN_ZSCORE,
       maxComponents: DEFAULT_MAX_COMPONENTS,
+      splitSelector: null,
       activeTab: 'boxplot',
       uploadedDataset: null,
     })),

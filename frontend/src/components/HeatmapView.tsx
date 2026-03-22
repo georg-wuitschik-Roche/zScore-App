@@ -2,11 +2,22 @@ import Plot from './Plot';
 import { useFilteredData } from '../hooks/useFilteredData';
 import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
+import type { Row } from '../data/types';
 
-export function HeatmapView() {
-  const { rows } = useFilteredData();
-  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+interface Props {
+  /** When provided, bypasses useFilteredData (used by split mode). */
+  panelRows?: Row[];
+  /** When provided, overrides store reactantTypes (used by split mode). */
+  panelReactantTypes?: string[];
+}
+
+export function HeatmapView({ panelRows, panelReactantTypes }: Props = {}) {
+  const fallback = useFilteredData();
+  const storeReactantTypes = useFilterStore((s) => s.reactantTypes);
   const presentationMode = useFilterStore((s) => s.presentationMode);
+
+  const rows = panelRows ?? fallback.rows;
+  const reactantTypes = panelReactantTypes ?? storeReactantTypes;
 
   if (reactantTypes.length < 2) {
     return (
