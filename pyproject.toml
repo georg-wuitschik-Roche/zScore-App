@@ -44,3 +44,26 @@ warn_return_any = false
 no_implicit_optional = false
 # Suppress pandas/numpy type-stub noise:
 disable_error_code = ["operator", "arg-type", "return-value", "assignment", "attr-defined", "str-bytes-safe"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+markers = [
+    "slow: tests using full 67k-row dataset",
+    "golden: golden snapshot comparison tests",
+    "e2e: end-to-end browser tests",
+    "integration: cross-module integration tests",
+]
+addopts = "--strict-markers -v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["data_utils", "plot_utils", "callbacks", "layout", "app", "export_boxplots"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 55
+show_missing = true

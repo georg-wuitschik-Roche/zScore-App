@@ -1,0 +1,33 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run unit tests with coverage
+        run: |
+          python -m pytest tests/ -m "not slow and not e2e and not golden" --cov --cov-report=xml -v
+
+      - name: Upload coverage
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.xml
+          fail_ci_if_error: false
