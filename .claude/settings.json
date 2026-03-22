@@ -1,6 +1,10 @@
 {
   "model": "opus",
   "effortLevel": "high",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
     "allow": [
       "Bash(*)",

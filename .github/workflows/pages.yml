@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Generate Parquet data file
+        run: |
+          pip install pandas pyarrow
+          python3 -c "
+          import pandas as pd
+          df = pd.read_csv('z-Score Peaks with FG.csv', encoding='utf-8')
+          USED = ['ELN_ID','PLATENUMBER','Coordinate','AREA_TOTAL_REDUCED',
+                  'Base','Catalyst','Solvent','Ligand','Additive',
+                  'Coupling Reagent','Secondary Solvent','Tertiary Solvent',
+                  'Reaction Type','FG A','FG B','FG_sorted','z-Score','output_column']
+          df_slim = df[[c for c in USED if c in df.columns]].copy()
+          df_slim['z-Score'] = pd.to_numeric(df_slim['z-Score'].astype(str).str.replace(',','.').str.strip(), errors='coerce')
+          df_slim['AREA_TOTAL_REDUCED'] = pd.to_numeric(df_slim['AREA_TOTAL_REDUCED'].astype(str).str.replace(',','.').str.strip(), errors='coerce')
+          df_slim.to_parquet('frontend/public/data/z-score-peaks.parquet', compression='zstd', index=False)
+          print(f'Generated Parquet: {len(df_slim)} rows, {df_slim.shape[1]} cols')
+          "
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
