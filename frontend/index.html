@@ -4,10 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="preload" as="image" href="/assets/logo.png" />
+    <title>Z-Score Dashboard</title>
+    <style>
+      /* Inline loading styles — visible before JS loads */
+      body { margin: 0; background: #fafafa; }
+      .initial-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        gap: 16px;
+        font-family: "DM Sans", "Helvetica Neue", sans-serif;
+        color: #999;
+      }
+      .initial-loader .spin {
+        width: 40px; height: 40px;
+        border: 3px solid #e5e5e5;
+        border-top-color: #111;
+        border-radius: 50%;
+        animation: sp 0.8s linear infinite;
+      }
+      @keyframes sp { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="initial-loader">
+        <img src="/assets/logo.png" alt="Z-Score Dashboard" width="400" height="auto" style="max-width:80vw" />
+        <div class="spin"></div>
+        <p>Loading Z-Score Dashboard...</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

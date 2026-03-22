@@ -44,11 +44,6 @@ export function median(nums: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-/** Count unique values in an array. */
-function countUnique(arr: (string | null)[]): number {
-  return new Set(arr.filter((v) => v !== null)).size;
-}
-
 // ---------------------------------------------------------------------------
 // Step 1: Filter by Reaction Types
 // ---------------------------------------------------------------------------

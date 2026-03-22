@@ -1,19 +1,116 @@
 /**
- * CSV loader — fetch and parse the dataset with PapaParse.
+ * Dataset loader — fetch Parquet file with hyparquet (pure JS, no WASM).
  *
- * Handles encoding detection, comma-as-decimal conversion, and
- * FG_PAIR_SORTED computation.
+ * Also supports CSV upload via PapaParse (for user-uploaded files).
+ * The default dataset ships as Parquet (0.5 MB vs 15 MB CSV = 30x smaller).
  */
 
 import Papa from 'papaparse';
+import { parquetRead } from 'hyparquet';
 import type { Row } from './types';
 
-/** Default CSV URL — served from public/ or fetched from GCS. */
-const DEFAULT_CSV_URL = '/data/z-score-peaks.csv';
+/** Default Parquet URL — served from public/. */
+const DEFAULT_PARQUET_URL = '/data/z-score-peaks.parquet';
+
+/**
+ * Compute sorted FG pair string: "ArBr, RNH2" format.
+ */
+function computeFgPairSorted(fgA: string | null, fgB: string | null): string | null {
+  if (!fgA || !fgB) return null;
+  const pair = [fgA, fgB].sort();
+  return `${pair[0]}, ${pair[1]}`;
+}
+
+/**
+ * Normalize a raw value from Parquet/CSV to null if it's empty/NaN.
+ */
+function normalizeNull(val: unknown): string | null {
+  if (val === null || val === undefined) return null;
+  const s = String(val);
+  if (s === '' || s === 'nan' || s === 'NaN') return null;
+  return s;
+}
+
+/**
+ * Clean a raw row from Parquet or CSV into a typed Row.
+ */
+function cleanRow(raw: Record<string, unknown>): Row {
+  const row = { ...raw } as Record<string, unknown>;
+
+  // Convert BigInt values to regular numbers (Parquet stores INT64 as BigInt)
+  for (const key of Object.keys(row)) {
+    if (typeof row[key] === 'bigint') {
+      row[key] = Number(row[key]);
+    }
+  }
+
+  // Normalize empty/NaN strings to null for categorical columns
+  for (const col of [
+    'Additive', 'Base', 'Catalyst', 'Coupling Reagent',
+    'Solvent', 'Ligand', 'Secondary Solvent', 'Tertiary Solvent',
+  ]) {
+    if (col in row) {
+      row[col] = normalizeNull(row[col]);
+    }
+  }
+
+  // Ensure numerics are numbers (Parquet already stores them as numbers,
+  // but CSV upload may need conversion)
+  if (typeof row['z-Score'] !== 'number') {
+    row['z-Score'] = parseNumeric(row['z-Score']);
+  }
+  if (typeof row['AREA_TOTAL_REDUCED'] !== 'number') {
+    row['AREA_TOTAL_REDUCED'] = parseNumeric(row['AREA_TOTAL_REDUCED']);
+  }
+
+  // Compute FG_PAIR_SORTED if not present
+  if (!row.FG_PAIR_SORTED) {
+    const fgSorted = row['FG_sorted'];
+    if (fgSorted && typeof fgSorted === 'string') {
+      row.FG_PAIR_SORTED = fgSorted;
+    } else {
+      row.FG_PAIR_SORTED = computeFgPairSorted(
+        row['FG A'] as string | null,
+        row['FG B'] as string | null,
+      );
+    }
+  }
+
+  return row as Row;
+}
+
+/**
+ * Load the default dataset from a Parquet file.
+ *
+ * Uses hyparquet — a pure JavaScript Parquet reader (420KB, no WASM).
+ * Parquet advantages: 30x smaller than CSV, types preserved, dictionary-encoded strings.
+ */
+export async function loadDataset(url: string = DEFAULT_PARQUET_URL): Promise<Row[]> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch dataset: ${response.status} ${response.statusText}`);
+  }
+
+  const buffer = await response.arrayBuffer();
+
+  return new Promise<Row[]>((resolve, reject) => {
+    try {
+      parquetRead({
+        file: buffer,
+        rowFormat: 'object',
+        onComplete: (data: Record<string, unknown>[]) => {
+          const rows = data.map(cleanRow);
+          resolve(rows);
+        },
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 
 /**
  * Parse a numeric string, handling comma-as-decimal separator.
- * Returns null for non-numeric values.
  */
 function parseNumeric(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
@@ -22,41 +119,15 @@ function parseNumeric(value: unknown): number | null {
   return isNaN(num) ? null : num;
 }
 
-/** Compute sorted FG pair string: "ArBr, RNH2" format. */
-function computeFgPairSorted(fgA: string | null, fgB: string | null): string | null {
-  if (!fgA || !fgB) return null;
-  const pair = [fgA, fgB].sort();
-  return `${pair[0]}, ${pair[1]}`;
-}
-
 /**
- * Load and parse a CSV file from a URL.
- *
- * Performs the same cleaning as Python's _load_and_prepare():
- * - Converts z-Score and AREA_TOTAL_REDUCED to numbers (handles comma decimals)
- * - Computes FG_PAIR_SORTED if not present
- */
-export async function loadDataset(url: string = DEFAULT_CSV_URL): Promise<Row[]> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
-  }
-
-  const csvText = await response.text();
-  return parseCSVText(csvText);
-}
-
-/**
- * Parse CSV text into Row[]. Used by both loadDataset and file upload.
+ * Parse CSV text into Row[]. Used for user-uploaded CSV files.
  */
 export function parseCSVText(csvText: string): Row[] {
-  // Try comma delimiter first, fall back to semicolon, then tab
   let result = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
   });
 
-  // If we got 1 or fewer columns, try semicolon
   if (result.meta.fields && result.meta.fields.length <= 1) {
     result = Papa.parse<Record<string, string>>(csvText, {
       header: true,
@@ -65,7 +136,6 @@ export function parseCSVText(csvText: string): Row[] {
     });
   }
 
-  // If still 1 or fewer columns, try tab
   if (result.meta.fields && result.meta.fields.length <= 1) {
     result = Papa.parse<Record<string, string>>(csvText, {
       header: true,
@@ -74,38 +144,5 @@ export function parseCSVText(csvText: string): Row[] {
     });
   }
 
-  // Coerce types and clean data
-  const rows: Row[] = result.data.map((raw) => {
-    const row = raw as unknown as Row;
-
-    // Convert numeric columns (handles comma-as-decimal)
-    row['z-Score'] = parseNumeric(raw['z-Score']);
-    row['AREA_TOTAL_REDUCED'] = parseNumeric(raw['AREA_TOTAL_REDUCED']);
-
-    // Normalize empty strings to null for categorical columns
-    for (const col of [
-      'Additive', 'Base', 'Catalyst', 'Coupling Reagent',
-      'Solvent', 'Ligand', 'Secondary Solvent', 'Tertiary Solvent',
-    ]) {
-      if (raw[col] === '' || raw[col] === 'nan' || raw[col] === 'NaN') {
-        (row as Record<string, unknown>)[col] = null;
-      }
-    }
-
-    // Compute FG_PAIR_SORTED if not present
-    if (!row.FG_PAIR_SORTED && row['FG A'] && row['FG B']) {
-      if (raw['FG_sorted']) {
-        row.FG_PAIR_SORTED = raw['FG_sorted'];
-      } else {
-        row.FG_PAIR_SORTED = computeFgPairSorted(
-          row['FG A'],
-          row['FG B'],
-        );
-      }
-    }
-
-    return row;
-  });
-
-  return rows;
+  return result.data.map((raw) => cleanRow(raw as Record<string, unknown>));
 }
