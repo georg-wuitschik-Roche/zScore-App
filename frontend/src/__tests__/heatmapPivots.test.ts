@@ -82,46 +82,34 @@ function buildHeatmapParams(
 }
 
 /**
- * Compute the pivot median for a specific (yVal, xVal) cell from filtered rows.
- * Returns null if no valid z-Scores exist for that cell.
+ * Pre-compute cell scores and ELN sets in a single pass over rows.
+ * Returns maps keyed by "yVal|xVal".
  */
-function computeCellMedian(
+function buildCellMaps(
   rows: Row[],
   yCol: string,
   xCol: string,
-  yVal: string,
-  xVal: string,
-): number | null {
-  const scores: number[] = [];
+): { scores: Map<string, number[]>; elns: Map<string, Set<string>> } {
+  const scores = new Map<string, number[]>();
+  const elns = new Map<string, Set<string>>();
   for (const row of rows) {
-    if (getVal(row, yCol) === yVal && getVal(row, xCol) === xVal) {
-      const z = row['z-Score'];
-      if (z !== null && z !== undefined && !isNaN(z)) {
-        scores.push(z);
-      }
+    const y = getVal(row, yCol);
+    const x = getVal(row, xCol);
+    if (y === null || x === null) continue;
+    const key = `${y}|${x}`;
+    const z = row['z-Score'];
+    if (z !== null && z !== undefined && !isNaN(z)) {
+      let arr = scores.get(key);
+      if (!arr) { arr = []; scores.set(key, arr); }
+      arr.push(z);
+    }
+    if (row.ELN_ID) {
+      let set = elns.get(key);
+      if (!set) { set = new Set(); elns.set(key, set); }
+      set.add(row.ELN_ID);
     }
   }
-  if (scores.length === 0) return null;
-  return median(scores);
-}
-
-/**
- * Count unique ELN_IDs for a specific (yVal, xVal) cell from filtered rows.
- */
-function computeCellElnCount(
-  rows: Row[],
-  yCol: string,
-  xCol: string,
-  yVal: string,
-  xVal: string,
-): number {
-  const elns = new Set<string>();
-  for (const row of rows) {
-    if (getVal(row, yCol) === yVal && getVal(row, xCol) === xVal) {
-      if (row.ELN_ID) elns.add(row.ELN_ID);
-    }
-  }
-  return elns.size;
+  return { scores, elns };
 }
 
 // ---------------------------------------------------------------------------
@@ -190,12 +178,13 @@ describe('Heatmap pivots (golden fixtures)', () => {
       it('cell medians match within tolerance', () => {
         const params = buildHeatmapParams(reactionType, reactantTypes);
         const { rows } = filterData(dataset, params);
+        const { scores } = buildCellMaps(rows, yCol, xCol);
 
         for (const [cellKey, expectedMedian] of Object.entries(
           expected.cell_medians,
         )) {
-          const [yVal, xVal] = cellKey.split('|');
-          const actual = computeCellMedian(rows, yCol, xCol, yVal, xVal);
+          const cellScores = scores.get(cellKey);
+          const actual = cellScores ? median(cellScores) : null;
 
           if (expectedMedian === null) {
             expect(actual).toBeNull();
@@ -209,12 +198,12 @@ describe('Heatmap pivots (golden fixtures)', () => {
       it('cell ELN counts match', () => {
         const params = buildHeatmapParams(reactionType, reactantTypes);
         const { rows } = filterData(dataset, params);
+        const { elns } = buildCellMaps(rows, yCol, xCol);
 
         for (const [cellKey, expectedCount] of Object.entries(
           expected.cell_eln_counts,
         )) {
-          const [yVal, xVal] = cellKey.split('|');
-          const actual = computeCellElnCount(rows, yCol, xCol, yVal, xVal);
+          const actual = elns.get(cellKey)?.size ?? 0;
           expect(actual).toBe(expectedCount);
         }
       });
