@@ -13,3 +13,20 @@ repos:
       - id: mypy
         args: [--ignore-missing-imports]
         additional_dependencies: [pandas-stubs, types-requests]
+
+  - repo: local
+    hooks:
+      - id: tsc
+        name: TypeScript type check
+        entry: bash -c 'cd frontend && npx tsc --noEmit'
+        language: system
+        files: '^frontend/src/.*\.(ts|tsx)$'
+        pass_filenames: false
+
+      - id: vitest
+        name: Golden tests (3,192)
+        entry: bash -c 'cd frontend && npx vitest run --reporter=dot'
+        language: system
+        stages: [pre-push]
+        files: '^frontend/'
+        pass_filenames: false
