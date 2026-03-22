@@ -47,8 +47,23 @@ zScore-App/
 ├── assets/
 │   ├── app.css               # Custom styling
 │   └── logo.png              # App logo
+├── tests/                    # Test suite (2,610 tests)
+│   ├── conftest.py           # Shared fixtures
+│   ├── fixtures/golden/      # Golden snapshot JSON files
+│   ├── generate_*.py         # Scripts to regenerate golden files
+│   ├── test_data_utils.py    # Filter chain, cache, upload, stats
+│   ├── test_plot_utils.py    # Boxplot, heatmap, distribution, QQ
+│   ├── test_callbacks.py     # Callback helpers and logic
+│   ├── test_layout.py        # Component IDs, structure, defaults
+│   ├── test_median_consistency.py  # 1,912 median snapshots (35 filters)
+│   ├── test_dropdown_conditioning.py  # FG B options per FG A
+│   ├── test_heatmap_pivots.py  # Cell values, axis ordering
+│   ├── test_stats_table.py   # describe() output validation
+│   ├── test_edge_cases.py    # 0 rows, NaN, degenerate inputs
+│   └── e2e/                  # Playwright browser tests
 ├── exports/                  # Generated images (boxplots, paper, supplementary)
 ├── requirements.txt          # Python deps
+├── requirements-dev.txt      # Test deps (pytest, coverage, freezegun)
 ├── Dockerfile                # Cloud Run container
 ├── Procfile                  # Heroku deploy
 └── z-Score Peaks with FG.csv # Main dataset (~15 MB)
@@ -59,13 +74,18 @@ zScore-App/
 | Task       | Command                                      |
 |------------|-----------------------------------------------|
 | Install    | `pip install -r requirements.txt`             |
+| Install dev| `pip install -r requirements-dev.txt`         |
 | Dev server | `python app.py` (debug mode, port 8050)       |
 | Production | `gunicorn --bind :8080 -w1 --threads 8 app:server` |
+| Tests fast | `python -m pytest tests/ -m "not slow and not e2e"` |
+| Tests full | `python -m pytest tests/ -m "not e2e"`        |
+| Tests cov  | `python -m pytest tests/ -m "not e2e" --cov`  |
+| Regen gold | `python tests/generate_median_golden.py`      |
 | Export     | `python export_boxplots.py`                   |
 | Stats figs | `python generate_supplementary_figures.py`    |
 
 - Local URL: http://localhost:8050
-- No test suite exists yet
+- Test suite: 2,610 tests (unit, integration, golden snapshots, edge cases)
 
 ## Key Files
 

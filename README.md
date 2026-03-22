@@ -241,14 +241,36 @@ Community contributions toward these features are welcome. Please open an issue 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Test thoroughly with dataset
+4. Run the test suite: `python -m pytest tests/ -m "not e2e"`
 5. Submit a pull request
 
 ### Development Setup
 
 ```bash
-# Install development dependencies
+# Install dependencies
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
+
+# Run fast tests (unit + integration, ~7s)
+python -m pytest tests/ -m "not slow and not e2e"
+
+# Run full suite including golden snapshots (~90s)
+python -m pytest tests/ -m "not e2e"
+
+# Run with coverage
+python -m pytest tests/ -m "not e2e" --cov
+```
+
+### Regenerating Golden Fixtures
+
+After intentional changes to filter logic, regenerate the golden snapshot files:
+
+```bash
+python tests/generate_golden.py
+python tests/generate_median_golden.py
+python tests/generate_dropdown_golden.py
+python tests/generate_heatmap_golden.py
+python tests/generate_stats_golden.py
 ```
 
 ## 📄 License
