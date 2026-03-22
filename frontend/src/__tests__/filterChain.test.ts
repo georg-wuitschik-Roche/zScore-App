@@ -20,10 +20,10 @@ import { DEFAULTS } from '../data/types';
 
 let dataset: Row[];
 
-beforeAll(() => {
+beforeAll(async () => {
   const csvPath = resolve(__dirname, '../../public/data/z-score-peaks.csv');
   const csvText = readFileSync(csvPath, 'utf-8');
-  dataset = parseCSVText(csvText);
+  dataset = await parseCSVText(csvText);
 });
 
 // ---------------------------------------------------------------------------
@@ -414,6 +414,17 @@ describe('Median consistency (golden fixtures)', () => {
     'max_components_5/Buchwald-Hartwig/Catalyst',
   ]);
 
+  // Pre-filter dataset by reaction type to avoid redundant 67K-row scans
+  const preFiltered = new Map<string, Row[]>();
+  function rowsFor(rt: string): Row[] {
+    let rows = preFiltered.get(rt);
+    if (!rows) {
+      rows = dataset.filter((r) => r['Reaction Type'] === rt);
+      preFiltered.set(rt, rows);
+    }
+    return rows;
+  }
+
   // Run each test case
   for (const tc of testCases) {
     const testKey = `${tc.filterLabel}/${tc.reactionType}/${tc.reactantType}`;
@@ -428,7 +439,7 @@ describe('Median consistency (golden fixtures)', () => {
         reactant_types: [tc.reactantType],
       });
 
-      const { rows } = filterData(dataset, params);
+      const { rows } = filterData(rowsFor(tc.reactionType), params);
 
       // Row count must match
       expect(rows.length).toBe(tc.expected.row_count);

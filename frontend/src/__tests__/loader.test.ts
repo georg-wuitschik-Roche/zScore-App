@@ -57,7 +57,7 @@ function makeRow(overrides: Record<string, string> = {}): string {
 
 describe('parseCSVText', () => {
   describe('comma-delimited CSV', () => {
-    it('parses correct number of rows', () => {
+    it('parses correct number of rows', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ ELN_ID: 'ELN001', 'z-Score': '1.23' }),
@@ -65,17 +65,17 @@ describe('parseCSVText', () => {
         makeRow({ ELN_ID: 'ELN003', 'z-Score': '3.45' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows).toHaveLength(3);
     });
 
-    it('preserves column values accurately', () => {
+    it('preserves column values accurately', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ ELN_ID: 'ELN042', Catalyst: 'CuI', Base: 'Cs2CO3' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0].ELN_ID).toBe('ELN042');
       expect(rows[0].Catalyst).toBe('CuI');
       expect(rows[0].Base).toBe('Cs2CO3');
@@ -83,7 +83,7 @@ describe('parseCSVText', () => {
   });
 
   describe('delimiter auto-detection', () => {
-    it('auto-detects semicolon delimiter', () => {
+    it('auto-detects semicolon delimiter', async () => {
       const csv = [
         REQUIRED_HEADERS.join(';'),
         REQUIRED_HEADERS.map((h) => {
@@ -100,13 +100,13 @@ describe('parseCSVText', () => {
         }).join(';'),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows).toHaveLength(1);
       expect(rows[0].ELN_ID).toBe('ELN001');
       expect(rows[0].Catalyst).toBe('Pd(OAc)2');
     });
 
-    it('auto-detects tab delimiter', () => {
+    it('auto-detects tab delimiter', async () => {
       const csv = [
         REQUIRED_HEADERS.join('\t'),
         REQUIRED_HEADERS.map((h) => {
@@ -123,7 +123,7 @@ describe('parseCSVText', () => {
         }).join('\t'),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows).toHaveLength(1);
       expect(rows[0].ELN_ID).toBe('ELN001');
       expect(rows[0].Catalyst).toBe('CuI');
@@ -131,49 +131,49 @@ describe('parseCSVText', () => {
   });
 
   describe('null normalization', () => {
-    it('normalizes empty string to null for categorical columns', () => {
+    it('normalizes empty string to null for categorical columns', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ Additive: '', Base: '', Catalyst: '', Ligand: '' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0].Additive).toBeNull();
       expect(rows[0].Base).toBeNull();
       expect(rows[0].Catalyst).toBeNull();
       expect(rows[0].Ligand).toBeNull();
     });
 
-    it('normalizes "nan" string to null', () => {
+    it('normalizes "nan" string to null', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ Additive: 'nan', Base: 'NaN', 'Coupling Reagent': 'nan' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0].Additive).toBeNull();
       expect(rows[0].Base).toBeNull();
       expect(rows[0]['Coupling Reagent']).toBeNull();
     });
 
-    it('normalizes "NaN" string to null', () => {
+    it('normalizes "NaN" string to null', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ Solvent: 'NaN', 'Secondary Solvent': 'NaN' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0].Solvent).toBeNull();
       expect(rows[0]['Secondary Solvent']).toBeNull();
     });
 
-    it('preserves non-null categorical values', () => {
+    it('preserves non-null categorical values', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0].Catalyst).toBe('Pd(OAc)2');
       expect(rows[0].Base).toBe('K3PO4');
       expect(rows[0].Solvent).toBe('DMF');
@@ -181,7 +181,7 @@ describe('parseCSVText', () => {
   });
 
   describe('z-Score conversion', () => {
-    it('converts z-Score strings to numbers', () => {
+    it('converts z-Score strings to numbers', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ 'z-Score': '1.23' }),
@@ -189,47 +189,47 @@ describe('parseCSVText', () => {
         makeRow({ 'z-Score': '0' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0]['z-Score']).toBe(1.23);
       expect(rows[1]['z-Score']).toBe(-0.5);
       expect(rows[2]['z-Score']).toBe(0);
     });
 
-    it('handles comma-as-decimal separator in z-Score', () => {
+    it('handles comma-as-decimal separator in z-Score', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ 'z-Score': '1,23' }),
         makeRow({ 'z-Score': '-0,5' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0]['z-Score']).toBe(1.23);
       expect(rows[1]['z-Score']).toBe(-0.5);
     });
 
-    it('handles empty z-Score as null', () => {
+    it('handles empty z-Score as null', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ 'z-Score': '' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0]['z-Score']).toBeNull();
     });
   });
 
   describe('FG_PAIR_SORTED computation', () => {
-    it('uses FG_sorted as FG_PAIR_SORTED when present', () => {
+    it('uses FG_sorted as FG_PAIR_SORTED when present', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ 'FG A': 'ArBr', 'FG B': 'RNH2', FG_sorted: 'ArBr, RNH2' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows[0].FG_PAIR_SORTED).toBe('ArBr, RNH2');
     });
 
-    it('computes FG_PAIR_SORTED from FG A + FG B when FG_sorted is missing', () => {
+    it('computes FG_PAIR_SORTED from FG A + FG B when FG_sorted is missing', async () => {
       // Build CSV without FG_sorted column
       const headers = REQUIRED_HEADERS.filter((h) => h !== 'FG_sorted');
       const headerLine = headers.join(',');
@@ -245,25 +245,25 @@ describe('parseCSVText', () => {
       }).join(',');
 
       const csv = [headerLine, values].join('\n');
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       // Sorted alphabetically: ArBr < RNH2
       expect(rows[0].FG_PAIR_SORTED).toBe('ArBr, RNH2');
     });
 
-    it('computes FG_PAIR_SORTED with correct sorting', () => {
+    it('computes FG_PAIR_SORTED with correct sorting', async () => {
       const csv = [
         HEADER_LINE,
         makeRow({ 'FG A': 'RNH2', 'FG B': 'ArBr', FG_sorted: '' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       // Empty FG_sorted falls through to computation: sorted → ArBr, RNH2
       expect(rows[0].FG_PAIR_SORTED).toBe('ArBr, RNH2');
     });
   });
 
   describe('BigInt handling', () => {
-    it('converts BigInt-like values to numbers', () => {
+    it('converts BigInt-like values to numbers', async () => {
       // The cleanRow function converts BigInt to Number.
       // In CSV parsing, values arrive as strings, so we test that
       // numeric columns are properly parsed as numbers.
@@ -272,29 +272,29 @@ describe('parseCSVText', () => {
         makeRow({ AREA_TOTAL_REDUCED: '12345' }),
       ].join('\n');
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(typeof rows[0].AREA_TOTAL_REDUCED).toBe('number');
       expect(rows[0].AREA_TOTAL_REDUCED).toBe(12345);
     });
   });
 
   describe('edge cases', () => {
-    it('returns empty array for empty CSV', () => {
-      const rows = parseCSVText('');
+    it('returns empty array for empty CSV', async () => {
+      const rows = await parseCSVText('');
       expect(rows).toHaveLength(0);
     });
 
-    it('returns empty array for header-only CSV', () => {
-      const rows = parseCSVText(HEADER_LINE);
+    it('returns empty array for header-only CSV', async () => {
+      const rows = await parseCSVText(HEADER_LINE);
       expect(rows).toHaveLength(0);
     });
 
-    it('handles rows with missing columns gracefully', () => {
+    it('handles rows with missing columns gracefully', async () => {
       const csv = `ELN_ID,z-Score,Catalyst,FG A,FG B
 ELN001,1.23,Pd(OAc)2,ArBr,RNH2
 ELN002,,CuI,ArCl,ArNH2`;
 
-      const rows = parseCSVText(csv);
+      const rows = await parseCSVText(csv);
       expect(rows).toHaveLength(2);
       expect(rows[0].ELN_ID).toBe('ELN001');
       expect(rows[0]['z-Score']).toBe(1.23);

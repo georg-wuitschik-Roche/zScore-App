@@ -41,9 +41,9 @@ const golden: HeatmapGolden = JSON.parse(
   readFileSync(resolve(goldenDir, 'heatmap_pivots.json'), 'utf-8'),
 );
 
-beforeAll(() => {
+beforeAll(async () => {
   const csvPath = resolve(__dirname, '../../public/data/z-score-peaks.csv');
-  dataset = parseCSVText(readFileSync(csvPath, 'utf-8'));
+  dataset = await parseCSVText(readFileSync(csvPath, 'utf-8'));
 });
 
 // ---------------------------------------------------------------------------

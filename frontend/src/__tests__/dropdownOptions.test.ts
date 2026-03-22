@@ -41,9 +41,9 @@ const golden: DropdownGolden = JSON.parse(
   readFileSync(resolve(goldenDir, 'dropdown_conditioning.json'), 'utf-8'),
 );
 
-beforeAll(() => {
+beforeAll(async () => {
   const csvPath = resolve(__dirname, '../../public/data/z-score-peaks.csv');
-  dataset = parseCSVText(readFileSync(csvPath, 'utf-8'));
+  dataset = await parseCSVText(readFileSync(csvPath, 'utf-8'));
 });
 
 // ---------------------------------------------------------------------------
@@ -52,6 +52,17 @@ beforeAll(() => {
 
 describe('Dropdown conditioning (golden fixtures)', () => {
   const reactionTypes = Object.keys(golden);
+
+  // Pre-filter dataset once per reaction type to avoid redundant 67K-row scans
+  const preFiltered = new Map<string, Row[]>();
+  function rowsFor(rt: string): Row[] {
+    let rows = preFiltered.get(rt);
+    if (!rows) {
+      rows = dataset.filter((r) => r['Reaction Type'] === rt);
+      preFiltered.set(rt, rows);
+    }
+    return rows;
+  }
 
   it(`has ${reactionTypes.length} reaction types in golden file`, () => {
     expect(reactionTypes.length).toBeGreaterThan(0);
@@ -62,14 +73,14 @@ describe('Dropdown conditioning (golden fixtures)', () => {
 
     describe(`${reactionType}`, () => {
       it('reactant availability matches', () => {
-        const actual = getReactantOptions(dataset, [reactionType]);
+        const actual = getReactantOptions(rowsFor(reactionType), [reactionType]);
         expect(actual.slice().sort()).toEqual(
           expected.reactant_availability.slice().sort(),
         );
       });
 
       it('FG options match', () => {
-        const actual = getFgOptions(dataset, [reactionType]);
+        const actual = getFgOptions(rowsFor(reactionType), [reactionType]);
         expect(actual.slice().sort()).toEqual(
           expected.fg_all_options.slice().sort(),
         );
@@ -86,7 +97,7 @@ describe('Dropdown conditioning (golden fixtures)', () => {
 
           it(`FG B conditioned on [${fgASelection.join(', ')}] matches`, () => {
             const actual = getFgBOptionsConditioned(
-              dataset,
+              rowsFor(reactionType),
               [reactionType],
               fgASelection,
             );

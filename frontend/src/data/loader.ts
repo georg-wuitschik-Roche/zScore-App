@@ -5,8 +5,6 @@
  * The default dataset ships as Parquet (0.5 MB vs 15 MB CSV = 30x smaller).
  */
 
-import Papa from 'papaparse';
-import { parquetRead } from 'hyparquet';
 import type { Row, DropdownIndex } from './types';
 
 /** Default Parquet URL — served from public/. */
@@ -115,7 +113,8 @@ export async function fetchParquetBuffer(
  * Uses hyparquet — a pure JavaScript Parquet reader (420KB, no WASM).
  * Parquet advantages: 30x smaller than CSV, types preserved, dictionary-encoded strings.
  */
-export function parseDataset(buffer: ArrayBuffer): Promise<Row[]> {
+export async function parseDataset(buffer: ArrayBuffer): Promise<Row[]> {
+  const { parquetRead } = await import('hyparquet');
   return new Promise<Row[]>((resolve, reject) => {
     try {
       parquetRead({
@@ -153,7 +152,8 @@ function parseNumeric(value: unknown): number | null {
 /**
  * Parse CSV text into Row[]. Used for user-uploaded CSV files.
  */
-export function parseCSVText(csvText: string): Row[] {
+export async function parseCSVText(csvText: string): Promise<Row[]> {
+  const Papa = await import('papaparse');
   let result = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,

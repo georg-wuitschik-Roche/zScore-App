@@ -63,7 +63,7 @@ export interface FilterState {
   clearUploadError: () => void;
   loadDataset: () => Promise<void>;
   setUploadedDataset: (rows: Row[] | null) => void;
-  uploadCSV: (text: string, fileName?: string) => void;
+  uploadCSV: (text: string, fileName?: string) => Promise<void>;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
@@ -132,18 +132,17 @@ export const useFilterStore = create<FilterState>((set) => ({
 
   loadDataset: async () => {
     set({ loadError: null });
+
+    // Phase 1: Fetch dropdown index (tiny JSON) → dropdowns become interactive
+    fetchDropdownIndex()
+      .then((index) => set({ dropdownIndex: index }))
+      .catch((e) =>
+        set({ loadError: e instanceof Error ? e.message : 'Failed to load dropdown index' }),
+      );
+
+    // Phase 2: Fetch + parse full dataset (independent, doesn't block dropdowns)
     try {
-      // Phase 1: Fetch dropdown index (tiny JSON) → dropdowns become interactive
-      const [index, buffer] = await Promise.all([
-        fetchDropdownIndex(),
-        fetchParquetBuffer(),
-      ]);
-      set({ dropdownIndex: index });
-
-      // Yield to browser so React renders the interactive LandingPage
-      await new Promise((r) => setTimeout(r, 0));
-
-      // Phase 2: Parse full dataset from the already-fetched buffer
+      const buffer = await fetchParquetBuffer();
       const rows = await parseDataset(buffer);
       set({ dataset: rows, isFullDataLoaded: true });
     } catch (e) {
@@ -155,7 +154,7 @@ export const useFilterStore = create<FilterState>((set) => ({
 
   setUploadedDataset: (rows) => set({ uploadedDataset: rows }),
 
-  uploadCSV: (text, fileName) => {
+  uploadCSV: async (text, fileName) => {
     const REQUIRED_COLUMNS = [
       'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
       'Base', 'Catalyst', 'Solvent', 'Ligand',
@@ -163,7 +162,7 @@ export const useFilterStore = create<FilterState>((set) => ({
     ];
 
     try {
-      const rows = parseCSVText(text);
+      const rows = await parseCSVText(text);
       if (rows.length === 0) {
         set({ uploadError: 'The uploaded file contains no data rows.' });
         return;

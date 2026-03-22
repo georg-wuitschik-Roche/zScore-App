@@ -257,8 +257,8 @@ describe('uploadCSV', () => {
 
   const VALID_CSV = [REQUIRED_HEADERS.join(','), validCsvRow()].join('\n');
 
-  it('sets uploadedDataset with valid CSV', () => {
-    useFilterStore.getState().uploadCSV(VALID_CSV, 'test.csv');
+  it('sets uploadedDataset with valid CSV', async () => {
+    await useFilterStore.getState().uploadCSV(VALID_CSV, 'test.csv');
     const state = useFilterStore.getState();
     expect(state.uploadedDataset).not.toBeNull();
     expect(state.uploadedDataset).toHaveLength(1);
@@ -266,48 +266,48 @@ describe('uploadCSV', () => {
     expect(state.uploadFileName).toBe('test.csv');
   });
 
-  it('sets uploadError with missing required columns', () => {
+  it('sets uploadError with missing required columns', async () => {
     const csv = 'ELN_ID,z-Score\nELN001,1.23';
-    useFilterStore.getState().uploadCSV(csv);
+    await useFilterStore.getState().uploadCSV(csv);
     const state = useFilterStore.getState();
     expect(state.uploadError).not.toBeNull();
     expect(state.uploadError).toContain('Missing required columns');
     expect(state.uploadedDataset).toBeNull();
   });
 
-  it('sets uploadError when z-Score has no numeric values', () => {
+  it('sets uploadError when z-Score has no numeric values', async () => {
     const csv = [
       REQUIRED_HEADERS.join(','),
       validCsvRow({ 'z-Score': '' }),
     ].join('\n');
 
-    useFilterStore.getState().uploadCSV(csv);
+    await useFilterStore.getState().uploadCSV(csv);
     const state = useFilterStore.getState();
     expect(state.uploadError).not.toBeNull();
     expect(state.uploadError).toContain('z-Score');
   });
 
-  it('sets uploadError with empty CSV', () => {
-    useFilterStore.getState().uploadCSV('');
+  it('sets uploadError with empty CSV', async () => {
+    await useFilterStore.getState().uploadCSV('');
     const state = useFilterStore.getState();
     expect(state.uploadError).not.toBeNull();
   });
 
-  it('sets uploadError with header-only CSV (no data rows)', () => {
-    useFilterStore.getState().uploadCSV(REQUIRED_HEADERS.join(','));
+  it('sets uploadError with header-only CSV (no data rows)', async () => {
+    await useFilterStore.getState().uploadCSV(REQUIRED_HEADERS.join(','));
     const state = useFilterStore.getState();
     expect(state.uploadError).not.toBeNull();
     expect(state.uploadError).toContain('no data rows');
   });
 
-  it('handles multiple rows correctly', () => {
+  it('handles multiple rows correctly', async () => {
     const csv = [
       REQUIRED_HEADERS.join(','),
       validCsvRow({ ELN_ID: 'ELN001', 'z-Score': '1.23' }),
       validCsvRow({ ELN_ID: 'ELN002', 'z-Score': '2.34' }),
     ].join('\n');
 
-    useFilterStore.getState().uploadCSV(csv);
+    await useFilterStore.getState().uploadCSV(csv);
     const state = useFilterStore.getState();
     expect(state.uploadedDataset).toHaveLength(2);
     expect(state.uploadError).toBeNull();

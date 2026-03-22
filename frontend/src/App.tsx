@@ -1,17 +1,30 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { useFilterStore } from './stores/filterStore';
 import { LandingPage } from './components/LandingPage';
-import { Dashboard } from './components/Dashboard';
 import './styles/app.css';
+
+const dashboardImport = () =>
+  import('./components/Dashboard').then((m) => ({ default: m.Dashboard }));
+
+const Dashboard = lazy(dashboardImport);
 
 function AppContent() {
   const { isFullDataLoaded, loadError, presentationMode, loadDataset } =
     useFilterStore();
 
+  const dropdownIndex = useFilterStore((s) => s.dropdownIndex);
+
   useEffect(() => {
     loadDataset();
   }, [loadDataset]);
+
+  // Preload Dashboard + Plotly chunk once landing page is interactive
+  useEffect(() => {
+    if (dropdownIndex) {
+      dashboardImport();
+    }
+  }, [dropdownIndex]);
 
   const containerClass = [
     'app-container',
@@ -37,7 +50,14 @@ function AppContent() {
                 <p className="load-error">Failed to load dataset: {loadError}</p>
               </div>
             ) : (
-              <Dashboard />
+              <Suspense fallback={
+                <div className="loading-container">
+                  <div className="spinner" />
+                  <p>Loading dashboard...</p>
+                </div>
+              }>
+                <Dashboard />
+              </Suspense>
             )
           }
         />

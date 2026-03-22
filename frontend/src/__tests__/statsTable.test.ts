@@ -48,9 +48,9 @@ const golden: StatsGolden = JSON.parse(
   readFileSync(resolve(goldenDir, 'stats_table.json'), 'utf-8'),
 );
 
-beforeAll(() => {
+beforeAll(async () => {
   const csvPath = resolve(__dirname, '../../public/data/z-score-peaks.csv');
-  dataset = parseCSVText(readFileSync(csvPath, 'utf-8'));
+  dataset = await parseCSVText(readFileSync(csvPath, 'utf-8'));
 });
 
 // ---------------------------------------------------------------------------
@@ -161,18 +161,40 @@ describe('Stats table (golden fixtures)', () => {
     expect(testKeys.length).toBeGreaterThan(0);
   });
 
+  // Lazy caches: filterData called once per test key, stats computed once per column
+  const rowsCache = new Map<string, Row[]>();
+  function getRows(key: string, params: FilterParams): Row[] {
+    let rows = rowsCache.get(key);
+    if (!rows) {
+      rows = filterData(dataset, params).rows;
+      rowsCache.set(key, rows);
+    }
+    return rows;
+  }
+
+  const statsCache = new Map<string, ColumnStats>();
+  function getColStats(key: string, params: FilterParams, col: string): ColumnStats {
+    const cacheKey = `${key}|${col}`;
+    let stats = statsCache.get(cacheKey);
+    if (!stats) {
+      const values = extractNumericColumn(getRows(key, params), col);
+      stats = computeStats(values);
+      statsCache.set(cacheKey, stats);
+    }
+    return stats;
+  }
+
   for (const testKey of testKeys) {
     const entry = golden[testKey];
     const params = convertParams(entry.params);
 
     describe(`${testKey}`, () => {
       it('row count matches', () => {
-        const { rows } = filterData(dataset, params);
-        expect(rows.length).toBe(entry.row_count);
+        expect(getRows(testKey, params).length).toBe(entry.row_count);
       });
 
       it('unique ELN count matches', () => {
-        const { rows } = filterData(dataset, params);
+        const rows = getRows(testKey, params);
         const elns = new Set<string>();
         for (const row of rows) {
           if (row.ELN_ID) elns.add(row.ELN_ID);
@@ -184,70 +206,35 @@ describe('Stats table (golden fixtures)', () => {
       for (const [colName, expectedStats] of Object.entries(entry.columns)) {
         describe(`column: ${colName}`, () => {
           it('count matches', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            expect(values.length).toBe(expectedStats.count);
+            expect(getColStats(testKey, params, colName).count).toBe(expectedStats.count);
           });
 
           it('mean matches within tolerance', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(Math.abs(actual.mean - expectedStats.mean)).toBeLessThan(
-              1e-2,
-            );
+            expect(Math.abs(getColStats(testKey, params, colName).mean - expectedStats.mean)).toBeLessThan(1e-2);
           });
 
           it('std matches within tolerance', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(Math.abs(actual.std - expectedStats.std)).toBeLessThan(1e-2);
+            expect(Math.abs(getColStats(testKey, params, colName).std - expectedStats.std)).toBeLessThan(1e-2);
           });
 
           it('min matches', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(Math.abs(actual.min - expectedStats.min)).toBeLessThan(
-              1e-4,
-            );
+            expect(Math.abs(getColStats(testKey, params, colName).min - expectedStats.min)).toBeLessThan(1e-4);
           });
 
           it('25th percentile matches', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(
-              Math.abs(actual['25%'] - expectedStats['25%']),
-            ).toBeLessThan(1e-4);
+            expect(Math.abs(getColStats(testKey, params, colName)['25%'] - expectedStats['25%'])).toBeLessThan(1e-4);
           });
 
           it('50th percentile (median) matches', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(
-              Math.abs(actual['50%'] - expectedStats['50%']),
-            ).toBeLessThan(1e-4);
+            expect(Math.abs(getColStats(testKey, params, colName)['50%'] - expectedStats['50%'])).toBeLessThan(1e-4);
           });
 
           it('75th percentile matches', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(
-              Math.abs(actual['75%'] - expectedStats['75%']),
-            ).toBeLessThan(1e-4);
+            expect(Math.abs(getColStats(testKey, params, colName)['75%'] - expectedStats['75%'])).toBeLessThan(1e-4);
           });
 
           it('max matches', () => {
-            const { rows } = filterData(dataset, params);
-            const values = extractNumericColumn(rows, colName);
-            const actual = computeStats(values);
-            expect(Math.abs(actual.max - expectedStats.max)).toBeLessThan(
-              1e-4,
-            );
+            expect(Math.abs(getColStats(testKey, params, colName).max - expectedStats.max)).toBeLessThan(1e-4);
           });
         });
       }
