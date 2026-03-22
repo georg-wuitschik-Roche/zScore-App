@@ -198,7 +198,13 @@ export function createBoxplotConfig(
       },
     },
     xaxis: {
-      title: { text: 'z-Score', font: { size: fontSize } },
+      title: {
+        text: 'z-Score',
+        font: {
+          size: presentationMode ? 24 : 18,
+          family: '"DM Sans", "Helvetica Neue", sans-serif',
+        },
+      },
       zeroline: true,
       zerolinecolor: '#ccc',
       gridcolor: '#d0d0d0',
@@ -213,7 +219,7 @@ export function createBoxplotConfig(
     },
     height,
     showlegend: false,
-    margin: { t: 60, b: 60, l: 200, r: 30 },
+    margin: { t: 60, b: 80, l: 200, r: 50 },
     paper_bgcolor: '#fff',
     plot_bgcolor: '#fff',
     font: {

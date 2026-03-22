@@ -5,7 +5,7 @@
  * reactant types, and reaction types from a dataset.
  */
 
-import type { Row } from './types';
+import type { Row, DropdownIndex } from './types';
 import { CATEGORY_OPTIONS } from './types';
 
 /** Get unique reaction types from dataset. */
@@ -88,6 +88,78 @@ export function getFgBOptionsConditioned(
       }
       if (row['FG B'] === fgAVal && row['FG A']) {
         otherFgs.add(row['FG A']);
+      }
+    }
+  }
+
+  return Array.from(otherFgs).sort();
+}
+
+// --- Index-based functions (instant, no row scanning) ---
+
+/** Get sorted reaction types from pre-computed index. */
+export function getReactionTypesFromIndex(index: DropdownIndex): string[] {
+  return Object.keys(index).sort();
+}
+
+/** Get available reactant columns from index for given reaction types. */
+export function getReactantOptionsFromIndex(
+  index: DropdownIndex,
+  reactionTypes: string[],
+): string[] {
+  const rts = reactionTypes.length > 0 ? reactionTypes : Object.keys(index);
+  const available = new Set<string>();
+  for (const rt of rts) {
+    const entry = index[rt];
+    if (entry) {
+      for (const cat of entry.reactant_availability) {
+        available.add(cat);
+      }
+    }
+  }
+  return CATEGORY_OPTIONS.filter((c) => available.has(c));
+}
+
+/** Get all unique FG values from index for given reaction types. */
+export function getFgOptionsFromIndex(
+  index: DropdownIndex,
+  reactionTypes: string[],
+): string[] {
+  const rts = reactionTypes.length > 0 ? reactionTypes : Object.keys(index);
+  const fgs = new Set<string>();
+  for (const rt of rts) {
+    const entry = index[rt];
+    if (entry) {
+      for (const fg of entry.fg_all_options) {
+        fgs.add(fg);
+      }
+    }
+  }
+  return Array.from(fgs).sort();
+}
+
+/** Get FG B options conditioned on FG A from index. */
+export function getFgBOptionsFromIndex(
+  index: DropdownIndex,
+  reactionTypes: string[],
+  fgASelection: string[],
+): string[] {
+  if (!fgASelection || fgASelection.length === 0) {
+    return getFgOptionsFromIndex(index, reactionTypes);
+  }
+
+  const rts = reactionTypes.length > 0 ? reactionTypes : Object.keys(index);
+  const fgASet = new Set(fgASelection);
+  const otherFgs = new Set<string>();
+
+  for (const rt of rts) {
+    const entry = index[rt];
+    if (!entry) continue;
+    for (const [fgKey, fgBValues] of Object.entries(entry.fg_b_conditioned)) {
+      if (fgASet.has(fgKey)) {
+        for (const fg of fgBValues) {
+          otherFgs.add(fg);
+        }
       }
     }
   }

@@ -15,7 +15,8 @@ import type { FilterState } from '../stores/filterStore';
 const INITIAL_STATE: Partial<FilterState> = {
   dataset: [],
   uploadedDataset: null,
-  isLoading: true,
+  isFullDataLoaded: false,
+  dropdownIndex: null,
   loadError: null,
   reactionTypes: ['Buchwald-Hartwig'],
   reactantTypes: ['Catalyst'],

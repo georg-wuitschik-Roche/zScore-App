@@ -93,6 +93,16 @@ export const CATEGORY_OPTIONS = [
   'Secondary Solvent',
 ] as const;
 
+/** Pre-computed dropdown index for instant startup. */
+export interface DropdownIndexEntry {
+  reactant_availability: string[];
+  fg_all_options: string[];
+  fg_b_conditioned: Record<string, string[]>;
+}
+
+/** Maps reaction type → pre-computed dropdown data. */
+export type DropdownIndex = Record<string, DropdownIndexEntry>;
+
 /** Reagent columns used in deduplication and scale-up detection. */
 export const REAGENT_COLS = [
   'Additive',

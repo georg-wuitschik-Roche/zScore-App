@@ -7,10 +7,13 @@
 
 import Papa from 'papaparse';
 import { parquetRead } from 'hyparquet';
-import type { Row } from './types';
+import type { Row, DropdownIndex } from './types';
 
 /** Default Parquet URL — served from public/. */
 const DEFAULT_PARQUET_URL = '/data/z-score-peaks.parquet';
+
+/** Pre-computed dropdown index URL. */
+const DROPDOWN_INDEX_URL = '/data/dropdown-index.json';
 
 /**
  * Compute sorted FG pair string: "ArBr, RNH2" format.
@@ -80,19 +83,39 @@ function cleanRow(raw: Record<string, unknown>): Row {
 }
 
 /**
- * Load the default dataset from a Parquet file.
- *
- * Uses hyparquet — a pure JavaScript Parquet reader (420KB, no WASM).
- * Parquet advantages: 30x smaller than CSV, types preserved, dictionary-encoded strings.
+ * Fetch the pre-computed dropdown index (tiny JSON, ~12KB).
+ * Returns instantly-usable dropdown data while the full parquet loads.
  */
-export async function loadDataset(url: string = DEFAULT_PARQUET_URL): Promise<Row[]> {
+export async function fetchDropdownIndex(
+  url: string = DROPDOWN_INDEX_URL,
+): Promise<DropdownIndex> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch dropdown index: ${response.status} ${response.statusText}`);
+  }
+  return response.json() as Promise<DropdownIndex>;
+}
+
+/**
+ * Fetch a Parquet file as an ArrayBuffer.
+ */
+export async function fetchParquetBuffer(
+  url: string = DEFAULT_PARQUET_URL,
+): Promise<ArrayBuffer> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch dataset: ${response.status} ${response.statusText}`);
   }
+  return response.arrayBuffer();
+}
 
-  const buffer = await response.arrayBuffer();
-
+/**
+ * Parse an ArrayBuffer containing Parquet data into Row[].
+ *
+ * Uses hyparquet — a pure JavaScript Parquet reader (420KB, no WASM).
+ * Parquet advantages: 30x smaller than CSV, types preserved, dictionary-encoded strings.
+ */
+export function parseDataset(buffer: ArrayBuffer): Promise<Row[]> {
   return new Promise<Row[]>((resolve, reject) => {
     try {
       parquetRead({
@@ -107,6 +130,14 @@ export async function loadDataset(url: string = DEFAULT_PARQUET_URL): Promise<Ro
       reject(e);
     }
   });
+}
+
+/**
+ * Load the default dataset from a Parquet file (convenience wrapper).
+ */
+export async function loadDataset(url: string = DEFAULT_PARQUET_URL): Promise<Row[]> {
+  const buffer = await fetchParquetBuffer(url);
+  return parseDataset(buffer);
 }
 
 /**

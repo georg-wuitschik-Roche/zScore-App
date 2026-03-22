@@ -6,8 +6,8 @@
  */
 
 import { create } from 'zustand';
-import type { Row } from '../data/types';
-import { loadDataset, parseCSVText } from '../data/loader';
+import type { Row, DropdownIndex } from '../data/types';
+import { fetchDropdownIndex, fetchParquetBuffer, parseDataset, parseCSVText } from '../data/loader';
 
 // Default filter values — matches callbacks.py defaults
 const DEFAULT_REACTION_TYPES = ['Buchwald-Hartwig'];
@@ -22,7 +22,8 @@ export interface FilterState {
   // Data
   dataset: Row[];
   uploadedDataset: Row[] | null;
-  isLoading: boolean;
+  isFullDataLoaded: boolean;
+  dropdownIndex: DropdownIndex | null;
   loadError: string | null;
 
   // Filter controls
@@ -72,7 +73,8 @@ export const useFilterStore = create<FilterState>((set) => ({
   // Data
   dataset: [],
   uploadedDataset: null,
-  isLoading: true,
+  isFullDataLoaded: false,
+  dropdownIndex: null,
   loadError: null,
 
   // Default filter values
@@ -129,14 +131,24 @@ export const useFilterStore = create<FilterState>((set) => ({
     })),
 
   loadDataset: async () => {
-    set({ isLoading: true, loadError: null });
+    set({ loadError: null });
     try {
-      const rows = await loadDataset();
-      set({ dataset: rows, isLoading: false });
+      // Phase 1: Fetch dropdown index (tiny JSON) → dropdowns become interactive
+      const [index, buffer] = await Promise.all([
+        fetchDropdownIndex(),
+        fetchParquetBuffer(),
+      ]);
+      set({ dropdownIndex: index });
+
+      // Yield to browser so React renders the interactive LandingPage
+      await new Promise((r) => setTimeout(r, 0));
+
+      // Phase 2: Parse full dataset from the already-fetched buffer
+      const rows = await parseDataset(buffer);
+      set({ dataset: rows, isFullDataLoaded: true });
     } catch (e) {
       set({
         loadError: e instanceof Error ? e.message : 'Failed to load dataset',
-        isLoading: false,
       });
     }
   },

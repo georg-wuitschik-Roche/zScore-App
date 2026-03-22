@@ -10,6 +10,7 @@ export function Navbar() {
   );
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const uploadCSV = useFilterStore((s) => s.uploadCSV);
+  const dataset = useFilterStore((s) => s.dataset);
   const uploadError = useFilterStore((s) => s.uploadError);
   const uploadFileName = useFilterStore((s) => s.uploadFileName);
   const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
@@ -76,7 +77,7 @@ export function Navbar() {
             }}
           />
           <h1 className="title">
-            Data-Driven Reagent Selection for Empirical Chemical Discovery
+            Lessons from {dataset.length > 0 ? dataset.length.toLocaleString() : '...'} High-Throughput Experiments
           </h1>
 
           {/* Upload status indicator */}

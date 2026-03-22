@@ -6,7 +6,7 @@ import { Dashboard } from './components/Dashboard';
 import './styles/app.css';
 
 function AppContent() {
-  const { isLoading, loadError, presentationMode, loadDataset } =
+  const { isFullDataLoaded, loadError, presentationMode, loadDataset } =
     useFilterStore();
 
   useEffect(() => {
@@ -27,7 +27,7 @@ function AppContent() {
         <Route
           path="/dashboard"
           element={
-            isLoading ? (
+            !isFullDataLoaded && !loadError ? (
               <div className="loading-container">
                 <div className="spinner" />
                 <p>Loading dataset...</p>
