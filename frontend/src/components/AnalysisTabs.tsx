@@ -5,9 +5,7 @@ import { createViolinConfig } from '../plots/violin';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
 import { useSplitFilteredData } from '../hooks/useSplitFilteredData';
-import type { SplitPanel } from '../hooks/useSplitFilteredData';
-
-type TabId = 'boxplot' | 'violin' | 'heatmap' | 'stats';
+import type { TabId, SplitPanel } from '../data/types';
 
 interface TabDef {
   id: TabId;
@@ -23,14 +21,15 @@ const TABS: TabDef[] = [
 ];
 
 function renderPanel(tab: TabId, panel: SplitPanel) {
+  const { rows, reactantTypes } = panel;
   switch (tab) {
     case 'boxplot':
       return (
         <DistributionView
           buildConfig={createBoxplotConfig}
           label="boxplot"
-          panelRows={panel.rows}
-          panelReactantTypes={panel.reactantTypes}
+          rows={rows}
+          reactantTypes={reactantTypes}
         />
       );
     case 'violin':
@@ -38,23 +37,17 @@ function renderPanel(tab: TabId, panel: SplitPanel) {
         <DistributionView
           buildConfig={createViolinConfig}
           label="violin plot"
-          panelRows={panel.rows}
-          panelReactantTypes={panel.reactantTypes}
+          rows={rows}
+          reactantTypes={reactantTypes}
         />
       );
     case 'heatmap':
       return (
-        <HeatmapView
-          panelRows={panel.rows}
-          panelReactantTypes={panel.reactantTypes}
-        />
+        <HeatmapView rows={rows} reactantTypes={reactantTypes} />
       );
     case 'stats':
       return (
-        <StatsTable
-          panelRows={panel.rows}
-          panelReactantTypes={panel.reactantTypes}
-        />
+        <StatsTable rows={rows} reactantTypes={reactantTypes} />
       );
   }
 }

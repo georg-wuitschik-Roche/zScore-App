@@ -103,8 +103,27 @@ export interface DropdownIndexEntry {
 /** Maps reaction type → pre-computed dropdown data. */
 export type DropdownIndex = Record<string, DropdownIndexEntry>;
 
+/** Analysis view tab identifiers. */
+export type TabId = 'boxplot' | 'violin' | 'heatmap' | 'stats';
+
 /** Which filter dropdown is in split mode (null = combined). */
 export type SplitSelector = 'reactionTypes' | 'fgA' | 'fgB' | 'reactantTypes';
+
+/** URL abbreviations for split selectors. */
+export const SPLIT_URL_KEYS: Record<SplitSelector, string> = {
+  reactionTypes: 'rt',
+  fgA: 'fga',
+  fgB: 'fgb',
+  reactantTypes: 'cat',
+};
+
+/** One panel of split (or combined) filtered data. */
+export interface SplitPanel {
+  label: string;
+  rows: Row[];
+  stats: FilterStats;
+  reactantTypes: string[];
+}
 
 /** Reagent columns used in deduplication and scale-up detection. */
 export const REAGENT_COLS = [

@@ -9,21 +9,12 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import type { FilterState } from '../stores/filterStore';
+import { SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
 
-const SPLIT_TO_URL: Record<string, string> = {
-  reactionTypes: 'rt',
-  fgA: 'fga',
-  fgB: 'fgb',
-  reactantTypes: 'cat',
-};
-
-const URL_TO_SPLIT: Record<string, SplitSelector> = {
-  rt: 'reactionTypes',
-  fga: 'fgA',
-  fgb: 'fgB',
-  cat: 'reactantTypes',
-};
+const URL_TO_SPLIT = Object.fromEntries(
+  Object.entries(SPLIT_URL_KEYS).map(([k, v]) => [v, k]),
+) as Record<string, SplitSelector>;
 
 /** Serialize a string array to a URL param (pipe-separated to avoid comma conflicts). */
 function encodeArray(arr: string[]): string {
@@ -121,7 +112,7 @@ export function useUrlState(): void {
       params.set('su', excludeScaleup ? '1' : '0');
       params.set('nc', includeNullCategories ? '1' : '0');
       if (activeTab !== 'boxplot') params.set('tab', activeTab);
-      if (splitSelector) params.set('split', SPLIT_TO_URL[splitSelector]);
+      if (splitSelector) params.set('split', SPLIT_URL_KEYS[splitSelector]);
 
       setSearchParams(params, { replace: true });
     }, 250);

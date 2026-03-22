@@ -1,13 +1,9 @@
 import { useMemo } from 'react';
-import { useFilteredData } from '../hooks/useFilteredData';
-import { useFilterStore } from '../stores/filterStore';
 import type { Row } from '../data/types';
 
 interface StatsTableProps {
-  /** When provided, bypasses useFilteredData (used by split mode). */
-  panelRows?: Row[];
-  /** When provided, overrides store reactantTypes (used by split mode). */
-  panelReactantTypes?: string[];
+  rows: Row[];
+  reactantTypes: string[];
 }
 
 interface GroupStats {
@@ -74,12 +70,7 @@ function cellColor(val: number): string {
   return 'inherit';
 }
 
-export function StatsTable({ panelRows, panelReactantTypes }: StatsTableProps = {}) {
-  const fallback = useFilteredData();
-  const storeReactantTypes = useFilterStore((s) => s.reactantTypes);
-
-  const rows = panelRows ?? fallback.rows;
-  const reactantTypes = panelReactantTypes ?? storeReactantTypes;
+export function StatsTable({ rows, reactantTypes }: StatsTableProps) {
 
   const tableData = useMemo((): GroupStats[] => {
     if (rows.length === 0 || reactantTypes.length === 0) return [];

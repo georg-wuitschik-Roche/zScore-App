@@ -6,7 +6,8 @@
  */
 
 import { create } from 'zustand';
-import type { Row, DropdownIndex, SplitSelector } from '../data/types';
+import type { Row, DropdownIndex, SplitSelector, TabId } from '../data/types';
+import { REQUIRED_COLUMNS } from '../data/types';
 import { fetchDropdownIndex, fetchParquetBuffer, parseDataset, parseCSVText } from '../data/loader';
 
 // Default filter values — empty until user selects on landing page
@@ -42,7 +43,7 @@ export interface FilterState {
   splitSelector: SplitSelector | null;
 
   // UI state
-  activeTab: 'boxplot' | 'violin' | 'heatmap' | 'stats';
+  activeTab: TabId;
   presentationMode: boolean;
   optionsPanelOpen: boolean;
   uploadError: string | null;
@@ -60,7 +61,7 @@ export interface FilterState {
   setTopnZscore: (val: number) => void;
   setMaxComponents: (val: number) => void;
   setSplitSelector: (selector: SplitSelector | null) => void;
-  setActiveTab: (tab: 'boxplot' | 'violin' | 'heatmap' | 'stats') => void;
+  setActiveTab: (tab: TabId) => void;
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
   resetFilters: () => void;
@@ -193,12 +194,6 @@ export const useFilterStore = create<FilterState>((set) => ({
   setUploadedDataset: (rows) => set({ uploadedDataset: rows }),
 
   uploadCSV: async (text, fileName) => {
-    const REQUIRED_COLUMNS = [
-      'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
-      'Base', 'Catalyst', 'Solvent', 'Ligand',
-      'Reaction Type', 'FG A', 'FG B', 'FG_sorted', 'z-Score',
-    ];
-
     try {
       const rows = await parseCSVText(text);
       if (rows.length === 0) {

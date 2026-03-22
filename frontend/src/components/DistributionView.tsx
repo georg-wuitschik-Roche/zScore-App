@@ -1,5 +1,4 @@
 import Plot from './Plot';
-import { useFilteredData } from '../hooks/useFilteredData';
 import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
 import type { Row } from '../data/types';
@@ -9,26 +8,18 @@ type ConfigBuilder = (rows: Row[], reactantTypes: string[], presentationMode: bo
 interface Props {
   buildConfig: ConfigBuilder;
   label: string;
-  /** When provided, bypasses useFilteredData (used by split mode). */
-  panelRows?: Row[];
-  /** When provided, overrides store reactantTypes (used by split mode). */
-  panelReactantTypes?: string[];
+  rows: Row[];
+  reactantTypes: string[];
 }
 
-export function DistributionView({ buildConfig, label, panelRows, panelReactantTypes }: Props) {
-  const fallback = useFilteredData();
-  const storeReactantTypes = useFilterStore((s) => s.reactantTypes);
+export function DistributionView({ buildConfig, label, rows, reactantTypes }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
-  const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
-  const rows = panelRows ?? fallback.rows;
-  const reactantTypes = panelReactantTypes ?? storeReactantTypes;
-
-  if (reactionTypes.length === 0 || reactantTypes.length === 0) {
+  if (reactantTypes.length === 0) {
     return (
       <div className="plot-container">
         <p className="no-data-message">
-          Select a reaction type and reactant type to display the {label}.
+          Select a reactant type to display the {label}.
         </p>
       </div>
     );

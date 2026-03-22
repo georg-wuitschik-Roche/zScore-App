@@ -8,18 +8,11 @@
 import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
-import type { FilterParams } from '../data/filterChain';
-import type { Row } from '../data/types';
+import type { FilterParams, FilterStats, Row } from '../data/types';
 
 export interface FilteredResult {
   rows: Row[];
-  stats: {
-    wholeDataset?: { elns: number };
-    afterReactantFilters?: { elns: number };
-    afterFgA?: { elns: number };
-    afterFgB?: { elns: number };
-    maxComponentsCap?: number;
-  };
+  stats: FilterStats;
 }
 
 export function useFilteredData(): FilteredResult {

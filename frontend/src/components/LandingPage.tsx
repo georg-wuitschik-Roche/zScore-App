@@ -14,6 +14,7 @@ import {
 } from '../data/dropdownOptions';
 import { MultiSelect } from './MultiSelect';
 import { Footer } from './Footer';
+import { SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
 
 export function LandingPage() {
@@ -70,13 +71,6 @@ export function LandingPage() {
     return null;
   }, [reactionTypes, fgA, fgB, reactantTypes]);
 
-  const SPLIT_TO_URL: Record<string, string> = {
-    reactionTypes: 'rt',
-    fgA: 'fga',
-    fgB: 'fgb',
-    reactantTypes: 'cat',
-  };
-
   function handleExplore(split: SplitSelector | null) {
     if (reactionTypes.length === 0) return;
 
@@ -93,7 +87,7 @@ export function LandingPage() {
     if (fgA.length > 0) params.set('fga', fgA.join('|'));
     if (fgB.length > 0) params.set('fgb', fgB.join('|'));
     if (reactantTypes.length > 0) params.set('cat', reactantTypes.join('|'));
-    if (split) params.set('split', SPLIT_TO_URL[split]);
+    if (split) params.set('split', SPLIT_URL_KEYS[split]);
     navigate(`/dashboard?${params.toString()}`);
   }
 

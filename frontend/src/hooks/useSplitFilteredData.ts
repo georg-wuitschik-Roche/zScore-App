@@ -8,15 +8,7 @@
 import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
-import type { FilterParams } from '../data/filterChain';
-import type { Row, FilterStats } from '../data/types';
-
-export interface SplitPanel {
-  label: string;
-  rows: Row[];
-  stats: FilterStats;
-  reactantTypes: string[];
-}
+import type { FilterParams, SplitPanel } from '../data/types';
 
 export function useSplitFilteredData(): SplitPanel[] {
   const {
