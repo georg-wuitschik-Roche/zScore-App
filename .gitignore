@@ -2,6 +2,9 @@
 node_modules/
 dist/
 
+# Dev environment
+.ona/
+
 # Python
 __pycache__/
 *.py[cod]
