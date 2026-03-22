@@ -43,10 +43,6 @@ Validates the TypeScript filter chain against Python golden fixtures:
 - 529 heatmap pivot tests (cell values, axis ordering)
 - 181 stats table tests (descriptive statistics)
 
-## Paper
-
-Publication scripts live in [`paper/`](paper/README.md) -- Shapiro-Wilk, Kruskal-Wallis, Mann-Whitney tests, batch figure export. These use scipy and are not part of the deployed dashboard.
-
 > Ahlbrecht, J.; Lutz, M. D. R.; Jost, V.; Farber, M.; Brase, S.; Wuitschik, G.
 > *Which Reaction Conditions Work on Drug-Like Molecules? Lessons from 66,000 High-Throughput Experiments.*
 > ACS Cent. Sci. **2026**, 12 (2), 222-232.

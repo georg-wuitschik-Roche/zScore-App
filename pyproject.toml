@@ -3,63 +3,8 @@ target-version = "py311"
 line-length = 120
 
 [tool.ruff.lint]
-select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # pyflakes
-    "I",    # isort (import ordering)
-    "UP",   # pyupgrade (modern Python syntax)
-    "B",    # flake8-bugbear (common bugs)
-    "SIM",  # flake8-simplify
-    "N",    # pep8-naming
-]
-ignore = [
-    "E501",   # line too long — handled by line-length setting
-    "N802",   # function name should be lowercase
-    "N803",   # argument name should be lowercase — DataFrame column names
-    "N806",   # variable in function should be lowercase — DataFrame vars
-    "N999",   # invalid module name
-    "B905",   # zip without strict=
-    "SIM108", # ternary operator — readability preference
-    "E402",   # module import not at top
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["data_utils", "plot_utils"]
-section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+select = ["E", "W", "F", "I", "UP"]
 
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "space"
-
-[tool.mypy]
-python_version = "3.11"
-ignore_missing_imports = true
-warn_unused_configs = true
-check_untyped_defs = false
-warn_return_any = false
-no_implicit_optional = false
-disable_error_code = ["operator", "arg-type", "return-value", "assignment", "attr-defined", "str-bytes-safe"]
-
-[tool.pytest.ini_options]
-testpaths = ["paper/tests"]
-python_files = ["test_*.py"]
-python_functions = ["test_*"]
-markers = [
-    "slow: tests using full 67k-row dataset",
-    "golden: golden snapshot comparison tests",
-    "e2e: end-to-end browser tests",
-    "integration: cross-module integration tests",
-]
-addopts = "--strict-markers -v --tb=short"
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
-
-[tool.coverage.run]
-source = ["paper/data_utils", "paper/plot_utils"]
-omit = ["paper/tests/*"]
-
-[tool.coverage.report]
-fail_under = 55
-show_missing = true

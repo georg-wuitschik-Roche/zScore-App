@@ -29,7 +29,7 @@ fi
 # 2. Install Python dependencies + pre-commit hooks
 # ---------------------------------------------------------------------------
 log "Installing Python dependencies..."
-pip install -q -r requirements.txt -r paper/requirements.txt
+pip install -q -r requirements.txt
 
 if [ -f .pre-commit-config.yaml ]; then
   log "Installing pre-commit hooks..."

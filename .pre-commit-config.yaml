@@ -1,28 +1,13 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
-    hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format
-        args: [--check]
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        args: [--ignore-missing-imports]
-        additional_dependencies: [pandas-stubs, types-requests]
-
   - repo: local
     hooks:
       - id: regenerate-csv-artifacts
-        name: Regenerate Parquet + golden fixtures from CSV
+        name: Regenerate Parquet + dropdown index from CSV
         entry: python3 scripts/regenerate_from_csv.py
         language: python
         files: '^z-Score Peaks with FG\.csv$'
         pass_filenames: false
-        additional_dependencies: [pandas>=2.0, numpy>=1.24, pyarrow>=14.0, requests>=2.28]
+        additional_dependencies: [pandas>=2.0, numpy>=1.24, pyarrow>=14.0]
 
       - id: tsc
         name: TypeScript type check
@@ -32,7 +17,7 @@ repos:
         pass_filenames: false
 
       - id: vitest
-        name: Golden tests (3,192)
+        name: Vitest tests
         entry: bash -c 'cd frontend && npx vitest run --reporter=dot'
         language: system
         stages: [pre-push]

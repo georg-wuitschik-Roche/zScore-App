@@ -9,7 +9,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, beforeAll } from 'vitest';
-import { parseCSVText } from '../data/loader';
+import { parseDataset } from '../data/loader';
 import {
   getReactantOptions,
   getFgOptions,
@@ -42,8 +42,11 @@ const golden: DropdownGolden = JSON.parse(
 );
 
 beforeAll(async () => {
-  const csvPath = resolve(__dirname, '../../public/data/z-score-peaks.csv');
-  dataset = await parseCSVText(readFileSync(csvPath, 'utf-8'));
+  const parquetPath = resolve(__dirname, '../../public/data/z-score-peaks.parquet');
+  const buffer = readFileSync(parquetPath);
+  dataset = await parseDataset(
+    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+  );
 });
 
 // ---------------------------------------------------------------------------

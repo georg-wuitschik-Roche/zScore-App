@@ -9,13 +9,10 @@ Triggered automatically by the pre-commit hook when
 Artifacts produced:
   1. frontend/public/data/z-score-peaks.parquet   (Parquet dataset)
   2. frontend/public/data/dropdown-index.json      (runtime dropdown data)
-  3. paper/tests/fixtures/golden/*.json             (Python golden fixtures)
-  4. frontend/golden/*.json                         (JS golden fixtures, copied)
 """
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -24,24 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT / "z-Score Peaks with FG.csv"
 PARQUET_PATH = ROOT / "frontend" / "public" / "data" / "z-score-peaks.parquet"
 DROPDOWN_INDEX_PATH = ROOT / "frontend" / "public" / "data" / "dropdown-index.json"
-PYTHON_GOLDEN_DIR = ROOT / "paper" / "tests" / "fixtures" / "golden"
 FRONTEND_GOLDEN_DIR = ROOT / "frontend" / "golden"
-
-# Golden files shared between paper/ and frontend/
-SHARED_GOLDEN_FILES = [
-    "dropdown_conditioning.json",
-    "heatmap_pivots.json",
-    "median_consistency.json",
-    "stats_table.json",
-]
-
-GOLDEN_SCRIPTS = [
-    "generate_golden.py",
-    "generate_dropdown_golden.py",
-    "generate_median_golden.py",
-    "generate_heatmap_golden.py",
-    "generate_stats_golden.py",
-]
 
 USED_COLUMNS = [
     "ELN_ID",
@@ -91,52 +71,12 @@ def generate_parquet() -> int:
     return 0
 
 
-def run_golden_scripts() -> int:
-    """Run all golden fixture generation scripts."""
-    paper_tests = ROOT / "paper" / "tests"
-    failed = 0
-
-    for script_name in GOLDEN_SCRIPTS:
-        script = paper_tests / script_name
-        if not script.exists():
-            print(f"  WARNING: {script_name} not found, skipping", file=sys.stderr)
-            continue
-
-        result = subprocess.run(
-            [sys.executable, str(script)],
-            cwd=str(ROOT / "paper"),
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            print(f"  FAILED: {script_name}", file=sys.stderr)
-            print(result.stderr, file=sys.stderr)
-            failed += 1
-        else:
-            print(f"  Golden: {script_name} ✓")
-
-    return failed
-
-
-def copy_shared_golden_files() -> None:
-    """Copy golden files shared between paper/ and frontend/."""
-    FRONTEND_GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
-    for filename in SHARED_GOLDEN_FILES:
-        src = PYTHON_GOLDEN_DIR / filename
-        dst = FRONTEND_GOLDEN_DIR / filename
-        if src.exists():
-            shutil.copy2(src, dst)
-            print(f"  Copied: {filename} → frontend/golden/")
-        else:
-            print(f"  WARNING: {filename} not found in paper golden dir", file=sys.stderr)
-
-
 def generate_dropdown_index() -> None:
     """Derive dropdown-index.json from the golden dropdown_conditioning.json.
 
     Strips ``row_count`` (not needed at runtime) and writes minified JSON.
     """
-    src = PYTHON_GOLDEN_DIR / "dropdown_conditioning.json"
+    src = FRONTEND_GOLDEN_DIR / "dropdown_conditioning.json"
     if not src.exists():
         print("  WARNING: dropdown_conditioning.json not found, skipping index", file=sys.stderr)
         return
@@ -175,7 +115,6 @@ def stage_generated_files() -> None:
     files_to_stage = [
         str(PARQUET_PATH.relative_to(ROOT)),
         str(DROPDOWN_INDEX_PATH.relative_to(ROOT)),
-        str(PYTHON_GOLDEN_DIR.relative_to(ROOT)),
         str(FRONTEND_GOLDEN_DIR.relative_to(ROOT)),
     ]
     subprocess.run(
@@ -193,12 +132,6 @@ def main() -> int:
     if rc != 0:
         return rc
 
-    failed = run_golden_scripts()
-    if failed:
-        print(f"\nERROR: {failed} golden script(s) failed", file=sys.stderr)
-        return 1
-
-    copy_shared_golden_files()
     generate_dropdown_index()
     stage_generated_files()
 

@@ -7,21 +7,23 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, beforeAll } from 'vitest';
-import { parseCSVText } from '../data/loader';
+import { parseDataset } from '../data/loader';
 import { filterData } from '../data/filterChain';
 import type { Row } from '../data/types';
 import { DEFAULTS } from '../data/types';
 
 // ---------------------------------------------------------------------------
-// Load dataset once
+// Load dataset once (from Parquet)
 // ---------------------------------------------------------------------------
 
 let dataset: Row[];
 
 beforeAll(async () => {
-  const csvPath = resolve(__dirname, '../../public/data/z-score-peaks.csv');
-  const csvText = readFileSync(csvPath, 'utf-8');
-  dataset = await parseCSVText(csvText);
+  const parquetPath = resolve(__dirname, '../../public/data/z-score-peaks.parquet');
+  const buffer = readFileSync(parquetPath);
+  dataset = await parseDataset(
+    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+  );
 });
 
 // ---------------------------------------------------------------------------

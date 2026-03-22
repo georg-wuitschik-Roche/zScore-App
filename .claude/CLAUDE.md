@@ -73,22 +73,13 @@ zScore-App/
 │   ├── public/
 │   │   ├── data/z-score-peaks.parquet  # Dataset (gitignored, built from CSV)
 │   │   └── assets/              # Logo, hiker icon
-│   ├── golden/                  # Golden test fixtures (from Python)
+│   ├── golden/                  # Golden test fixtures
 │   ├── src/__tests__/           # Vitest tests
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── tsconfig.json
-├── paper/                       # Publication scripts (not deployed)
-│   ├── data_utils.py            # Python filter chain (for stats)
-│   ├── plot_utils.py            # Python plot generation
-│   ├── stats.py                 # Scipy statistical tests
-│   ├── export_boxplots.py       # Batch PNG/SVG export
-│   ├── generate_supplementary_figures.py
-│   ├── requirements.txt         # Python deps (scipy, pandas, etc.)
-│   ├── tests/                   # Python test suite (2,610 tests)
-│   └── README.md
 ├── z-Score Peaks with FG.csv    # Source dataset (~15MB)
-├── pyproject.toml               # Ruff/MyPy/pytest config
+├── pyproject.toml               # Ruff config
 ├── .pre-commit-config.yaml
 └── LICENSE
 ```
@@ -143,8 +134,7 @@ All filtering runs client-side in TypeScript (<50ms for 67K rows).
 
 ## Testing
 - **TypeScript tests** (Vitest) — unit tests for filter steps, store, URL state, colors, boxplot config, plus golden fixtures for dropdowns and stats
-- **Python tests** (pytest) in `paper/tests/` for the publication scripts
-- Golden fixtures in `frontend/golden/` cover dropdowns and stats
+- Golden fixtures in `frontend/golden/` cover dropdowns, stats, and parity with the former Python implementation
 
 ## Skills
 Always follow the guidelines defined in these skill files:
