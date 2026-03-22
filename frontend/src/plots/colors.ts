@@ -54,17 +54,23 @@ export function interpolateHex(col1: string, col2: string, factor: number): stri
  *
  * Categories with more unique ELNs get darker shades. If all categories
  * have the same ELN count, factor defaults to 0.5 (midpoint).
+ *
+ * @param category  Reactant type name for palette selection (e.g. "Catalyst")
+ * @param rows      Dataset rows
+ * @param groupCols Columns to form the compound grouping key (defaults to [category])
  */
 export function createColorMapping(
   category: string,
   rows: Row[],
+  groupCols?: string[],
 ): Map<string, string> {
   const base = BASE_COLOURS[category] ?? DEFAULT_COLOURS;
+  const cols = groupCols ?? [category];
 
   // Count unique ELNs per category value
   const elnSets = new Map<string, Set<string>>();
   for (const row of rows) {
-    const catVal = String(row[category] ?? '(no value)');
+    const catVal = cols.map((c) => String(row[c] ?? '(no value)')).join(' / ');
     if (!elnSets.has(catVal)) elnSets.set(catVal, new Set());
     if (row.ELN_ID) elnSets.get(catVal)!.add(row.ELN_ID);
   }

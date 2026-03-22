@@ -64,8 +64,9 @@ export interface PreparedData {
 /**
  * Prepare all shared data for a distribution plot.
  *
- * Groups rows by the first reactant type, sorts by descending median,
- * computes colors/hover text/layout. Returns null for empty inputs.
+ * Groups rows by reactant types (compound key when multiple are selected),
+ * sorts by descending median, computes colors/hover text/layout.
+ * Returns null for empty inputs.
  */
 export function prepareDistributionData(
   rows: Row[],
@@ -74,12 +75,16 @@ export function prepareDistributionData(
 ): PreparedData | null {
   if (rows.length === 0 || reactantTypes.length === 0) return null;
 
-  const groupCol = reactantTypes[0];
+  const groupCol = reactantTypes.length === 1
+    ? reactantTypes[0]
+    : reactantTypes.join(' / ');
 
-  // Group rows by category value
+  // Group rows by category value(s)
   const groupMap = new Map<string, Row[]>();
   for (const row of rows) {
-    const key = String(row[groupCol] ?? '(no value)');
+    const key = reactantTypes
+      .map((col) => String(row[col] ?? '(no value)'))
+      .join(' / ');
     const z = row['z-Score'];
     if (z === null || z === undefined || isNaN(z)) continue;
     if (!groupMap.has(key)) groupMap.set(key, []);
@@ -97,8 +102,8 @@ export function prepareDistributionData(
   // Reverse for Plotly y-axis (bottom-to-top)
   const categoryOrder = sorted.map((g) => g.name).reverse();
 
-  // Color mapping: ELN density → light/dark shade
-  const colorMap = createColorMapping(groupCol, rows);
+  // Color mapping: ELN density → light/dark shade (palette from first reactant type)
+  const colorMap = createColorMapping(reactantTypes[0], rows, reactantTypes);
 
   // Count unique ELNs per category
   const elnCounts = new Map<string, number>();
