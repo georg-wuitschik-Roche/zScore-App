@@ -141,7 +141,7 @@ button:hover {
     justify-content: center;
     flex: 1;
     padding: 24px;
-    padding-top: 48px;
+    padding-top: 24px;
     padding-bottom: 0;
     text-align: center;
     height: 100dvh;
@@ -151,21 +151,21 @@ button:hover {
 .landing-logo {
     width: 400px;
     height: auto;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
 }
 
 .landing-title {
     font-size: 42px;
     font-weight: 400;
     color: var(--color-text);
-    margin: 0 0 12px;
+    margin: 0 0 8px;
     letter-spacing: -1.5px;
 }
 
 .landing-subtitle {
     font-size: 14px;
     color: var(--color-text-muted);
-    margin: 0 0 40px;
+    margin: 0 0 28px;
     font-weight: 400;
     letter-spacing: 0.05em;
     text-transform: uppercase;
