@@ -21,6 +21,9 @@ export const BASE_COLOURS: Record<string, { light: string; dark: string }> = {
 
 const DEFAULT_COLOURS = { light: '#D3D3D3', dark: '#696969' }; // grey
 
+/** Distinct palette used when multiple reactant types are combined */
+export const COMBINED_COLOURS = { light: '#B0BEC5', dark: '#263238' }; // blue-grey → dark slate
+
 /**
  * Linear interpolation between two hex colours (0 ≤ factor ≤ 1).
  */
@@ -63,8 +66,9 @@ export function createColorMapping(
   category: string,
   rows: Row[],
   groupCols?: string[],
+  combined?: boolean,
 ): Map<string, string> {
-  const base = BASE_COLOURS[category] ?? DEFAULT_COLOURS;
+  const base = combined ? COMBINED_COLOURS : (BASE_COLOURS[category] ?? DEFAULT_COLOURS);
   const cols = groupCols ?? [category];
 
   // Count unique ELNs per category value

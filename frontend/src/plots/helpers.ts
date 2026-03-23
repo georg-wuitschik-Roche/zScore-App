@@ -102,8 +102,10 @@ export function prepareDistributionData(
   // Reverse for Plotly y-axis (bottom-to-top)
   const categoryOrder = sorted.map((g) => g.name).reverse();
 
-  // Color mapping: ELN density → light/dark shade (palette from first reactant type)
-  const colorMap = createColorMapping(reactantTypes[0], rows, reactantTypes);
+  // Color mapping: ELN density → light/dark shade
+  // Use slate palette when combining multiple reactant types, otherwise type-specific palette
+  const combined = reactantTypes.length > 1;
+  const colorMap = createColorMapping(reactantTypes[0], rows, reactantTypes, combined);
 
   // Count unique ELNs per category
   const elnCounts = new Map<string, number>();

@@ -738,10 +738,6 @@ button:hover {
     border-bottom: 1px solid var(--color-border);
 }
 
-.split-panel .plot-container {
-    height: auto;
-}
-
 /* ================================================================== */
 /* 8. RANGE SLIDERS                                                   */
 /* ================================================================== */
@@ -769,8 +765,9 @@ button:hover {
 .slider-value {
     font-size: 13px;
     font-weight: 600;
-    min-width: 20px;
-    text-align: center;
+    min-width: 24px;
+    text-align: right;
+    flex-shrink: 0;
 }
 
 /* ================================================================== */
@@ -838,22 +835,125 @@ button:hover {
 }
 
 .filter-options-row.sliders { margin-bottom: 16px; }
-.filter-options-row.downloads { margin-top: 16px; }
-.filter-options-row label { margin-right: 8px; }
+.filter-options-row.downloads { margin-top: 16px; justify-content: flex-end; }
+.filter-options-row label {
+    margin-right: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+.filter-options-row.sliders label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
 
-.slider-wrap { margin-right: 32px; }
-.slider-wrap.min-eln { width: 150px; }
-.slider-wrap.topn { width: 120px; }
-.slider-wrap.max-comp { width: 150px; }
+.slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 32px;
+}
+.slider-wrap.min-eln { width: 180px; }
+.slider-wrap.topn { width: 160px; }
+.slider-wrap.max-comp { width: 180px; }
 
-.checklist-item { margin-right: 32px; }
+/* ---- Custom range slider ---- */
+.filter-panel input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+    outline: none;
+    cursor: pointer;
+}
+
+.filter-panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.filter-panel input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.filter-panel input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.filter-panel input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+}
+
+/* ---- Custom checkbox ---- */
+.filter-panel input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-border-btn);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    vertical-align: middle;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-panel input[type="checkbox"]:checked {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.filter-panel input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 45%;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -55%) rotate(45deg);
+}
+
+.filter-panel input[type="checkbox"]:hover {
+    border-color: var(--color-primary);
+}
+
+.checklist-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 32px;
+    cursor: pointer;
+}
 .download-btn-gap { margin-right: 16px; }
 
 /* ================================================================== */
 /* 10. PLOTS & STATS                                                  */
 /* ================================================================== */
 
-.plot-container { height: 800px; width: 100%; margin-bottom: 60px; }
+.plot-container { width: 100%; margin-bottom: 60px; }
 .stats-container {
     width: 100%;
     padding: 24px 0;

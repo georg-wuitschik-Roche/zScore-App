@@ -43,7 +43,7 @@ export function DistributionView({ buildConfig, label, rows, reactantTypes }: Pr
         data={config.data}
         layout={config.layout}
         config={{ responsive: true, displayModeBar: false }}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%' }}
         useResizeHandler
       />
     </div>
