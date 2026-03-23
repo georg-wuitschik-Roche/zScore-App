@@ -170,6 +170,8 @@ export function createHeatmapConfig(
   // Format customdata as [[elnCount]] per cell for hovertemplate
   const customdata = elnMatrix.map((row) => row.map((n) => [n]));
 
+  const monoFont = '"JetBrains Mono", "Fira Code", monospace';
+
   const data: Data[] = [
     {
       type: 'heatmap' as const,
@@ -179,6 +181,8 @@ export function createHeatmapConfig(
       colorscale,
       zmin,
       zmax,
+      xgap: 2,
+      ygap: 2,
       showscale: true,
       text: textMatrix as unknown as string[],
       texttemplate: '%{text}',
@@ -186,8 +190,9 @@ export function createHeatmapConfig(
       colorbar: {
         title: {
           text: 'Median z-Score',
-          font: { size: fontSize, family: '"DM Sans", sans-serif' },
+          font: { size: fontSize, family: monoFont },
         },
+        tickfont: { family: monoFont },
       },
       hoverongaps: false,
       customdata: customdata as unknown as number[][],
@@ -218,15 +223,18 @@ export function createHeatmapConfig(
       },
     },
     xaxis: {
-      title: { text: xCol, font: { size: fontSize + 2 }, standoff: 20 },
+      title: { text: xCol, font: { size: fontSize + 2, family: monoFont }, standoff: 20 },
       tickangle: -45,
-      tickfont: { size: presentationMode ? 16 : 13 },
+      tickfont: { size: presentationMode ? 16 : 13, family: monoFont },
       side: 'bottom',
+      automargin: true,
+      showgrid: false,
     },
     yaxis: {
-      title: { text: yCol, font: { size: fontSize + 2 }, standoff: 20 },
-      tickfont: { size: presentationMode ? 16 : 13 },
+      title: { text: yCol, font: { size: fontSize + 2, family: monoFont }, standoff: 20 },
+      tickfont: { size: presentationMode ? 16 : 13, family: monoFont },
       automargin: true,
+      showgrid: false,
     },
     height,
     margin: { t: 60, b: 180, l: 220, r: 30 },

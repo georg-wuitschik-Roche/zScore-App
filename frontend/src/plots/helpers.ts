@@ -181,6 +181,7 @@ export function prepareDistributionData(
       zerolinecolor: '#ccc',
       gridcolor: '#d0d0d0',
       showgrid: true,
+      tickfont: { size: presentationMode ? 16 : 13, family: '"JetBrains Mono", "Fira Code", monospace' },
     },
     yaxis: {
       automargin: true,
