@@ -477,7 +477,7 @@ button:hover {
     align-items: center;
     justify-content: space-between;
     margin-bottom: 6px;
-    min-height: 24px;
+    min-height: 32px;
 }
 
 .control-col-header label {
@@ -554,7 +554,7 @@ button:hover {
     gap: 4px;
     margin: 2px;
     padding: 3px 8px;
-    background: #555;
+    background: #000;
     color: #fff;
     border-radius: 3px;
     font-family: var(--font-mono);
@@ -1244,6 +1244,16 @@ button.tutorial-highlight,
 .multi-select.tutorial-highlight,
 .multi-select-control.tutorial-highlight {
     z-index: 9998 !important;
+}
+
+label.tutorial-highlight {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+/* Boost navbar stacking context when it contains a highlighted element */
+.navbar.tutorial-lift {
+    z-index: 9999 !important;
 }
 
 /* ================================================================== */

@@ -1,5 +1,5 @@
 /**
- * Tutorial state machine — 11-step walkthrough.
+ * Tutorial state machine — 17-step walkthrough.
  *
  * Each step has a target element ID, title, body text, and a gating
  * condition that determines whether the user has completed the step.
@@ -43,7 +43,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     targetId: 'min-eln-slider',
     title: 'Minimum ELNs',
-    body: 'Drag to require a minimum number of ELNs (data points) per selection.',
+    body: 'Drag to require a minimum number of ELNs (reactions) per selection.',
   },
   {
     targetId: 'topn-slider',
@@ -61,9 +61,39 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     body: 'Toggle to include/exclude CuI catalyst entries.',
   },
   {
+    targetId: 'exclude-scaleup-checkbox',
+    title: 'Exclude Scale-Up Plates',
+    body: 'Toggle to exclude scale-up plate experiments from the analysis.',
+  },
+  {
+    targetId: 'include-null-checkbox',
+    title: 'Include Null Reactant Types',
+    body: 'Toggle to include combinations where a reactant type has no value (null).',
+  },
+  {
+    targetId: 'download-buttons',
+    title: 'Download Data',
+    body: 'Export the filtered data as CSV or save the current plot as a high-resolution PNG.',
+  },
+  {
     targetId: 'view-toggle',
     title: 'Explore Results',
-    body: 'Switch between Boxplot, Heatmap, and Statistics views.',
+    body: 'Switch between Boxplot, Violin, Heatmap, and Statistics views. Violin plots show the full distribution shape with individual data points.',
+  },
+  {
+    targetId: 'split-toggle',
+    title: 'Split / Combined Mode',
+    body: 'When 2+ values are selected in a dropdown, use Split to compare them side by side. Combined overlays everything in one plot.',
+  },
+  {
+    targetId: 'settings-toggle',
+    title: 'Settings',
+    body: 'Upload your own CSV dataset or toggle Presentation Mode for cleaner visuals.',
+  },
+  {
+    targetId: 'reset-btn',
+    title: 'Reset Filters',
+    body: 'Click Reset to clear all filters and return to the default state.',
   },
   {
     targetId: null,
@@ -118,8 +148,8 @@ export function useIsStepSatisfied(): boolean {
   const topnZscore = useFilterStore((s) => s.topnZscore);
   const maxComponents = useFilterStore((s) => s.maxComponents);
   const excludeCui = useFilterStore((s) => s.excludeCui);
-  const activeTab = useFilterStore((s) => s.activeTab);
-
+  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
+  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   switch (step) {
     case 0:
       return reactionTypes.length > 0;
@@ -140,10 +170,20 @@ export function useIsStepSatisfied(): boolean {
     case 8:
       return !excludeCui;
     case 9:
-      return activeTab === 'heatmap';
+      return !excludeScaleup;
     case 10:
-      return true;
+      return includeNullCategories;
+    case 11:
+      return true; // downloads — informational, click Next to proceed
+    case 12:
+      return true; // tabs — auto-cycled, click Next to proceed
+    case 13:
+      return true; // split — auto-enabled, click Next to proceed
+    case 14:
+      return true; // settings — auto-opened, click Next to proceed
+    case 15:
+      return true; // reset — click Next to proceed
     default:
-      return false;
+      return true;
   }
 }

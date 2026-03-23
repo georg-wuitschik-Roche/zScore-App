@@ -91,6 +91,7 @@ export function Navbar() {
           <div className="settings-wrapper" ref={settingsRef}>
             <button
               className="settings-toggle"
+              id="settings-toggle"
               onClick={() => setSettingsOpen((prev) => !prev)}
               aria-label="Settings"
             >
@@ -139,7 +140,7 @@ export function Navbar() {
           </div>
 
           {/* Reset button */}
-          <button className="reset-btn-subtle" onClick={handleReset}>
+          <button className="reset-btn-subtle" id="reset-btn" onClick={handleReset}>
             <svg
               width="14"
               height="14"

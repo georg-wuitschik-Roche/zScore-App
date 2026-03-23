@@ -1,20 +1,24 @@
 /**
- * Tutorial overlay — 11-step guided walkthrough.
+ * Tutorial overlay — 17-step guided walkthrough.
  *
  * Shows a floating panel with step title/body, highlights the target
  * element, and gates progression on user interaction.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import {
   useTutorialStore,
   useIsStepSatisfied,
   TUTORIAL_STEPS,
 } from '../hooks/useTutorial';
 import { useFilterStore } from '../stores/filterStore';
+import { getReactantOptions } from '../data/dropdownOptions';
 
-// Steps 5-8 target elements inside the options panel
-const STEPS_REQUIRING_PANEL_OPEN = new Set([5, 6, 7, 8]);
+// Steps 5-11 target elements inside the options panel
+const STEPS_REQUIRING_PANEL_OPEN = new Set([5, 6, 7, 8, 9, 10, 11]);
+
+// Steps 14-15 target elements inside the navbar
+const STEPS_IN_NAVBAR = new Set([14, 15]);
 
 export function TutorialOverlay() {
   const active = useTutorialStore((s) => s.active);
@@ -40,14 +44,102 @@ export function TutorialOverlay() {
 
   const optionsPanelOpen = useFilterStore((s) => s.optionsPanelOpen);
   const setFilters = useFilterStore((s) => s.setFilters);
+  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+  const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
+  const setActiveTab = useFilterStore((s) => s.setActiveTab);
+  const setSplitSelector = useFilterStore((s) => s.setSplitSelector);
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const dataset = useFilterStore((s) => s.dataset);
+  const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
 
-  // Auto-open options panel when tutorial reaches slider/checkbox steps
+  const sourceData = uploadedDataset ?? dataset;
+  const availableReactants = useMemo(
+    () => getReactantOptions(sourceData, reactionTypes),
+    [sourceData, reactionTypes],
+  );
+
+  // Auto-open options panel when tutorial reaches slider/checkbox/download steps
   useEffect(() => {
     if (!active) return;
     if (STEPS_REQUIRING_PANEL_OPEN.has(step) && !optionsPanelOpen) {
       setFilters({ optionsPanelOpen: true });
     }
   }, [active, step, optionsPanelOpen, setFilters]);
+
+  // Lift navbar z-index when highlighting elements inside it
+  useEffect(() => {
+    if (!active) return;
+    const navbar = document.querySelector('.navbar');
+    if (STEPS_IN_NAVBAR.has(step)) {
+      navbar?.classList.add('tutorial-lift');
+    }
+    return () => {
+      navbar?.classList.remove('tutorial-lift');
+    };
+  }, [active, step]);
+
+  // Step 12a — ensure 2+ reactant types so heatmap tab is visible
+  useEffect(() => {
+    if (!active || step !== 12) return;
+    if (reactantTypes.length < 2) {
+      const preferred = ['Base', 'Solvent'].filter((r) => availableReactants.includes(r));
+      if (preferred.length >= 2) {
+        setReactantTypes(preferred);
+      } else {
+        const second = availableReactants.find((r) => !reactantTypes.includes(r));
+        if (second) setReactantTypes([...reactantTypes, second]);
+      }
+    }
+  }, [active, step, reactantTypes, availableReactants, setReactantTypes]);
+
+  // Step 12b — cycle through tabs (separate effect to avoid restart on reactantTypes change)
+  useEffect(() => {
+    if (!active || step !== 12) return;
+    const timers = [
+      setTimeout(() => setActiveTab('violin'), 800),
+      setTimeout(() => setActiveTab('heatmap'), 3600),
+      setTimeout(() => setActiveTab('stats'), 6400),
+      setTimeout(() => setActiveTab('boxplot'), 9200),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [active, step, setActiveTab]);
+
+  // Step 13 — set reactants to Catalyst + Base + Solvent, show boxplots, enable split
+  useEffect(() => {
+    if (!active || step !== 13) return;
+    setActiveTab('boxplot');
+    const preferred = ['Catalyst', 'Base', 'Solvent'].filter((r) => availableReactants.includes(r));
+    const needsUpdate =
+      preferred.length >= 2
+        ? reactantTypes.length !== preferred.length ||
+          preferred.some((r) => !reactantTypes.includes(r))
+        : reactantTypes.length < 2;
+    if (needsUpdate) {
+      if (preferred.length >= 2) {
+        setReactantTypes(preferred);
+      } else {
+        const second = availableReactants.find((r) => !reactantTypes.includes(r));
+        if (second) setReactantTypes([...reactantTypes, second]);
+      }
+    }
+    const timer = setTimeout(() => setSplitSelector('reactantTypes'), 400);
+    return () => clearTimeout(timer);
+  }, [active, step, reactantTypes, availableReactants, setReactantTypes, setSplitSelector]);
+
+  // Step 14 — auto-open settings dropdown
+  useEffect(() => {
+    if (!active || step !== 14) return;
+    const timer = setTimeout(() => {
+      document.getElementById('settings-toggle')?.click();
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      // Close settings when leaving this step
+      if (document.querySelector('.settings-dropdown:not(.hidden)')) {
+        document.getElementById('settings-toggle')?.click();
+      }
+    };
+  }, [active, step]);
 
   // Add/remove highlight class on target element
   useEffect(() => {
@@ -108,7 +200,7 @@ export function TutorialOverlay() {
             className="tutorial-btn tutorial-btn-next"
             onClick={isLastStep ? finish : next}
           >
-            {isLastStep ? 'Finish' : isSatisfied ? 'Next' : 'Skip Step'}
+            {isLastStep ? 'Finish' : 'Next'}
           </button>
         </div>
       </div>

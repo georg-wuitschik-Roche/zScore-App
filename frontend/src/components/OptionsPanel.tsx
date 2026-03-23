@@ -148,7 +148,7 @@ export function OptionsPanel() {
             />
             {' '}Exclude CuI as Catalyst
           </label>
-          <label className="checklist-item">
+          <label className="checklist-item" id="exclude-scaleup-checkbox">
             <input
               type="checkbox"
               checked={excludeScaleup}
@@ -156,7 +156,7 @@ export function OptionsPanel() {
             />
             {' '}Exclude Scale-Up Plates
           </label>
-          <label className="checklist-item">
+          <label className="checklist-item" id="include-null-checkbox">
             <input
               type="checkbox"
               checked={includeNullCategories}
@@ -168,10 +168,12 @@ export function OptionsPanel() {
 
         {/* Download buttons row */}
         <div className="filter-options-row downloads">
-          <button className="download-btn-gap" onClick={handleDownloadCSV}>
-            Download CSV
-          </button>
-          <button onClick={handleDownloadPNG}>Download PNG</button>
+          <span id="download-buttons" style={{ display: 'inline-flex', gap: 8 }}>
+            <button className="download-btn-gap" onClick={handleDownloadCSV}>
+              Download CSV
+            </button>
+            <button onClick={handleDownloadPNG}>Download PNG</button>
+          </span>
         </div>
       </div>
     </>

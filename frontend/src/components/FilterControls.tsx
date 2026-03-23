@@ -10,7 +10,7 @@ import {
 import { MultiSelect } from './MultiSelect';
 import type { SplitSelector } from '../data/types';
 
-function SplitToggle({ selectorKey, values }: { selectorKey: SplitSelector; values: string[] }) {
+function SplitToggle({ selectorKey, values, id }: { selectorKey: SplitSelector; values: string[]; id?: string }) {
   const splitSelector = useFilterStore((s) => s.splitSelector);
   const setSplitSelector = useFilterStore((s) => s.setSplitSelector);
 
@@ -19,7 +19,7 @@ function SplitToggle({ selectorKey, values }: { selectorKey: SplitSelector; valu
   const isActive = splitSelector === selectorKey;
 
   return (
-    <div className="split-toggle">
+    <div className="split-toggle" id={id}>
       <button
         className={`split-toggle-btn${!isActive ? ' active' : ''}`}
         onClick={() => setSplitSelector(null)}
@@ -150,7 +150,7 @@ export function FilterControls() {
       <div className="control-col" id="reactant-types-dropdown">
         <div className="control-col-header">
           <label>Reactant Type(s):</label>
-          <SplitToggle selectorKey="reactantTypes" values={reactantTypes} />
+          <SplitToggle selectorKey="reactantTypes" values={reactantTypes} id="split-toggle" />
         </div>
         <MultiSelect
           options={reactantTypeOptions}
