@@ -129,6 +129,7 @@ button:hover {
 
 .app-footer a:hover { text-decoration: underline; }
 
+
 /* ================================================================== */
 /* 4. LANDING PAGE                                                    */
 /* ================================================================== */
@@ -275,9 +276,11 @@ button:hover {
 
 .landing-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-top: 16px;
     justify-content: center;
+    max-width: 420px;
 }
 
 .landing-tutorial-btn {
@@ -316,6 +319,124 @@ button:hover {
 
 .landing-github-link:hover {
     color: var(--color-text);
+}
+
+.landing-about-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    border: 1px solid var(--color-text-muted);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.landing-about-btn:hover {
+    color: var(--color-text);
+}
+
+/* -- About modal -- */
+
+.about-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.about-panel {
+    background: var(--color-bg);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 620px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalSlideIn 0.2s ease-out;
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 0;
+}
+
+.about-header h2 {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.about-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.about-close:hover {
+    color: var(--color-text);
+}
+
+.about-body {
+    padding: 16px 24px 24px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text);
+}
+
+.about-body h3 {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    margin: 18px 0 6px;
+    color: var(--color-text);
+}
+
+.about-body p {
+    margin: 0 0 10px;
+}
+
+.about-formula {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    text-align: center;
+    padding: 8px 0;
+    color: var(--color-text);
+}
+
+.about-caveat {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+.about-citation {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.about-citation a {
+    color: var(--color-primary-hover);
 }
 
 /* ================================================================== */

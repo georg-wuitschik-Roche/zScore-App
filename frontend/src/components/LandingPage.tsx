@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useTutorialStore } from '../hooks/useTutorial';
@@ -112,6 +112,8 @@ export function LandingPage() {
     navigate('/dashboard?rt=Buchwald-Hartwig&cat=Catalyst');
   }
 
+  const [showAbout, setShowAbout] = useState(false);
+
   const showFilters = reactionTypes.length > 0;
 
   return (
@@ -208,6 +210,14 @@ export function LandingPage() {
         <button className="landing-tutorial-btn" onClick={handleStartTutorial}>
           Start Tutorial
         </button>
+        <button className="landing-about-btn" onClick={() => setShowAbout(true)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          How It Works
+        </button>
         <a
           href="https://github.com/georg-wuitschik-Roche/zScore-App"
           target="_blank"
@@ -219,7 +229,70 @@ export function LandingPage() {
           </svg>
           View on GitHub
         </a>
+        <a
+          href="https://pubs.acs.org/doi/10.1021/acscentsci.5c02031"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="landing-github-link"
+        >
+          <img src="/assets/acs-logo.png" alt="ACS" width="20" height="20" />
+          View on ACS Central Science
+        </a>
       </div>
+
+      {showAbout && (
+        <div className="about-modal" onClick={() => setShowAbout(false)}>
+          <div className="about-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="about-header">
+              <h2>How It Works</h2>
+              <button className="about-close" onClick={() => setShowAbout(false)}>
+                &times;
+              </button>
+            </div>
+            <div className="about-body">
+              <p>
+                This dashboard analyzes <strong>over 66,000 high-throughput experimentation (HTE) reactions</strong> across
+                42 reaction types, focusing on transformations of drug-like molecules at Roche.
+              </p>
+              <h3>From LC-MS to z-Scores</h3>
+              <p>
+                Reaction outcomes are measured via LC-MS peak area percentages, normalized to exclude
+                reagent and solvent peaks. For each substrate pair, a <strong>z-score</strong> is calculated:
+              </p>
+              <p className="about-formula">
+                z = (x &minus; &mu;) / &sigma;
+              </p>
+              <p>
+                where <em>x</em> is the observed area %, <em>&mu;</em> the mean, and <em>&sigma;</em> the
+                standard deviation across all conditions for that transformation. This normalization
+                makes results comparable across different reaction types: a 30% yield in a difficult
+                transformation can score higher than 80% in an easy one.
+              </p>
+              <h3>Reagent Ranking</h3>
+              <p>
+                For each ELN (experiment), the top <em>n</em> z-scores containing a given reagent
+                are selected. The reagent is then ranked by the <strong>median</strong> of those
+                top-<em>n</em> values. With a large <em>n</em>, reagents that perform robustly
+                across many conditions are favored. With a small <em>n</em>, reagents with
+                extraordinary performance under specific conditions are highlighted. The
+                default (<em>n</em> = 5) strikes a balance between both.
+              </p>
+              <p className="about-caveat">
+                Note: The underlying distributions are non-normal (median skewness = 1.36).
+                z-Scores are used here solely for normalization, not for probabilistic inference.
+              </p>
+              <p className="about-citation">
+                Ahlbrecht, J.; Lutz, M.{'\u2009'}D.{'\u2009'}R.; Jost, V.;
+                F{'\u00e4'}rber, M.; Br{'\u00e4'}se, S.; Wuitschik, G.{' '}
+                <em>ACS Cent. Sci.</em> <strong>2026</strong>, 12 (2), 222–232.{' '}
+                <a href="https://doi.org/10.1021/acscentsci.5c02031" target="_blank" rel="noopener noreferrer">
+                  DOI: 10.1021/acscentsci.5c02031
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <Footer />
     </div>
   );

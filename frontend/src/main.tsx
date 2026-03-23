@@ -30,6 +30,10 @@ class ErrorBoundary extends Component<
   }
 }
 
+if (import.meta.env.DEV) {
+  document.title = '[DEV] ' + document.title
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
