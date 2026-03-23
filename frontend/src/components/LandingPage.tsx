@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useTutorialStore } from '../hooks/useTutorial';
@@ -14,7 +14,7 @@ import {
 } from '../data/dropdownOptions';
 import { MultiSelect } from './MultiSelect';
 import { Footer } from './Footer';
-import { SPLIT_URL_KEYS } from '../data/types';
+import { DEFAULTS, SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
 
 export function LandingPage() {
@@ -23,14 +23,17 @@ export function LandingPage() {
   const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
   const dropdownIndex = useFilterStore((s) => s.dropdownIndex);
   const setFilters = useFilterStore((s) => s.setFilters);
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const setReactionTypes = useFilterStore((s) => s.setReactionTypes);
+  const fgA = useFilterStore((s) => s.fgA);
+  const setFgA = useFilterStore((s) => s.setFgA);
+  const fgB = useFilterStore((s) => s.fgB);
+  const setFgB = useFilterStore((s) => s.setFgB);
+  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+  const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
 
   // Use index for instant dropdowns; fall back to row scanning for uploaded CSVs
   const useIndex = !uploadedDataset && dropdownIndex !== null;
-
-  const [reactionTypes, setReactionTypes] = useState<string[]>([]);
-  const [fgA, setFgA] = useState<string[]>([]);
-  const [fgB, setFgB] = useState<string[]>([]);
-  const [reactantTypes, setReactantTypes] = useState<string[]>([]);
 
   const rowData = uploadedDataset ?? dataset;
 
@@ -75,11 +78,14 @@ export function LandingPage() {
     if (reactionTypes.length === 0) return;
 
     setFilters({
+      ...DEFAULTS,
       reactionTypes,
       fgA,
       fgB,
       reactantTypes,
       splitSelector: split,
+      activeTab: 'boxplot',
+      optionsPanelOpen: false,
     });
 
     const params = new URLSearchParams();
@@ -95,10 +101,12 @@ export function LandingPage() {
 
   function handleStartTutorial() {
     setFilters({
+      ...DEFAULTS,
       reactionTypes: ['Buchwald-Hartwig'],
       reactantTypes: ['Catalyst'],
-      fgA: [],
-      fgB: [],
+      splitSelector: null,
+      activeTab: 'boxplot',
+      optionsPanelOpen: false,
     });
     startTutorial();
     navigate('/dashboard?rt=Buchwald-Hartwig&cat=Catalyst');
@@ -125,11 +133,7 @@ export function LandingPage() {
             <MultiSelect
               options={reactionTypeOptions}
               value={reactionTypes}
-              onChange={(vals) => {
-                setReactionTypes(vals);
-                setFgA([]);
-                setFgB([]);
-              }}
+              onChange={setReactionTypes}
               placeholder="Search by reaction type..."
               autoClose
             />
