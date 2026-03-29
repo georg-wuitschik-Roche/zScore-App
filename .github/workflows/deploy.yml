@@ -3,11 +3,6 @@ name: Deploy to Cloud Run
 on:
   workflow_dispatch:  # Manual trigger only (auto-deploy disabled until WIF is configured)
 
-env:
-  PROJECT_ID: gcp-p-hte-os-mrewa
-  SERVICE: zscore-dashboard
-  REGION: europe-west6
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,6 +14,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Load deploy config
+        run: |
+          echo "PROJECT_ID=$(jq -r .project_id deploy-config.json)" >> "$GITHUB_ENV"
+          echo "SERVICE=$(jq -r .service deploy-config.json)" >> "$GITHUB_ENV"
+          echo "REGION=$(jq -r .region deploy-config.json)" >> "$GITHUB_ENV"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2

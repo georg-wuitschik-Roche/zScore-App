@@ -4,9 +4,10 @@ set -euo pipefail
 # Deploy to Google Cloud Run
 # Usage: ./deploy.sh
 
-PROJECT_ID="gcp-p-hte-os-mrewa"
-SERVICE="zscore-dashboard"
-REGION="europe-west6"
+CONFIG="$(dirname "$0")/deploy-config.json"
+PROJECT_ID=$(jq -r .project_id "$CONFIG")
+SERVICE=$(jq -r .service "$CONFIG")
+REGION=$(jq -r .region "$CONFIG")
 IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/${SERVICE}"
 
 echo "Building Docker image..."
@@ -17,6 +18,7 @@ docker push "${IMAGE}:latest"
 
 echo "Deploying to Cloud Run..."
 gcloud run deploy "${SERVICE}" \
+  --project "${PROJECT_ID}" \
   --image "${IMAGE}:latest" \
   --region "${REGION}" \
   --platform managed \
@@ -24,4 +26,4 @@ gcloud run deploy "${SERVICE}" \
   --port 8080
 
 echo "Done. Service URL:"
-gcloud run services describe "${SERVICE}" --region "${REGION}" --format 'value(status.url)'
+gcloud run services describe "${SERVICE}" --project "${PROJECT_ID}" --region "${REGION}" --format 'value(status.url)'
