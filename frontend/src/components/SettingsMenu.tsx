@@ -142,9 +142,11 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
               </div>
 
               {/* COMPARISON section */}
-              {availableVersions.length > 1 && (
+              {(availableVersions.length > 1 || !!uploadedDataset) && (
                 <div className="settings-section" id="settings-section-comparison">
-                  <h3 className="settings-section-title">Version Comparison</h3>
+                  <h3 className="settings-section-title">
+                    {uploadedDataset ? 'Compare with Built-in' : 'Version Comparison'}
+                  </h3>
 
                   <div className="settings-row">
                     <span className="settings-row-label">Compare</span>
@@ -169,9 +171,9 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
                       <span className="settings-row-label">Compare with</span>
                       <div className="settings-pills">
                         {availableVersions
-                          .filter((v) => v.id !== activeVersion)
+                          .filter((v) => !!uploadedDataset || v.id !== activeVersion)
                           .map((v) => {
-                            const resolved = resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion);
+                            const resolved = resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion, !!uploadedDataset);
                             const isSelected = v.id === resolved;
                             return (
                               <button

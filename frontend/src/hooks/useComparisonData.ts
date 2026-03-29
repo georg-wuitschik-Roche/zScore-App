@@ -31,6 +31,7 @@ export function useComparisonFilteredRows(): Row[] | null {
   const activeVersion = useFilterStore((s) => s.activeVersion);
   const availableVersions = useFilterStore((s) => s.availableVersions);
   const datasetCache = useFilterStore((s) => s.datasetCache);
+  const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
 
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
@@ -45,8 +46,8 @@ export function useComparisonFilteredRows(): Row[] | null {
 
   const comparisonVersionId = useMemo(() => {
     if (!comparisonMode) return null;
-    return resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion);
-  }, [comparisonMode, comparisonVersion, activeVersion, availableVersions]);
+    return resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion, !!uploadedDataset);
+  }, [comparisonMode, comparisonVersion, activeVersion, availableVersions, uploadedDataset]);
 
   const rawComparisonRows = useMemo(() => {
     if (!comparisonVersionId) return null;

@@ -16,8 +16,11 @@ export function resolveComparisonVersion(
   availableVersions: VersionInfo[],
   activeVersion: string,
   explicitVersion: string | null,
+  hasUpload = false,
 ): string | null {
   if (explicitVersion) return explicitVersion;
+  // With an upload active, default to the active built-in version as baseline
+  if (hasUpload) return activeVersion;
   const idx = availableVersions.findIndex((v) => v.id === activeVersion);
   if (idx <= 0) return availableVersions.length > 1 ? availableVersions[0].id : null;
   return availableVersions[idx - 1].id;
