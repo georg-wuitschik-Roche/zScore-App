@@ -27,6 +27,68 @@ function useDebouncedSlider(
   return [local, update];
 }
 
+/** Clickable slider value that becomes an editable number input. */
+function EditableSliderValue({
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(String(value));
+      // Wait a tick so the input is rendered before focusing
+      requestAnimationFrame(() => inputRef.current?.select());
+    }
+  }, [editing, value]);
+
+  function commit() {
+    setEditing(false);
+    const parsed = parseInt(draft, 10);
+    if (!isNaN(parsed)) {
+      onChange(Math.min(max, Math.max(min, parsed)));
+    }
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="slider-value slider-value-input"
+        type="number"
+        min={min}
+        max={max}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') setEditing(false);
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      className="slider-value slider-value-clickable"
+      title="Click to type a value"
+      onClick={() => setEditing(true)}
+    >
+      {value}
+    </span>
+  );
+}
+
 export function OptionsPanel() {
   const optionsPanelOpen = useFilterStore((s) => s.optionsPanelOpen);
   const toggleOptionsPanel = useFilterStore((s) => s.toggleOptionsPanel);
@@ -46,10 +108,11 @@ export function OptionsPanel() {
   const setIncludeNullCategories = useFilterStore(
     (s) => s.setIncludeNullCategories,
   );
+  const resetOptions = useFilterStore((s) => s.resetOptions);
 
   const { rows, stats } = useFilteredData();
 
-  const maxComponentsCap = stats.maxComponentsCap ?? 10;
+  const maxComponentsCap = Math.min(stats.maxComponentsCap ?? 10, 50);
 
   const [localMinEln, setLocalMinEln] = useDebouncedSlider(minEln, setMinEln);
   const [localTopn, setLocalTopn] = useDebouncedSlider(topnZscore, setTopnZscore);
@@ -136,7 +199,7 @@ export function OptionsPanel() {
               value={localMinEln}
               onChange={(e) => setLocalMinEln(Number(e.target.value))}
             />
-            <span className="slider-value">{localMinEln}</span>
+            <EditableSliderValue value={localMinEln} min={1} max={20} onChange={setLocalMinEln} />
           </div>
 
           <label>Top-N z-Score per (ELN_ID, selected reactant type(s)):</label>
@@ -149,7 +212,7 @@ export function OptionsPanel() {
               value={localTopn}
               onChange={(e) => setLocalTopn(Number(e.target.value))}
             />
-            <span className="slider-value">{localTopn}</span>
+            <EditableSliderValue value={localTopn} min={1} max={10} onChange={setLocalTopn} />
           </div>
 
           <label>Max Components to Display:</label>
@@ -162,9 +225,12 @@ export function OptionsPanel() {
               value={Math.min(localMaxComp, maxComponentsCap)}
               onChange={(e) => setLocalMaxComp(Number(e.target.value))}
             />
-            <span className="slider-value">
-              {Math.min(localMaxComp, maxComponentsCap)}
-            </span>
+            <EditableSliderValue
+              value={Math.min(localMaxComp, maxComponentsCap)}
+              min={1}
+              max={Math.max(maxComponentsCap, 1)}
+              onChange={setLocalMaxComp}
+            />
           </div>
         </div>
 
@@ -196,13 +262,12 @@ export function OptionsPanel() {
           </label>
         </div>
 
-        {/* Download buttons row */}
+        {/* Action buttons row */}
         <div className="filter-options-row downloads">
-          <span id="download-buttons" style={{ display: 'inline-flex', gap: 12 }}>
-            <button onClick={handleDownloadCSV}>
-              Download CSV
-            </button>
-            <button onClick={handleDownloadPNG}>Download PNG</button>
+          <span id="download-buttons" className="options-actions">
+            <button className="options-btn" onClick={handleDownloadCSV}>Download CSV</button>
+            <button className="options-btn" onClick={handleDownloadPNG}>Download PNG</button>
+            <button className="options-btn options-btn-reset" onClick={resetOptions}>Reset Options</button>
           </span>
         </div>
       </div>

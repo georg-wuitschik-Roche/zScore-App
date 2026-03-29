@@ -95,6 +95,7 @@ export interface FilterState {
   setTheme: (theme: 'light' | 'dark') => void;
   setComparisonMode: (on: boolean) => void;
   setComparisonVersion: (versionId: string | null) => void;
+  resetOptions: () => void;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
@@ -375,6 +376,16 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       uploadFileName: null,
         });
   },
+
+  resetOptions: () =>
+    set({
+      minEln: DEFAULT_MIN_ELN,
+      topnZscore: DEFAULT_TOPN_ZSCORE,
+      maxComponents: DEFAULT_MAX_COMPONENTS,
+      excludeCui: true,
+      excludeScaleup: true,
+      includeNullCategories: true,
+    }),
 
   setComparisonMode: (on) => set({ comparisonMode: on }),
   setComparisonVersion: (versionId) => set({ comparisonVersion: versionId }),

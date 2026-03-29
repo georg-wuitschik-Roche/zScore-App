@@ -1373,6 +1373,32 @@ button:hover {
     text-align: right;
     flex-shrink: 0;
 }
+.slider-value-clickable {
+    cursor: pointer;
+    border-bottom: 1px dashed var(--color-border);
+    user-select: none;
+}
+.slider-value-clickable:hover {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+.slider-value-input {
+    width: 44px;
+    padding: 1px 4px;
+    border: 1px solid var(--color-primary);
+    border-radius: 4px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: inherit;
+    outline: none;
+}
+/* Hide spinner arrows on number input */
+.slider-value-input::-webkit-inner-spin-button,
+.slider-value-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.slider-value-input { -moz-appearance: textfield; }
 
 /* ================================================================== */
 /* 9. FILTER PANEL                                                    */
@@ -1440,6 +1466,32 @@ button:hover {
 
 .filter-options-row.sliders { margin-bottom: 16px; }
 .filter-options-row.downloads { margin-top: 16px; justify-content: flex-end; }
+.options-actions {
+    display: inline-flex;
+    gap: 10px;
+}
+.options-btn {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 10px 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
+}
+.options-btn:hover {
+    background: var(--color-bg-hover, rgba(0,0,0,0.05));
+    color: var(--color-text);
+}
+.options-btn-reset {
+    border-color: #d1836a;
+    color: #c0694e;
+}
+.options-btn-reset:hover {
+    background: rgba(192, 105, 78, 0.08);
+    color: #a5553b;
+}
 .filter-options-row label {
     margin-right: 8px;
     font-size: 14px;
