@@ -1318,8 +1318,17 @@ button:hover {
 }
 
 .split-panel {
-    flex: 1 1 0;
-    min-width: 0;
+    flex: 1 1 calc((100% - 32px) / 3);   /* 3 columns max on normal screens */
+    min-width: calc((100% - 32px) / 3);   /* prevent more than 3 per row    */
+    max-width: 100%;
+}
+
+/* Ultrawide screens (>2200px): allow up to 5 columns */
+@media (min-width: 2200px) {
+    .split-panel {
+        flex-basis: calc((100% - 64px) / 5);
+        min-width: 0;
+    }
 }
 
 .split-panel-label {
