@@ -134,7 +134,7 @@ export function Navbar() {
                   setSettingsOpen(false);
                 }}
               >
-                Presentation Mode
+                {presentationMode ? 'Exit Presentation Mode' : 'Presentation Mode'}
               </button>
             </div>
           </div>

@@ -1248,8 +1248,8 @@ button:hover {
 
 /* Presentation toggle active state */
 .settings-dropdown-btn.active {
-    background: var(--color-primary-light) !important;
-    color: var(--color-text) !important;
+    background: var(--color-primary) !important;
+    color: #fff !important;
     font-weight: 600 !important;
 }
 
@@ -1517,7 +1517,7 @@ label.tutorial-highlight {
 
 .app-container.presentation-mode .multi-select-control {
     font-size: 22px !important;
-    min-height: 65px !important;
+    min-height: 76px !important;
     border: 2px solid var(--color-pres-accent) !important;
     border-radius: var(--radius-md) !important;
     box-shadow: none !important;
@@ -1539,6 +1539,11 @@ label.tutorial-highlight {
 .app-container.presentation-mode .controls-row {
     gap: 24px !important;
     margin-bottom: 32px !important;
+    align-items: stretch !important;
+}
+
+.app-container.presentation-mode .control-col-header {
+    min-height: 40px !important;
 }
 
 .app-container.presentation-mode .control-col label {
@@ -1559,7 +1564,7 @@ label.tutorial-highlight {
     color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.app-container.presentation-mode button:not(.settings-dropdown-btn):not(.settings-toggle):not(.reset-btn-subtle) {
+.app-container.presentation-mode button:not(.settings-dropdown-btn):not(.settings-toggle):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn) {
     font-size: 20px !important;
     padding: 16px 32px !important;
     font-weight: 600 !important;
@@ -1569,17 +1574,27 @@ label.tutorial-highlight {
 
 .app-container.presentation-mode .tabs-header { margin-top: 40px !important; }
 
-.app-container.presentation-mode .tab-button {
-    font-size: 24px !important;
-    padding: 20px 35px !important;
+.app-container.presentation-mode .view-toggle-btn {
+    font-size: 14px !important;
+    padding: 10px 18px !important;
     font-weight: 600 !important;
-    border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
-    margin-right: 4px !important;
+    min-height: auto !important;
+}
+
+.app-container.presentation-mode .split-toggle-btn {
+    font-size: 14px !important;
+    padding: 6px 16px !important;
+    min-height: auto !important;
+    font-weight: 600 !important;
+}
+
+.app-container.presentation-mode .filter-panel {
+    padding-top: 52px !important;
 }
 
 .app-container.presentation-mode .filter-toggle-btn {
-    font-size: 18px !important;
-    padding: 12px 24px !important;
+    font-size: 14px !important;
+    padding: 10px 20px !important;
     font-weight: 600 !important;
 }
 
@@ -1598,9 +1613,9 @@ label.tutorial-highlight {
 }
 
 .app-container.presentation-mode .multi-select-pill {
-    margin: 3px !important;
+    margin: 2px !important;
     padding: 8px 12px !important;
-    font-size: 15px !important;
+    font-size: 20px !important;
     line-height: 1.4 !important;
     border-radius: 4px !important;
     background-color: var(--color-primary) !important;
