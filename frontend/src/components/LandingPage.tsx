@@ -216,7 +216,7 @@ export function LandingPage() {
             <line x1="12" y1="16" x2="12" y2="12"/>
             <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-          How It Works
+          About the Data
         </button>
         <a
           href="https://github.com/georg-wuitschik-Roche/zScore-App"
@@ -244,7 +244,7 @@ export function LandingPage() {
         <div className="about-modal" onClick={() => setShowAbout(false)}>
           <div className="about-panel" onClick={(e) => e.stopPropagation()}>
             <div className="about-header">
-              <h2>How It Works</h2>
+              <h2>About the Data</h2>
               <button className="about-close" onClick={() => setShowAbout(false)}>
                 &times;
               </button>

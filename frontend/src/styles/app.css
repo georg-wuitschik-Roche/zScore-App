@@ -144,7 +144,7 @@ button:hover {
     padding-top: 24px;
     padding-bottom: 0;
     text-align: center;
-    height: 100dvh;
+    min-height: 100dvh;
     box-sizing: border-box;
 }
 
