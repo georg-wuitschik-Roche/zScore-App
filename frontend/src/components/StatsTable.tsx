@@ -4,6 +4,7 @@ import type { Row } from '../data/types';
 interface StatsTableProps {
   rows: Row[];
   reactantTypes: string[];
+  noDataHint?: string;
 }
 
 interface GroupStats {
@@ -70,7 +71,7 @@ function cellColor(val: number): string {
   return 'inherit';
 }
 
-export function StatsTable({ rows, reactantTypes }: StatsTableProps) {
+export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps) {
 
   const tableData = useMemo((): GroupStats[] => {
     if (rows.length === 0 || reactantTypes.length === 0) return [];
@@ -103,7 +104,7 @@ export function StatsTable({ rows, reactantTypes }: StatsTableProps) {
     return (
       <div className="stats-container">
         <p className="no-data-message">
-          No data available for the current filter selection.
+          {noDataHint ?? 'No data available for the current filter selection.'}
         </p>
       </div>
     );

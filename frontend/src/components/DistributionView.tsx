@@ -10,9 +10,10 @@ interface Props {
   label: string;
   rows: Row[];
   reactantTypes: string[];
+  noDataHint?: string;
 }
 
-export function DistributionView({ buildConfig, label, rows, reactantTypes }: Props) {
+export function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
 
   if (reactantTypes.length === 0) {
@@ -29,7 +30,7 @@ export function DistributionView({ buildConfig, label, rows, reactantTypes }: Pr
     return (
       <div className="plot-container">
         <p className="no-data-message">
-          No data available for the current filter selection.
+          {noDataHint ?? 'No data available for the current filter selection.'}
         </p>
       </div>
     );

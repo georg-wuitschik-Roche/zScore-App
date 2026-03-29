@@ -21,7 +21,8 @@ const TABS: TabDef[] = [
 ];
 
 function renderPanel(tab: TabId, panel: SplitPanel) {
-  const { rows, reactantTypes } = panel;
+  const { rows, reactantTypes, stats } = panel;
+  const noDataHint = stats.noDataHint;
   switch (tab) {
     case 'boxplot':
       return (
@@ -30,6 +31,7 @@ function renderPanel(tab: TabId, panel: SplitPanel) {
           label="boxplot"
           rows={rows}
           reactantTypes={reactantTypes}
+          noDataHint={noDataHint}
         />
       );
     case 'violin':
@@ -39,15 +41,16 @@ function renderPanel(tab: TabId, panel: SplitPanel) {
           label="violin plot"
           rows={rows}
           reactantTypes={reactantTypes}
+          noDataHint={noDataHint}
         />
       );
     case 'heatmap':
       return (
-        <HeatmapView rows={rows} reactantTypes={reactantTypes} />
+        <HeatmapView rows={rows} reactantTypes={reactantTypes} noDataHint={noDataHint} />
       );
     case 'stats':
       return (
-        <StatsTable rows={rows} reactantTypes={reactantTypes} />
+        <StatsTable rows={rows} reactantTypes={reactantTypes} noDataHint={noDataHint} />
       );
   }
 }

@@ -6,9 +6,10 @@ import type { Row } from '../data/types';
 interface Props {
   rows: Row[];
   reactantTypes: string[];
+  noDataHint?: string;
 }
 
-export function HeatmapView({ rows, reactantTypes }: Props) {
+export function HeatmapView({ rows, reactantTypes, noDataHint }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
 
   if (reactantTypes.length < 2) {
@@ -25,7 +26,7 @@ export function HeatmapView({ rows, reactantTypes }: Props) {
     return (
       <div className="plot-container">
         <p className="no-data-message">
-          No data available for the current filter selection.
+          {noDataHint ?? 'No data available for the current filter selection.'}
         </p>
       </div>
     );

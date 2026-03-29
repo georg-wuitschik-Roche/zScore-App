@@ -88,27 +88,51 @@ export function filterData(
     stats.afterFgB = { elns: countElns(rows) };
   }
 
+  // If no rows survive the base filters (steps 1–5), no options can help
+  if (rows.length === 0) {
+    stats.noDataHint = 'No data exists for the selected reaction type, functional group, and reactant type combination.';
+    return { rows, stats };
+  }
+
   // Step 6: Scale-up plates
+  const rowsBeforeScaleup = rows.length;
   rows = filterScaleupPlates(rows, params.excludeScaleup);
+  if (rows.length === 0 && rowsBeforeScaleup > 0) {
+    stats.noDataHint =
+      'All data was removed by scale-up plate exclusion. Try unchecking "Exclude Scale-Up Plates" in Options.';
+    return { rows, stats };
+  }
 
   // Step 7: Deduplication
   rows = deduplicateBestZscore(rows);
 
   // Step 8: Top-N z-scores
+  const rowsBeforeTopN = rows.length;
   rows = filterTopNZscore(
     rows,
     params.topnZscore,
     params.reactantTypes,
     params.includeNullCategories,
   );
+  if (rows.length === 0 && rowsBeforeTopN > 0) {
+    stats.noDataHint =
+      `Try increasing "Top-N z-Score" (currently ${params.topnZscore}) in Options.`;
+    return { rows, stats };
+  }
 
   // Step 9: Min ELN count
+  const rowsBeforeMinEln = rows.length;
   rows = filterMinEln(
     rows,
     params.minEln,
     params.reactantTypes,
     params.includeNullCategories,
   );
+  if (rows.length === 0 && rowsBeforeMinEln > 0) {
+    stats.noDataHint =
+      `Try lowering "Minimum Number of ELNs" (currently ${params.minEln}) in Options.`;
+    return { rows, stats };
+  }
 
   // Compute max-components cap for the slider (before step 10)
   if (params.reactantTypes.length > 0) {
@@ -117,12 +141,17 @@ export function filterData(
   }
 
   // Step 10: Max components
+  const rowsBeforeMaxComp = rows.length;
   rows = filterMaxComponents(
     rows,
     params.maxComponents,
     params.reactantTypes,
     params.includeNullCategories,
   );
+  if (rows.length === 0 && rowsBeforeMaxComp > 0) {
+    stats.noDataHint =
+      'Try increasing "Max Components to Display" in Options.';
+  }
 
   return { rows, stats };
 }

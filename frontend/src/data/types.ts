@@ -49,6 +49,8 @@ export interface FilterStats {
   afterFgA?: { elns: number };
   afterFgB?: { elns: number };
   maxComponentsCap?: number;
+  /** Diagnostic hint explaining why filtered rows are empty. */
+  noDataHint?: string;
 }
 
 /** Default filter values — single source of truth. */
