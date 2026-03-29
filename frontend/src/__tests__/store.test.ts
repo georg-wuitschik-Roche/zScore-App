@@ -124,10 +124,10 @@ describe('setReactionTypes', () => {
 // ---------------------------------------------------------------------------
 
 describe('resetFilters', () => {
-  it('keeps reactionTypes', () => {
+  it('clears reactionTypes', () => {
     useFilterStore.setState({ reactionTypes: ['Suzuki-Miyaura'] });
     useFilterStore.getState().resetFilters();
-    expect(useFilterStore.getState().reactionTypes).toEqual(['Suzuki-Miyaura']);
+    expect(useFilterStore.getState().reactionTypes).toEqual([]);
   });
 
   it('clears fgA and fgB', () => {

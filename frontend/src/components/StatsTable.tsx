@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useFilterStore } from '../stores/filterStore';
 import type { Row } from '../data/types';
 
 interface StatsTableProps {
@@ -72,6 +73,7 @@ function cellColor(val: number): string {
 }
 
 export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps) {
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
   const tableData = useMemo((): GroupStats[] => {
     if (rows.length === 0 || reactantTypes.length === 0) return [];
@@ -99,6 +101,20 @@ export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps)
     }
     return elns.size;
   }, [rows]);
+
+  if (reactionTypes.length === 0 || reactantTypes.length === 0) {
+    const missing: string[] = [];
+    if (reactionTypes.length === 0) missing.push('reaction type');
+    if (reactantTypes.length === 0) missing.push('reactant type');
+    return (
+      <div className="stats-container empty-state">
+        <img src="/assets/logo.svg" alt="" className="empty-state-logo" />
+        <p className="no-data-message">
+          Select a {missing.join(' and ')} to display stats.
+        </p>
+      </div>
+    );
+  }
 
   if (rows.length === 0) {
     return (

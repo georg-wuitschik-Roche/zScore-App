@@ -11,12 +11,17 @@ interface Props {
 
 export function HeatmapView({ rows, reactantTypes, noDataHint }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
-  if (reactantTypes.length < 2) {
+  if (reactionTypes.length === 0 || reactantTypes.length < 2) {
+    const missing: string[] = [];
+    if (reactionTypes.length === 0) missing.push('reaction type');
+    if (reactantTypes.length < 2) missing.push('at least 2 reactant types');
     return (
-      <div className="plot-container">
+      <div className="plot-container empty-state">
+        <img src="/assets/logo.svg" alt="" className="empty-state-logo" />
         <p className="no-data-message">
-          Select at least 2 reactant types for heatmap view.
+          Select {missing.join(' and ')} for heatmap view.
         </p>
       </div>
     );

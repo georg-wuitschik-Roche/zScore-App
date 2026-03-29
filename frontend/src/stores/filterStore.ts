@@ -153,8 +153,7 @@ export const useFilterStore = create<FilterState>((set) => ({
 
   resetFilters: () =>
     set((s) => ({
-      // Keep current reaction types — clear everything else
-      reactionTypes: s.reactionTypes,
+      reactionTypes: [],
       reactantTypes: [],
       fgA: [],
       fgB: [],
