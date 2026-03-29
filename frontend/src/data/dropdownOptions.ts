@@ -156,9 +156,20 @@ export function getFgBOptionsFromIndex(
     const entry = index[rt];
     if (!entry) continue;
     for (const [fgKey, fgBValues] of Object.entries(entry.fg_b_conditioned)) {
+      // Forward: selected FG A matches a key → add the conditioned values
       if (fgASet.has(fgKey)) {
         for (const fg of fgBValues) {
           otherFgs.add(fg);
+        }
+      }
+      // Reverse: selected FG A appears in the values → add the key
+      // (skip composite keys — their parts are already covered by single keys)
+      if (!fgKey.includes('+')) {
+        for (const fgBVal of fgBValues) {
+          if (fgASet.has(fgBVal)) {
+            otherFgs.add(fgKey);
+            break;
+          }
         }
       }
     }
