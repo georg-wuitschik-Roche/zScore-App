@@ -177,7 +177,7 @@ def process_csv(csv_path: Path, manifest: dict) -> int:
     # 2. Write parquet
     parquet_path = DATA_DIR / f'{version_id}.parquet'
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(parquet_path, compression='zstd', index=False)
+    df.to_parquet(parquet_path, compression='snappy', index=False)
     print(f'    Parquet → {parquet_path.relative_to(ROOT)}')
 
     # 3. Compute and write dropdown index

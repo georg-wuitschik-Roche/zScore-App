@@ -10,6 +10,10 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   const clearUploadData = useFilterStore((s) => s.clearUploadData);
   const togglePresentationMode = useFilterStore((s) => s.togglePresentationMode);
   const presentationMode = useFilterStore((s) => s.presentationMode);
+  const availableVersions = useFilterStore((s) => s.availableVersions);
+  const activeVersion = useFilterStore((s) => s.activeVersion);
+  const switchVersion = useFilterStore((s) => s.switchVersion);
+  const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
 
   const [open, setOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ text: string; name: string } | null>(null);
@@ -76,6 +80,27 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
           </svg>
         </button>
         <div className={`settings-dropdown${open ? '' : ' hidden'}`}>
+          {availableVersions.length > 1 && (
+            <>
+              <div className="settings-dropdown-row">
+                <span className="settings-dropdown-row-label">Dataset</span>
+                <div className="upload-mode-btns">
+                  {availableVersions.map((v) => (
+                    <button
+                      key={v.id}
+                      className={`upload-mode-btn${v.id === activeVersion ? ' active' : ''}`}
+                      onClick={() => switchVersion(v.id)}
+                      disabled={isLoadingVersion}
+                      title={v.date ?? ''}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-dropdown-divider" />
+            </>
+          )}
           <button
             className="settings-dropdown-btn"
             onClick={() => fileInputRef.current?.click()}

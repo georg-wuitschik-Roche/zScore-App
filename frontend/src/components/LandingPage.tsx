@@ -32,10 +32,6 @@ export function LandingPage() {
   const setFgB = useFilterStore((s) => s.setFgB);
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
   const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
-  const availableVersions = useFilterStore((s) => s.availableVersions);
-  const activeVersion = useFilterStore((s) => s.activeVersion);
-  const switchVersion = useFilterStore((s) => s.switchVersion);
-  const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
   // Use index for instant dropdowns; fall back to row scanning for uploaded CSVs
   const useIndex = !uploadedDataset && dropdownIndex !== null;
 
@@ -134,26 +130,6 @@ export function LandingPage() {
       <p className="landing-subtitle">
         Search for a reaction type to explore z-score analytics
       </p>
-
-      {availableVersions.length > 1 && (
-        <div className="version-picker">
-          <span className="version-picker-label">Dataset:</span>
-          {availableVersions.map((v) => (
-            <button
-              key={v.id}
-              className={`version-pill${v.id === activeVersion ? ' active' : ''}`}
-              onClick={() => switchVersion(v.id)}
-              disabled={isLoadingVersion}
-            >
-              {v.label}{v.date ? ` (${v.date})` : ''}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {isLoadingVersion && (
-        <div className="version-loading">Loading dataset...</div>
-      )}
 
       <div className="landing-filters">
         <div className="landing-filter-row">

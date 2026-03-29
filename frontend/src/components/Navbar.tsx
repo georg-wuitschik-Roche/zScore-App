@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
@@ -11,28 +10,7 @@ export function Navbar() {
   const uploadFileName = useFilterStore((s) => s.uploadFileName);
   const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
   const clearUploadError = useFilterStore((s) => s.clearUploadError);
-  const availableVersions = useFilterStore((s) => s.availableVersions);
-  const activeVersion = useFilterStore((s) => s.activeVersion);
-  const switchVersion = useFilterStore((s) => s.switchVersion);
-  const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
   const effectiveData = useEffectiveDataset();
-
-  const [versionOpen, setVersionOpen] = useState(false);
-  const versionRef = useRef<HTMLDivElement>(null);
-
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (
-      versionRef.current &&
-      !versionRef.current.contains(e.target as Node)
-    ) {
-      setVersionOpen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [handleClickOutside]);
 
   return (
     <>
@@ -55,36 +33,6 @@ export function Navbar() {
               <span className="title-dataset-name"> — {uploadFileName}</span>
             )}
           </h1>
-
-          {/* Version switcher (compact, only when >1 version) */}
-          {availableVersions.length > 1 && (
-            <div className="version-nav-wrapper" ref={versionRef}>
-              <button
-                className="version-nav-btn"
-                onClick={() => setVersionOpen((prev) => !prev)}
-                disabled={isLoadingVersion}
-              >
-                {availableVersions.find((v) => v.id === activeVersion)?.label ?? activeVersion}
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 4 }}>
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-              <div className={`version-nav-dropdown${versionOpen ? '' : ' hidden'}`}>
-                {availableVersions.map((v) => (
-                  <button
-                    key={v.id}
-                    className={`version-nav-item${v.id === activeVersion ? ' active' : ''}`}
-                    onClick={() => {
-                      switchVersion(v.id);
-                      setVersionOpen(false);
-                    }}
-                  >
-                    {v.label}{v.date ? ` (${v.date})` : ''}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <SettingsMenu />
 

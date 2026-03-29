@@ -307,12 +307,6 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         isFullDataLoaded: true,
         activeVersion: versionId,
         isLoadingVersion: false,
-        // Reset filters since the data universe changed
-        reactionTypes: [],
-        reactantTypes: [],
-        fgA: [],
-        fgB: [],
-        splitSelector: null,
       });
     } catch (e) {
       set({
