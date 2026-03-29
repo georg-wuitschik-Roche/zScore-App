@@ -59,7 +59,7 @@ export function Navbar() {
 
       {/* Upload error modal */}
       {uploadError && (
-        <div className="upload-error-modal" style={{ display: 'flex' }}>
+        <div className="upload-error-modal">
           <div className="upload-error-panel">
             <div className="upload-error-header">
               <h3>Upload Error</h3>

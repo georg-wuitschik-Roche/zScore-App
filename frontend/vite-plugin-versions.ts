@@ -9,9 +9,8 @@
  * If no versioned files are found, falls back to the legacy filenames.
  */
 
-import { readdirSync, readFileSync, existsSync } from 'fs';
+import { readdirSync, readFileSync, existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { writeFileSync } from 'fs';
 import type { Plugin } from 'vite';
 import type { VersionsManifest, VersionInfo } from './src/data/types';
 

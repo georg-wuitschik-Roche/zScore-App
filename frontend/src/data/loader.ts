@@ -152,14 +152,6 @@ export async function parseDataset(buffer: ArrayBuffer): Promise<Row[]> {
 }
 
 /**
- * Load the default dataset from a Parquet file (convenience wrapper).
- */
-export async function loadDataset(url: string = DEFAULT_PARQUET_URL): Promise<Row[]> {
-  const buffer = await fetchParquetBuffer(url);
-  return parseDataset(buffer);
-}
-
-/**
  * Parse a numeric string, handling comma-as-decimal separator.
  */
 function parseNumeric(value: unknown): number | null {

@@ -83,7 +83,6 @@ export interface FilterState {
   resetFilters: () => void;
   clearUploadError: () => void;
   loadDataset: () => Promise<void>;
-  setUploadedDataset: (rows: Row[] | null) => void;
   uploadCSV: (text: string, fileName?: string) => Promise<void>;
   switchVersion: (versionId: string) => Promise<void>;
   setUploadMode: (mode: UploadMode) => void;
@@ -238,8 +237,6 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       });
     }
   },
-
-  setUploadedDataset: (rows) => set({ uploadedDataset: rows }),
 
   uploadCSV: async (text, fileName) => {
     const { uploadMode } = get();

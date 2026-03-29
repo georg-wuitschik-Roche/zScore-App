@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# Z-Score Dashboard — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive dashboard for analyzing z-score data from high-throughput chemistry experiments (HTE).
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # Dev server at http://localhost:5173
+npm run build      # Production build
+npx tsc --noEmit   # Type check
+npx vitest run     # Run tests
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Dataset Versioning
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The app supports multiple dataset versions. The newest version loads by default, and users can switch between versions via the settings menu.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### How it works
+
+- Versioned datasets live in `public/data/` as `v1.parquet`, `v2.parquet`, etc.
+- Each version has a companion dropdown index (`v1-dropdown-index.json`)
+- A `versions.json` manifest lists all versions with metadata (label, date, file paths)
+- A Vite plugin auto-discovers versioned files at build time and serves the manifest dynamically in dev mode
+
+### Adding a new version
+
+See [`../add-dataset/README.md`](../add-dataset/README.md) for instructions. In short: drop a CSV into `add-dataset/` and commit.
+
+## User Data Upload
+
+Users can upload their own CSV datasets via the settings menu:
+
+- **My data only** — replaces the built-in dataset
+- **Combined with built-in** — merges uploaded rows with the active version (ELN IDs prefixed with `upload_` to avoid collisions)
+- Uploads are cached in the browser's localStorage and survive page refresh
+- Users can switch modes or remove uploaded data at any time
+
+## Architecture
+
 ```
+Browser
+  ├── Fetch Parquet once → parse with hyparquet → store in memory
+  ├── Filter chain (10 steps, <50ms for 70K rows)
+  ├── Plotly.js → boxplots, violin plots, heatmaps
+  ├── URL state sync → shareable deep links
+  └── PNG export via Plotly.toImage()
+```
+
+## Tech Stack
+
+- React 19 + TypeScript + Vite
+- Plotly.js via react-plotly.js
+- Zustand (state management)
+- React Router v7 (routing + URL state)
+- hyparquet (Parquet parsing, pure JS)
+- PapaParse (CSV upload parsing)

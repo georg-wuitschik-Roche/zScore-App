@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Auto-version new dataset CSVs dropped into datasets/.
+"""Auto-version new dataset CSVs dropped into add-dataset/.
 
-Triggered by a pre-commit hook when a CSV is staged in datasets/:
+Triggered by a pre-commit hook when a CSV is staged in add-dataset/:
 
-    git add datasets/my-new-data.csv && git commit
+    git add add-dataset/my-new-data.csv && git commit
 
 For each CSV found:
   1. Determines the next version number from versions.json
   2. Converts CSV → frontend/public/data/v{N}.parquet
   3. Computes dropdown index → frontend/public/data/v{N}-dropdown-index.json
   4. Updates frontend/public/data/versions.json
-  5. Removes the source CSV from datasets/
+  5. Removes the source CSV from add-dataset/
   6. Stages all generated files
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATASETS_DIR = ROOT / 'datasets'
+DATASETS_DIR = ROOT / 'add-dataset'
 DATA_DIR = ROOT / 'frontend' / 'public' / 'data'
 VERSIONS_PATH = DATA_DIR / 'versions.json'
 
@@ -203,14 +203,14 @@ def process_csv(csv_path: Path, manifest: dict) -> int:
 
 
 def main() -> int:
-    """Scan datasets/ for CSVs and version them."""
+    """Scan add-dataset/ for CSVs and version them."""
     if not DATASETS_DIR.exists():
-        print('No datasets/ directory found, nothing to do.')
+        print('No add-dataset/ directory found, nothing to do.')
         return 0
 
     csv_files = sorted(DATASETS_DIR.glob('*.csv'))
     if not csv_files:
-        print('No CSV files in datasets/, nothing to do.')
+        print('No CSV files in add-dataset/, nothing to do.')
         return 0
 
     print(f'Found {len(csv_files)} CSV file(s) to version...')

@@ -13,7 +13,7 @@ repos:
         name: Auto-version new dataset CSVs
         entry: python3 scripts/version_dataset.py
         language: python
-        files: '^datasets/.*\.csv$'
+        files: '^add-dataset/.*\.csv$'
         pass_filenames: false
         additional_dependencies: [pandas>=2.0, numpy>=1.24, pyarrow>=14.0]
 
