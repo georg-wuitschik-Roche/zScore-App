@@ -13,7 +13,14 @@
       "index": "/data/v1-dropdown-index.json",
       "label": "v1",
       "date": "2025-09-25"
+    },
+    {
+      "id": "v2",
+      "parquet": "/data/v2.parquet",
+      "index": "/data/v2-dropdown-index.json",
+      "label": "v2",
+      "date": "2026-03-29"
     }
   ],
-  "latest": "v1"
+  "latest": "v2"
 }
