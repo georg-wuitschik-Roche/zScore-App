@@ -10,7 +10,7 @@ function useDebouncedSlider(
   storeSetter: (v: number) => void,
 ): [number, (v: number) => void] {
   const [local, setLocal] = useState(storeValue);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync local state when store value changes externally (e.g. URL restore)
   useEffect(() => { setLocal(storeValue); }, [storeValue]);
