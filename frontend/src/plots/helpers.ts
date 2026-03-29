@@ -282,7 +282,7 @@ export function prepareDistributionData(
 // ── Shared trace builders ─────────────────────────────────────────────
 
 /** Invisible median marker — shows clean tooltip on distribution hover */
-export function buildMedianTrace(name: string, medianVal: number, n: number, isDark = false): Data {
+export function buildMedianTrace(name: string, medianVal: number, n: number, elnCount: number, isDark = false): Data {
   return {
     type: 'scatter' as const,
     x: [medianVal],
@@ -290,7 +290,7 @@ export function buildMedianTrace(name: string, medianVal: number, n: number, isD
     mode: 'markers' as const,
     marker: { color: 'rgba(0,0,0,0)', size: 20 },
     showlegend: false,
-    hovertemplate: `<b>${name}</b><br>Median: ${medianVal.toFixed(3)}<br>n = ${n}<extra></extra>`,
+    hovertemplate: `<b>${name}</b><br>Median: ${medianVal.toFixed(3)}<br>n = ${n} · ELNs: ${elnCount}<extra></extra>`,
     hoverlabel: getHoverLabelStyle(isDark),
   };
 }
@@ -318,7 +318,7 @@ export function buildDistributionConfig(
   if (!prepared) return { data: [], layout: {} };
 
   const data: Data[] = prepared.groups
-    .map((group) => [buildTrace(group), buildMedianTrace(group.name, group.medianVal, group.zScores.length, isDark)])
+    .map((group) => [buildTrace(group), buildMedianTrace(group.name, group.medianVal, group.zScores.length, group.elnCount, isDark)])
     .flat();
 
   return { data, layout: prepared.layout };

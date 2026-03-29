@@ -433,6 +433,7 @@ button:hover {
 .landing-logo {
     width: 400px;
     height: auto;
+    aspect-ratio: 2380 / 1760;
     margin-bottom: 20px;
 }
 

@@ -87,7 +87,7 @@ export function createViolinConfig(
         hoveron: 'points' as const,
         hoverlabel: getHoverLabelStyle(isDark),
       } as Data,
-      buildMedianTrace(group.name, group.medianVal, group.zScores.length, isDark),
+      buildMedianTrace(group.name, group.medianVal, group.zScores.length, group.elnCount, isDark),
     ])
     .flat();
 
