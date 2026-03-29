@@ -62,6 +62,7 @@ export interface FilterState {
   activeTab: TabId;
   presentationMode: boolean;
   optionsPanelOpen: boolean;
+  theme: 'light' | 'dark';
   uploadError: string | null;
   uploadFileName: string | null;
 
@@ -87,6 +88,8 @@ export interface FilterState {
   switchVersion: (versionId: string) => Promise<void>;
   setUploadMode: (mode: UploadMode) => void;
   clearUploadData: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+  setUploadedDataset: (rows: Row[] | null) => void;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
@@ -128,6 +131,8 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   activeTab: 'boxplot',
   presentationMode: false,
   optionsPanelOpen: false,
+  theme: (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-theme') as 'light' | 'dark')
+    || (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   uploadError: null,
   uploadFileName: null,
 
@@ -177,6 +182,11 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     set((s) => ({ presentationMode: !s.presentationMode })),
   toggleOptionsPanel: () =>
     set((s) => ({ optionsPanelOpen: !s.optionsPanelOpen })),
+  setTheme: (theme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('zscore-theme', theme); } catch { /* ignore */ }
+    set({ theme });
+  },
 
   resetFilters: () => {
     clearStoredUpload();

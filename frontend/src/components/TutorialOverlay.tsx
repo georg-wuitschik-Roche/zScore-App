@@ -125,7 +125,7 @@ export function TutorialOverlay() {
     return () => clearTimeout(timer);
   }, [active, step, reactantTypes, availableReactants, setReactantTypes, setSplitSelector]);
 
-  // Step 14 — auto-open settings dropdown
+  // Step 14 — auto-open settings modal
   useEffect(() => {
     if (!active || step !== 14) return;
     const timer = setTimeout(() => {
@@ -133,10 +133,9 @@ export function TutorialOverlay() {
     }, 300);
     return () => {
       clearTimeout(timer);
-      // Close settings when leaving this step
-      if (document.querySelector('.settings-dropdown:not(.hidden)')) {
-        document.getElementById('settings-toggle')?.click();
-      }
+      // Close settings modal when leaving this step
+      const closeBtn = document.querySelector('.settings-modal-close') as HTMLButtonElement | null;
+      closeBtn?.click();
     };
   }, [active, step]);
 

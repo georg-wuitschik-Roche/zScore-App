@@ -10,7 +10,7 @@ const dashboardImport = () =>
 const Dashboard = lazy(dashboardImport);
 
 function AppContent() {
-  const { isFullDataLoaded, loadError, presentationMode, loadDataset } =
+  const { isFullDataLoaded, loadError, presentationMode, theme, loadDataset } =
     useFilterStore();
 
   const dropdownIndex = useFilterStore((s) => s.dropdownIndex);
@@ -18,6 +18,11 @@ function AppContent() {
   useEffect(() => {
     loadDataset();
   }, [loadDataset]);
+
+  // Apply theme on mount
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Preload Dashboard + Plotly chunk once landing page is interactive
   useEffect(() => {

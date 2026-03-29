@@ -53,6 +53,277 @@
     --font-mono: "JetBrains Mono", "Fira Code", monospace;
 }
 
+/* -- Dark theme overrides -- */
+[data-theme="dark"] {
+    --color-primary: #e5e5e5;
+    --color-primary-hover: #ccc;
+    --color-primary-light: #2a2a2a;
+    --color-primary-border: #444;
+
+    --color-text: #e5e5e5;
+    --color-text-secondary: #aaa;
+    --color-text-muted: #777;
+    --color-tag-text: #ccc;
+
+    --color-bg: #1e1e1e;
+    --color-bg-page: #141414;
+    --color-bg-hover: #2a2a2a;
+    --color-bg-panel: #252525;
+    --color-bg-input: #2a2a2a;
+    --color-bg-surface: #1e1e1e;
+
+    --color-border: #333;
+    --color-border-input: #444;
+    --color-border-btn: #555;
+
+    --color-danger: #e74c3c;
+    --color-danger-hover: #c0392b;
+    --color-success-bg: #1b3a20;
+    --color-success-text: #66bb6a;
+    --color-error-bg: #3a1b1b;
+    --color-error-text: #ef5350;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+    --color-pres-accent: #aaa;
+
+    --stats-positive: #66bb6a;
+    --stats-negative: #ef5350;
+}
+
+[data-theme="dark"] body {
+    background: #1e1e1e;
+    color: #e5e5e5;
+}
+
+[data-theme="dark"] .settings-modal,
+[data-theme="dark"] .upload-mode-panel,
+[data-theme="dark"] .upload-error-panel {
+    background: #1e1e1e;
+}
+
+[data-theme="dark"] .upload-mode-header h3,
+[data-theme="dark"] .upload-mode-choice strong {
+    color: #e5e5e5;
+}
+
+[data-theme="dark"] .upload-mode-filename,
+[data-theme="dark"] .upload-mode-choice span {
+    color: #999;
+}
+
+[data-theme="dark"] .upload-mode-choice {
+    border-color: #444;
+    background: #252525;
+}
+
+[data-theme="dark"] .upload-mode-choice:hover {
+    border-color: #888;
+    background: #2a2a2a;
+}
+
+[data-theme="dark"] .upload-error-header {
+    background: #3a1b1b;
+}
+
+[data-theme="dark"] .settings-pill.active {
+    background: #e5e5e5;
+    color: #111;
+}
+
+[data-theme="dark"] .landing-logo {
+    filter: invert(1) brightness(2);
+}
+
+[data-theme="dark"] .multi-select-control {
+    background: var(--color-bg) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .multi-select-input {
+    color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .multi-select-input::placeholder {
+    color: var(--color-text-muted) !important;
+}
+
+[data-theme="dark"] .multi-select-dropdown {
+    background: var(--color-bg) !important;
+    border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .multi-select-option {
+    color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .landing-search .multi-select-control {
+    border-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .multi-select-pill {
+    background: #e5e5e5;
+    color: #111;
+}
+
+[data-theme="dark"] .multi-select-pill button {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .multi-select-pill button:hover {
+    color: #111;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .landing-explore-btn {
+    background: #fff !important;
+    color: #111 !important;
+}
+
+[data-theme="dark"] .landing-explore-btn:hover {
+    background: #ddd !important;
+}
+
+[data-theme="dark"] .landing-explore-btn-split {
+    background: #fff !important;
+    color: #111 !important;
+    border-color: #fff !important;
+}
+
+[data-theme="dark"] .landing-explore-btn-split:hover {
+    background: #ddd !important;
+}
+
+[data-theme="dark"] .landing-tutorial-btn {
+    background: #555 !important;
+    border-color: #555 !important;
+    color: #fff !important;
+}
+
+[data-theme="dark"] .landing-tutorial-btn:hover {
+    background: #666 !important;
+    border-color: #666 !important;
+}
+
+[data-theme="dark"] .landing-about-btn,
+[data-theme="dark"] .landing-github-link {
+    border-color: #555 !important;
+    color: #bbb !important;
+    background: transparent !important;
+}
+
+[data-theme="dark"] .landing-about-btn:hover,
+[data-theme="dark"] .landing-github-link:hover {
+    border-color: #999 !important;
+    color: #fff !important;
+}
+
+/* -- Dark mode: navbar blends with dark page -- */
+[data-theme="dark"] .navbar {
+    background: #252525;
+}
+
+/* -- Dark mode: dashboard & filters -- */
+[data-theme="dark"] .dashboard-content {
+    background: var(--color-bg) !important;
+}
+
+[data-theme="dark"] .view-toggle {
+    background: var(--color-bg-panel);
+}
+
+[data-theme="dark"] .view-toggle-btn {
+    color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .view-toggle-btn.active {
+    background: #e5e5e5;
+    color: #111;
+}
+
+[data-theme="dark"] .filter-toggle-btn {
+    background-color: var(--color-bg) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .options-panel {
+    background: var(--color-bg-panel);
+    border-color: var(--color-border);
+}
+
+[data-theme="dark"] .stat-badge {
+    background: var(--color-bg-panel);
+    color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .split-toggle-btn.active {
+    background: #e5e5e5;
+    color: #111;
+}
+
+/* -- Dark mode: about modal -- */
+[data-theme="dark"] .about-modal-panel {
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .about-modal-panel h2,
+[data-theme="dark"] .about-modal-panel h3 {
+    color: var(--color-text);
+}
+
+/* -- Dark mode: Plotly charts -- */
+[data-theme="dark"] .js-plotly-plot .plotly .main-svg {
+    background: transparent !important;
+}
+
+[data-theme="dark"] .js-plotly-plot .plotly .bg {
+    fill: transparent !important;
+}
+
+[data-theme="dark"] .js-plotly-plot text {
+    fill: var(--color-text) !important;
+}
+
+[data-theme="dark"] .js-plotly-plot .gridlayer line,
+[data-theme="dark"] .js-plotly-plot .zerolinelayer line {
+    stroke: #333 !important;
+}
+
+[data-theme="dark"] .js-plotly-plot .xy .xlines,
+[data-theme="dark"] .js-plotly-plot .xy .ylines {
+    stroke: #444 !important;
+}
+
+/* -- Dark mode: stats table -- */
+[data-theme="dark"] .stats-table {
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .stats-table th {
+    background: var(--color-bg-panel);
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+
+[data-theme="dark"] .stats-table td {
+    border-color: var(--color-border);
+}
+
+[data-theme="dark"] .stats-table tr:nth-child(even) td {
+    background: var(--color-bg-panel);
+}
+
+/* -- Dark mode: footer -- */
+[data-theme="dark"] .footer {
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
 /* ================================================================== */
 /* 2. RESET & BASE                                                    */
 /* ================================================================== */
@@ -526,12 +797,7 @@ button:hover {
     font-style: italic;
 }
 
-/* -- Settings gear & dropdown -- */
-.settings-wrapper {
-    position: relative;
-    margin-left: auto;
-}
-
+/* -- Settings gear button -- */
 .settings-toggle {
     width: 40px;
     height: 40px;
@@ -545,6 +811,7 @@ button:hover {
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
     color: #fff;
     box-shadow: none !important;
+    margin-left: auto;
 }
 
 .settings-toggle:hover {
@@ -555,6 +822,7 @@ button:hover {
 .settings-toggle.light {
     border-color: var(--color-border) !important;
     color: var(--color-text-muted) !important;
+    margin-left: 0;
 }
 
 .settings-toggle.light:hover {
@@ -562,45 +830,199 @@ button:hover {
     color: var(--color-text) !important;
 }
 
-.settings-dropdown {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 6px);
+/* -- Settings modal -- */
+.settings-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.settings-modal {
     background: var(--color-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    min-width: 220px;
-    padding: 6px;
-    z-index: 1001;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    width: 90vw;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow-y: auto;
 }
 
-.settings-dropdown.hidden {
-    display: none;
+.settings-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 32px 16px;
 }
 
-.settings-dropdown-item {
-    width: 100%;
+.settings-modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
 }
 
-.settings-dropdown-btn {
-    width: 100%;
-    text-align: left !important;
-    background: transparent !important;
+.settings-modal-close {
+    background: none !important;
     border: none !important;
+    font-size: 28px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0 4px !important;
+    line-height: 1;
+    box-shadow: none !important;
+}
+
+.settings-modal-close:hover {
+    color: var(--color-text);
+    background: none !important;
+}
+
+.settings-modal-body {
+    padding: 0 32px 32px;
+}
+
+.settings-section {
+    padding: 16px 20px;
+    background: var(--color-bg-panel);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+}
+
+.settings-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 16px;
+    text-align: left;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 44px;
+    margin-bottom: 12px;
+}
+
+.settings-row-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--color-text);
+    min-width: 110px;
+    flex-shrink: 0;
+}
+
+.settings-pills {
+    display: flex;
+    gap: 0;
+    background: var(--color-bg-hover);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    flex: 1;
+}
+
+.settings-pill {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-align: center;
+    min-width: 0;
+}
+
+.settings-pill:hover {
+    color: var(--color-text);
+}
+
+.settings-pill.active {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-pill:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.settings-pill-with-sub {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 0 4px;
+}
+
+.settings-pill-date {
+    font-size: 10px;
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+.settings-action-btn {
+    padding: 8px 18px;
+    border: 1px solid var(--color-border) !important;
     border-radius: var(--radius-sm) !important;
-    padding: 10px 14px !important;
+    background: var(--color-bg) !important;
+    color: var(--color-text) !important;
     font-size: 14px !important;
     font-weight: 500 !important;
-    color: var(--color-text) !important;
-    box-shadow: none !important;
     cursor: pointer;
+    box-shadow: none !important;
+    transition: background 0.15s;
 }
 
-.settings-dropdown-btn:hover {
+.settings-action-btn:hover {
     background: var(--color-bg-hover) !important;
-    box-shadow: none !important;
 }
+
+.settings-remove-btn {
+    padding: 8px 18px;
+    border: 1px solid #e0b4b4 !important;
+    border-radius: var(--radius-sm) !important;
+    background: #fdf0f0 !important;
+    color: #c0392b !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.settings-remove-btn:hover {
+    background: #fbe3e3 !important;
+    border-color: #c0392b !important;
+}
+
+[data-theme="dark"] .settings-remove-btn {
+    background: #3a1b1b !important;
+    border-color: #5a2a2a !important;
+    color: #ef5350 !important;
+}
+
+[data-theme="dark"] .settings-remove-btn:hover {
+    background: #4a2020 !important;
+    border-color: #ef5350 !important;
+}
+
+.settings-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: 8px 0;
+}
+
 
 /* -- Subtle reset button -- */
 .reset-btn-subtle {
@@ -1269,12 +1691,6 @@ button:hover {
 /* 11. UPLOAD COMPONENTS                                              */
 /* ================================================================== */
 
-/* Presentation toggle active state */
-.settings-dropdown-btn.active {
-    background: var(--color-primary) !important;
-    color: #fff !important;
-    font-weight: 600 !important;
-}
 
 /* ================================================================== */
 /* 12. UPLOAD ERROR MODAL                                             */
@@ -1303,8 +1719,8 @@ button:hover {
 }
 
 @keyframes modalSlideIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .upload-error-header {
@@ -1587,7 +2003,7 @@ label.tutorial-highlight {
     color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.app-container.presentation-mode button:not(.settings-dropdown-btn):not(.settings-toggle):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn) {
+.app-container.presentation-mode button:not(.settings-toggle):not(.settings-pill):not(.settings-action-btn):not(.settings-remove-btn):not(.settings-modal-close):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn) {
     font-size: 20px !important;
     padding: 16px 32px !important;
     font-weight: 600 !important;
@@ -1673,8 +2089,7 @@ label.tutorial-highlight {
 .upload-mode-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1756,70 +2171,7 @@ label.tutorial-highlight {
     color: #666;
 }
 
-/* Settings dropdown: inline row (label + control) */
-.settings-dropdown-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 14px;
-}
-
-.settings-dropdown-row-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-}
-
-.settings-dropdown-divider {
-    height: 1px;
-    background: var(--color-border);
-    margin: 4px 10px;
-}
-
-/* Upload mode pill toggle */
-.upload-mode-btns {
-    display: flex;
-    flex: 1;
-    gap: 0;
-    background: var(--color-bg-input);
-    border-radius: var(--radius-sm);
-    padding: 2px;
-}
-
-.upload-mode-btn {
-    flex: 1;
-    padding: 3px 0;
-    border: none;
-    border-radius: calc(var(--radius-sm) - 1px);
-    background: transparent;
-    color: var(--color-text-muted);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    text-align: center;
-    min-width: 0;
-}
-
-.upload-mode-btn:hover {
-    color: var(--color-text);
-}
-
-.upload-mode-btn.active {
-    background: var(--color-primary);
-    color: #fff;
-    box-shadow: var(--shadow-sm);
-}
-
-.settings-dropdown-btn-danger {
-    color: #c0392b !important;
-}
-
-.settings-dropdown-btn-danger:hover {
-    background: #fdecea !important;
-    color: #a93226 !important;
-}
+/* (old dropdown styles removed — settings now uses modal)
 
 /* ================================================================== */
 /* 17. TEXT SELECTION (plotly)                                         */

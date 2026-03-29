@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import type { UploadMode } from '../data/types';
 
@@ -14,22 +14,12 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   const activeVersion = useFilterStore((s) => s.activeVersion);
   const switchVersion = useFilterStore((s) => s.switchVersion);
   const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
+  const theme = useFilterStore((s) => s.theme);
+  const setTheme = useFilterStore((s) => s.setTheme);
 
   const [open, setOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ text: string; name: string } | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-      setOpen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [handleClickOutside]);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -43,7 +33,6 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
       const text = ev.target?.result;
       if (typeof text === 'string') {
         setPendingUpload({ text, name: file.name });
-        setOpen(false);
       }
     };
     reader.readAsText(file);
@@ -59,103 +48,138 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
 
   return (
     <>
-      <div className="settings-wrapper" ref={wrapperRef}>
-        <button
-          className={`settings-toggle ${variant}`}
-          onClick={() => setOpen((prev) => !prev)}
-          aria-label="Settings"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </button>
-        <div className={`settings-dropdown${open ? '' : ' hidden'}`}>
-          {availableVersions.length > 1 && (
-            <>
-              <div className="settings-dropdown-row">
-                <span className="settings-dropdown-row-label">Dataset</span>
-                <div className="upload-mode-btns">
-                  {availableVersions.map((v) => (
+      <button
+        className={`settings-toggle ${variant}`}
+        id="settings-toggle"
+        onClick={() => setOpen(true)}
+        aria-label="Settings"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </button>
+
+      {/* Settings modal */}
+      {open && (
+        <div className="settings-modal-backdrop" onClick={() => setOpen(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="settings-modal-header">
+              <h2>Settings</h2>
+              <button className="settings-modal-close" onClick={() => setOpen(false)}>&times;</button>
+            </div>
+
+            <div className="settings-modal-body">
+              {/* DATA section */}
+              <div className="settings-section">
+                <h3 className="settings-section-title">Data</h3>
+
+                {availableVersions.length > 1 && (
+                  <div className="settings-row">
+                    <span className="settings-row-label">Dataset</span>
+                    <div className="settings-pills">
+                      {availableVersions.map((v) => (
+                        <button
+                          key={v.id}
+                          className={`settings-pill settings-pill-with-sub${v.id === activeVersion ? ' active' : ''}`}
+                          onClick={() => switchVersion(v.id)}
+                          disabled={isLoadingVersion}
+                        >
+                          {v.label}
+                          {v.date && <span className="settings-pill-date">{v.date}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="settings-row">
+                  <span className="settings-row-label">Upload</span>
+                  <button className="settings-action-btn" onClick={() => fileInputRef.current?.click()}>
+                    {uploadedDataset ? 'Replace Dataset' : 'Upload Dataset'}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                </div>
+
+                {uploadedDataset && (
+                  <>
+                    <div className="settings-row">
+                      <span className="settings-row-label">Mode</span>
+                      <div className="settings-pills">
+                        <button
+                          className={`settings-pill${uploadMode === 'replace' ? ' active' : ''}`}
+                          onClick={() => setUploadMode('replace')}
+                        >
+                          My data
+                        </button>
+                        <button
+                          className={`settings-pill${uploadMode === 'combine' ? ' active' : ''}`}
+                          onClick={() => setUploadMode('combine')}
+                        >
+                          Combined
+                        </button>
+                      </div>
+                    </div>
+                    <div className="settings-row">
+                      <span className="settings-row-label" />
+                      <button className="settings-remove-btn" onClick={() => clearUploadData()}>
+                        Remove uploaded data
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* APPEARANCE section */}
+              <div className="settings-section">
+                <h3 className="settings-section-title">Appearance</h3>
+
+                <div className="settings-row">
+                  <span className="settings-row-label">Theme</span>
+                  <div className="settings-pills">
                     <button
-                      key={v.id}
-                      className={`upload-mode-btn${v.id === activeVersion ? ' active' : ''}`}
-                      onClick={() => switchVersion(v.id)}
-                      disabled={isLoadingVersion}
-                      title={v.date ?? ''}
+                      className={`settings-pill${theme === 'light' ? ' active' : ''}`}
+                      onClick={() => setTheme('light')}
                     >
-                      {v.label}
+                      Light
                     </button>
-                  ))}
+                    <button
+                      className={`settings-pill${theme === 'dark' ? ' active' : ''}`}
+                      onClick={() => setTheme('dark')}
+                    >
+                      Dark
+                    </button>
+                  </div>
+                </div>
+
+                <div className="settings-row">
+                  <span className="settings-row-label">Presentation</span>
+                  <div className="settings-pills">
+                    <button
+                      className={`settings-pill${!presentationMode ? ' active' : ''}`}
+                      onClick={() => { if (presentationMode) togglePresentationMode(); }}
+                    >
+                      Off
+                    </button>
+                    <button
+                      className={`settings-pill${presentationMode ? ' active' : ''}`}
+                      onClick={() => { if (!presentationMode) togglePresentationMode(); }}
+                    >
+                      On
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="settings-dropdown-divider" />
-            </>
-          )}
-          <button
-            className="settings-dropdown-btn"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {uploadedDataset ? 'Replace Dataset' : 'Upload Dataset'}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
-          {uploadedDataset && (
-            <>
-              <div className="settings-dropdown-row">
-                <span className="settings-dropdown-row-label">Mode</span>
-                <div className="upload-mode-btns">
-                  <button
-                    className={`upload-mode-btn${uploadMode === 'replace' ? ' active' : ''}`}
-                    onClick={() => setUploadMode('replace')}
-                  >
-                    My data
-                  </button>
-                  <button
-                    className={`upload-mode-btn${uploadMode === 'combine' ? ' active' : ''}`}
-                    onClick={() => setUploadMode('combine')}
-                  >
-                    Combined
-                  </button>
-                </div>
-              </div>
-              <button
-                className="settings-dropdown-btn settings-dropdown-btn-danger"
-                onClick={() => {
-                  clearUploadData();
-                  setOpen(false);
-                }}
-              >
-                Remove Data
-              </button>
-              <div className="settings-dropdown-divider" />
-            </>
-          )}
-          <button
-            className={`settings-dropdown-btn${presentationMode ? ' active' : ''}`}
-            onClick={() => {
-              togglePresentationMode();
-              setOpen(false);
-            }}
-          >
-            {presentationMode ? 'Exit Presentation Mode' : 'Presentation Mode'}
-          </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Upload mode selection modal */}
       {pendingUpload && (
