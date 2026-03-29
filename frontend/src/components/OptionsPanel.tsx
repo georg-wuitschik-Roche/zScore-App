@@ -168,8 +168,8 @@ export function OptionsPanel() {
 
         {/* Download buttons row */}
         <div className="filter-options-row downloads">
-          <span id="download-buttons" style={{ display: 'inline-flex', gap: 8 }}>
-            <button className="download-btn-gap" onClick={handleDownloadCSV}>
+          <span id="download-buttons" style={{ display: 'inline-flex', gap: 12 }}>
+            <button onClick={handleDownloadCSV}>
               Download CSV
             </button>
             <button onClick={handleDownloadPNG}>Download PNG</button>

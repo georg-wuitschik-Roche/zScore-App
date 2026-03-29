@@ -352,7 +352,7 @@ h1, h2, h3, h4 {
 
 button {
     background: var(--color-bg);
-    border: 1px solid var(--color-border-btn);
+    border: 1px solid var(--color-primary);
     border-radius: var(--radius-md);
     padding: 10px 24px;
     font-size: 16px;
@@ -1546,7 +1546,6 @@ button:hover {
     margin-right: 32px;
     cursor: pointer;
 }
-.download-btn-gap { margin-right: 16px; }
 
 /* ================================================================== */
 /* 10. PLOTS & STATS                                                  */
@@ -1900,6 +1899,65 @@ button:hover {
     pointer-events: auto;
 }
 
+.tutorial-active {
+    overflow-x: clip;
+}
+
+.tutorial-active .settings-modal-backdrop {
+    z-index: 9997;
+}
+
+/* ---- Step 14: side-by-side tutorial (left) + settings (right) ---- */
+
+
+.tutorial-step-settings .settings-modal-backdrop {
+    justify-content: flex-start;
+    padding-left: calc(50vw + 20px);
+    background: transparent;
+    pointer-events: none;
+}
+
+.tutorial-step-settings .settings-modal {
+    pointer-events: auto;
+}
+
+.tutorial-step-settings .settings-section {
+    opacity: 0.25;
+    transition: opacity 0.3s ease;
+}
+
+.tutorial-step-settings .settings-section.tutorial-highlight {
+    opacity: 1;
+    outline: 2px solid var(--color-primary) !important;
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.tutorial-panel-settings {
+    left: auto;
+    right: calc(50% + 20px);
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+
+/* Narrow screens: stack vertically, hide arrow */
+@media (max-width: 1100px) {
+    .tutorial-step-settings .settings-modal-backdrop {
+        justify-content: center;
+        padding-left: 0;
+        align-items: flex-start;
+        padding-top: 3vh;
+    }
+
+    .tutorial-panel-settings {
+        left: 50%;
+        right: auto;
+        top: auto;
+        bottom: 24px;
+        transform: translateX(-50%);
+    }
+}
+
 .tutorial-panel h3 { margin: 0 0 8px 0; }
 
 .tutorial-btn-row {
@@ -1921,6 +1979,22 @@ button.tutorial-highlight,
 .filter-toggle-btn.tutorial-highlight {
     outline: 2px solid var(--color-primary) !important;
     box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar .tutorial-highlight {
+    outline-color: #fff !important;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3) !important;
+}
+
+#download-buttons.tutorial-highlight {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+#download-buttons.tutorial-highlight button {
+    outline: 2px solid var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-md);
 }
 
 .multi-select.tutorial-highlight,

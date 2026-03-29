@@ -1,5 +1,5 @@
 /**
- * Tutorial state machine — 17-step walkthrough.
+ * Tutorial state machine — 19-step walkthrough.
  *
  * Each step has a target element ID, title, body text, and a gating
  * condition that determines whether the user has completed the step.
@@ -86,9 +86,19 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     body: 'When 2+ values are selected in a dropdown, use Split to compare them side by side. Combined overlays everything in one plot.',
   },
   {
-    targetId: 'settings-toggle',
-    title: 'Settings',
-    body: 'Upload your own CSV dataset or toggle Presentation Mode for cleaner visuals.',
+    targetId: 'settings-section-data',
+    title: 'Settings — Data',
+    body: 'Switch between dataset versions or upload your own CSV file.',
+  },
+  {
+    targetId: 'settings-section-comparison',
+    title: 'Settings — Comparison',
+    body: 'Enable comparison mode to see how results changed between dataset versions.',
+  },
+  {
+    targetId: 'settings-section-appearance',
+    title: 'Settings — Appearance',
+    body: 'Toggle dark mode or turn on Presentation Mode for cleaner visuals.',
   },
   {
     targetId: 'reset-btn',
@@ -180,9 +190,13 @@ export function useIsStepSatisfied(): boolean {
     case 13:
       return true; // split — auto-enabled, click Next to proceed
     case 14:
-      return true; // settings — auto-opened, click Next to proceed
+      return true; // settings: data
     case 15:
-      return true; // reset — click Next to proceed
+      return true; // settings: comparison
+    case 16:
+      return true; // settings: appearance
+    case 17:
+      return true; // reset
     default:
       return true;
   }

@@ -76,7 +76,7 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
 
             <div className="settings-modal-body">
               {/* DATA section */}
-              <div className="settings-section">
+              <div className="settings-section" id="settings-section-data">
                 <h3 className="settings-section-title">Data</h3>
 
                 {availableVersions.length > 1 && (
@@ -143,7 +143,7 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
 
               {/* COMPARISON section */}
               {availableVersions.length > 1 && (
-                <div className="settings-section">
+                <div className="settings-section" id="settings-section-comparison">
                   <h3 className="settings-section-title">Version Comparison</h3>
 
                   <div className="settings-row">
@@ -191,7 +191,7 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
               )}
 
               {/* APPEARANCE section */}
-              <div className="settings-section">
+              <div className="settings-section" id="settings-section-appearance">
                 <h3 className="settings-section-title">Appearance</h3>
 
                 <div className="settings-row">

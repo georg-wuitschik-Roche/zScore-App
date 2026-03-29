@@ -1,5 +1,5 @@
 /**
- * Tutorial overlay — 17-step guided walkthrough.
+ * Tutorial overlay — 19-step guided walkthrough.
  *
  * Shows a floating panel with step title/body, highlights the target
  * element, and gates progression on user interaction.
@@ -18,8 +18,11 @@ import { getReactantOptions } from '../data/dropdownOptions';
 // Steps 5-11 target elements inside the options panel
 const STEPS_REQUIRING_PANEL_OPEN = new Set([5, 6, 7, 8, 9, 10, 11]);
 
-// Steps 14-15 target elements inside the navbar
-const STEPS_IN_NAVBAR = new Set([14, 15]);
+// Steps 14-16 are settings sub-panels, step 17 is reset — all in navbar
+const STEPS_IN_NAVBAR = new Set([14, 15, 16, 17]);
+
+// Steps 14-16 show settings modal side-by-side with tutorial
+const SETTINGS_STEPS = new Set([14, 15, 16]);
 
 export function TutorialOverlay() {
   const active = useTutorialStore((s) => s.active);
@@ -125,19 +128,22 @@ export function TutorialOverlay() {
     return () => clearTimeout(timer);
   }, [active, step, reactantTypes, availableReactants, setReactantTypes, setSplitSelector]);
 
-  // Step 14 — auto-open settings modal
+  // Steps 14-16 — auto-open settings modal, keep open across sub-steps
+  const isSettingsStep = SETTINGS_STEPS.has(step);
   useEffect(() => {
-    if (!active || step !== 14) return;
-    const timer = setTimeout(() => {
+    if (!active || !isSettingsStep) return;
+    if (!document.querySelector('.settings-modal')) {
       document.getElementById('settings-toggle')?.click();
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-      // Close settings modal when leaving this step
+    }
+  }, [active, isSettingsStep]);
+
+  // Close settings when leaving settings range or tutorial ends
+  useEffect(() => {
+    if (!active || !isSettingsStep) {
       const closeBtn = document.querySelector('.settings-modal-close') as HTMLButtonElement | null;
       closeBtn?.click();
-    };
-  }, [active, step]);
+    }
+  }, [active, isSettingsStep]);
 
   // Add/remove highlight class on target element
   useEffect(() => {
@@ -150,7 +156,7 @@ export function TutorialOverlay() {
         el.classList.add('tutorial-highlight');
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, STEPS_REQUIRING_PANEL_OPEN.has(step) ? 350 : 0);
+    }, STEPS_REQUIRING_PANEL_OPEN.has(step) ? 350 : SETTINGS_STEPS.has(step) ? 100 : 0);
 
     return () => {
       clearTimeout(timer);
@@ -174,7 +180,7 @@ export function TutorialOverlay() {
 
   return (
     <div className="tutorial-overlay">
-      <div className="tutorial-panel">
+      <div className={`tutorial-panel${SETTINGS_STEPS.has(step) ? ' tutorial-panel-settings' : ''}`}>
         <div className="tutorial-step-indicator">
           Step {step + 1} of {TUTORIAL_STEPS.length}
         </div>
