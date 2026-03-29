@@ -39,8 +39,8 @@ export function createBoxplotConfig(
     line: { color: '#333', width: 1.5 },
     fillcolor: group.color,
     showlegend: false,
-    text: group.hoverText,
-    hoverinfo: 'text' as const,
+    customdata: group.customdata,
+    hovertemplate: group.hovertemplate,
     hoveron: 'points' as const,
     hoverlabel: getHoverLabelStyle(isDark),
   }), rankMap, isDark);

@@ -176,17 +176,21 @@ describe('createBoxplotConfig', () => {
       }
     });
 
-    it('hover text contains z-Score value', () => {
+    it('hover customdata contains z-Score value and hovertemplate references it', () => {
       const config = createBoxplotConfig(FIXTURE, ['Catalyst']);
       const boxTraces = config.data.filter(
         (d) => (d as Record<string, unknown>).type === 'box',
       );
       for (const trace of boxTraces) {
-        const texts = (trace as Record<string, unknown>).text as string[];
-        expect(Array.isArray(texts)).toBe(true);
-        for (const text of texts) {
-          expect(text).toContain('z-Score');
+        const rec = trace as Record<string, unknown>;
+        const customdata = rec.customdata as string[][];
+        expect(Array.isArray(customdata)).toBe(true);
+        for (const row of customdata) {
+          // Index 3 is the formatted z-Score value
+          expect(row[3]).toMatch(/^-?\d+\.\d{3}$/);
         }
+        expect(typeof rec.hovertemplate).toBe('string');
+        expect(rec.hovertemplate as string).toContain('z-Score');
       }
     });
 

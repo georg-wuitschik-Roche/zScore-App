@@ -32,9 +32,14 @@ export function fmtArea(val: unknown): string {
   return isNaN(n) ? '' : n.toFixed(2) + '%';
 }
 
-/** Compute median of a numeric array */
+/** Compute median of a numeric array (copies + sorts internally). */
 export function median(arr: number[]): number {
   const sorted = [...arr].sort((a, b) => a - b);
+  return medianOfSorted(sorted);
+}
+
+/** Compute median of a pre-sorted numeric array (no copy, no sort). */
+export function medianOfSorted(sorted: number[]): number {
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 !== 0
     ? sorted[mid]
@@ -69,7 +74,10 @@ export interface PreparedGroup {
   medianVal: number;
   color: string;
   elnCount: number;
-  hoverText: string[];
+  /** Per-point structured data for Plotly hover (passed as trace.customdata). */
+  customdata: string[][];
+  /** Plotly hovertemplate referencing customdata indices (set once per trace). */
+  hovertemplate: string;
 }
 
 export interface PreparedData {
@@ -123,11 +131,12 @@ export function prepareDistributionData(
     elnCounts.set(key, elns.size);
   }
 
-  // Sort groups by median z-Score descending
+  // Sort groups by median z-Score descending (sort zScores in-place to avoid re-sort in median)
   const sorted = Array.from(groupMap.entries())
     .map(([name, groupRows]) => {
       const zScores = groupRows.map((r) => r['z-Score'] as number);
-      return { name, rows: groupRows, zScores, medianVal: median(zScores) };
+      zScores.sort((a, b) => a - b);
+      return { name, rows: groupRows, zScores, medianVal: medianOfSorted(zScores) };
     })
     .sort((a, b) => b.medianVal - a.medianVal);
 
@@ -138,45 +147,55 @@ export function prepareDistributionData(
   const combined = reactantTypes.length > 1;
   const colorMap = createColorMappingFromElnCounts(reactantTypes[0], elnCounts, combined);
 
-  // Build prepared groups with hover text
+  // Hover template — built once with theme color, references customdata indices
+  const dim = isDark ? '#aaa' : '#999';
+  const hovertemplate =
+    `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">EXPERIMENT</span><br>` +
+    `<b style="font-size:15px">%{customdata[0]}</b>` +
+    `<span style="color:${dim}"> · Plate %{customdata[1]} · %{customdata[2]}</span><br>` +
+    `<br>` +
+    `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">RESULTS</span><br>` +
+    `z-Score: <b>%{customdata[3]}</b> · Area: %{customdata[4]}<br>` +
+    `<br>` +
+    `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">REAGENTS</span><br>` +
+    `%{customdata[5]}` +
+    `<br>` +
+    `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">REACTION</span><br>` +
+    `%{customdata[6]} · <b>%{customdata[7]} ELNs</b>` +
+    `<extra></extra>`;
+
+  // Build prepared groups with customdata (cheap array construction per row)
   const groups: PreparedGroup[] = sorted.map(({ name, rows: groupRows, zScores, medianVal }) => {
     const color = colorMap.get(name) ?? '#999';
     const elnCount = elnCounts.get(name) ?? 0;
+    const elnCountStr = String(elnCount);
 
-    const dim = isDark ? '#aaa' : '#999';
-    const hoverText = groupRows.map((row) => {
-      const reagentLines = [
-        ['Catalyst', row.Catalyst],
-        ['Solvent', row.Solvent],
-        ['Base', row.Base],
-        ['Ligand', row.Ligand],
-        ['Additive', row.Additive],
-        ['Coupling Reagent', row['Coupling Reagent']],
-        ['FG A', row['FG A']],
-        ['FG B', row['FG B']],
-        ['Secondary Solvent', row['Secondary Solvent']],
-      ]
-        .filter(([, v]) => v !== null && v !== undefined && v !== '')
-        .map(([k, v]) => `<span style="color:${dim}">${k}:</span> ${s(v)}`)
-        .join('<br>');
+    const customdata = groupRows.map((row) => {
+      // Build reagent block — direct concatenation, no intermediate arrays
+      let reagents = '';
+      if (row.Catalyst) reagents += `<span style="color:${dim}">Catalyst:</span> ${row.Catalyst}<br>`;
+      if (row.Solvent) reagents += `<span style="color:${dim}">Solvent:</span> ${row.Solvent}<br>`;
+      if (row.Base) reagents += `<span style="color:${dim}">Base:</span> ${row.Base}<br>`;
+      if (row.Ligand) reagents += `<span style="color:${dim}">Ligand:</span> ${row.Ligand}<br>`;
+      if (row.Additive) reagents += `<span style="color:${dim}">Additive:</span> ${row.Additive}<br>`;
+      if (row['Coupling Reagent']) reagents += `<span style="color:${dim}">Coupling Reagent:</span> ${row['Coupling Reagent']}<br>`;
+      if (row['FG A']) reagents += `<span style="color:${dim}">FG A:</span> ${row['FG A']}<br>`;
+      if (row['FG B']) reagents += `<span style="color:${dim}">FG B:</span> ${row['FG B']}<br>`;
+      if (row['Secondary Solvent']) reagents += `<span style="color:${dim}">Secondary Solvent:</span> ${row['Secondary Solvent']}<br>`;
 
-      return (
-        `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">EXPERIMENT</span><br>` +
-        `<b style="font-size:15px">${s(row.ELN_ID)}</b>` +
-        `<span style="color:${dim}"> · Plate ${s(row.PLATENUMBER)} · ${s(row.Coordinate)}</span><br>` +
-        `<br>` +
-        `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">RESULTS</span><br>` +
-        `z-Score: <b>${fmtZ(row['z-Score'])}</b> · Area: ${fmtArea(row.AREA_TOTAL_REDUCED)}<br>` +
-        `<br>` +
-        `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">REAGENTS</span><br>` +
-        reagentLines +
-        `<br><br>` +
-        `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">REACTION</span><br>` +
-        `${s(row['Reaction Type'])} · <b>${elnCount} ELNs</b>`
-      );
+      return [
+        s(row.ELN_ID),                  // 0
+        s(row.PLATENUMBER),             // 1
+        s(row.Coordinate),              // 2
+        fmtZ(row['z-Score']),           // 3
+        fmtArea(row.AREA_TOTAL_REDUCED),// 4
+        reagents,                       // 5
+        s(row['Reaction Type']),        // 6
+        elnCountStr,                    // 7
+      ];
     });
 
-    return { name, rows: groupRows, zScores, medianVal, color, elnCount, hoverText };
+    return { name, rows: groupRows, zScores, medianVal, color, elnCount, customdata, hovertemplate };
   });
 
   // Build colored rank badge annotations (positioned next to y-axis labels)
