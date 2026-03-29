@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import type { Row, RankDelta } from '../data/types';
 
@@ -73,7 +73,7 @@ function cellColor(val: number): string {
   return 'inherit';
 }
 
-export function StatsTable({ rows, reactantTypes, noDataHint, rankMap }: StatsTableProps) {
+export const StatsTable = memo(function StatsTable({ rows, reactantTypes, noDataHint, rankMap }: StatsTableProps) {
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
   const tableData = useMemo((): GroupStats[] => {
@@ -209,4 +209,4 @@ export function StatsTable({ rows, reactantTypes, noDataHint, rankMap }: StatsTa
       </div>
     </div>
   );
-}
+});

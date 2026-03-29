@@ -7,7 +7,7 @@
 
 import type { Row, RankDelta } from '../data/types';
 import type { Data, Layout } from 'plotly.js';
-import { createColorMapping } from './colors';
+import { createColorMappingFromElnCounts } from './colors';
 import type { PlotConfig } from './types';
 
 // ── Formatting helpers ────────────────────────────────────────────────
@@ -100,16 +100,27 @@ export function prepareDistributionData(
     ? reactantTypes[0]
     : reactantTypes.join(' / ');
 
-  // Group rows by category value(s)
+  // Single pass: group rows by category, collect ELN sets for color mapping
   const groupMap = new Map<string, Row[]>();
+  const elnSets = new Map<string, Set<string>>();
   for (const row of rows) {
     const key = reactantTypes
       .map((col) => String(row[col] ?? '(no value)'))
       .join(' / ');
     const z = row['z-Score'];
     if (z === null || z === undefined || isNaN(z)) continue;
-    if (!groupMap.has(key)) groupMap.set(key, []);
+    if (!groupMap.has(key)) {
+      groupMap.set(key, []);
+      elnSets.set(key, new Set());
+    }
     groupMap.get(key)!.push(row);
+    if (row.ELN_ID) elnSets.get(key)!.add(row.ELN_ID);
+  }
+
+  // ELN counts from the sets we already collected
+  const elnCounts = new Map<string, number>();
+  for (const [key, elns] of elnSets) {
+    elnCounts.set(key, elns.size);
   }
 
   // Sort groups by median z-Score descending
@@ -123,20 +134,9 @@ export function prepareDistributionData(
   // Reverse for Plotly y-axis (bottom-to-top)
   const categoryOrder = sorted.map((g) => g.name).reverse();
 
-  // Color mapping: ELN density → light/dark shade
-  // Use slate palette when combining multiple reactant types, otherwise type-specific palette
+  // Color mapping from pre-computed ELN counts (no extra row iteration)
   const combined = reactantTypes.length > 1;
-  const colorMap = createColorMapping(reactantTypes[0], rows, reactantTypes, combined);
-
-  // Count unique ELNs per category
-  const elnCounts = new Map<string, number>();
-  for (const { name, rows: groupRows } of sorted) {
-    const elns = new Set<string>();
-    for (const r of groupRows) {
-      if (r.ELN_ID) elns.add(r.ELN_ID);
-    }
-    elnCounts.set(name, elns.size);
-  }
+  const colorMap = createColorMappingFromElnCounts(reactantTypes[0], elnCounts, combined);
 
   // Build prepared groups with hover text
   const groups: PreparedGroup[] = sorted.map(({ name, rows: groupRows, zScores, medianVal }) => {

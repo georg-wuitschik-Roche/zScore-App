@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useDeferredValue } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { DistributionView } from './DistributionView';
 import { createBoxplotConfig } from '../plots/boxplot';
@@ -6,9 +6,9 @@ import { createViolinConfig } from '../plots/violin';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
 import { useSplitFilteredData } from '../hooks/useSplitFilteredData';
-import { useComparisonRanks } from '../hooks/useComparisonData';
+import { useComparisonFilteredRows, useComparisonRanks } from '../hooks/useComparisonData';
 import type { ComparisonResult } from '../hooks/useComparisonData';
-import type { TabId, SplitPanel } from '../data/types';
+import type { TabId, SplitPanel, Row } from '../data/types';
 
 interface TabDef {
   id: TabId;
@@ -70,9 +70,17 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
   }
 }
 
-/** Wrapper that calls useComparisonRanks per panel so each gets its own rank deltas. */
-const PanelWithComparison = memo(function PanelWithComparison({ tab, panel }: { tab: TabId; panel: SplitPanel }) {
-  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes);
+/** Wrapper that computes rank deltas per panel using pre-filtered comparison rows. */
+const PanelWithComparison = memo(function PanelWithComparison({
+  tab,
+  panel,
+  comparisonFilteredRows,
+}: {
+  tab: TabId;
+  panel: SplitPanel;
+  comparisonFilteredRows: Row[] | null;
+}) {
+  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes, comparisonFilteredRows);
   return renderPanel(tab, panel, comparison);
 });
 
@@ -83,7 +91,13 @@ export function AnalysisTabs() {
   const splitSelector = useFilterStore((s) => s.splitSelector);
   const panels = useSplitFilteredData();
 
-  const isSplit = panels.length > 1;
+  // Defer panel data so tab buttons and UI stay responsive while charts recompute
+  const deferredPanels = useDeferredValue(panels);
+
+  // Filter comparison data once (not per panel)
+  const comparisonFilteredRows = useComparisonFilteredRows();
+
+  const isSplit = deferredPanels.length > 1;
 
   // Heatmap needs ≥2 reactant types per panel; when splitting by reactant types
   // each panel has only 1, so hide heatmap
@@ -116,15 +130,23 @@ export function AnalysisTabs() {
       <div className="view-content">
         {isSplit ? (
           <div className="split-grid">
-            {panels.map((panel) => (
+            {deferredPanels.map((panel) => (
               <div key={panel.label} className="split-panel">
                 <div className="split-panel-label">{panel.label}</div>
-                <PanelWithComparison tab={effectiveTab} panel={panel} />
+                <PanelWithComparison
+                  tab={effectiveTab}
+                  panel={panel}
+                  comparisonFilteredRows={comparisonFilteredRows}
+                />
               </div>
             ))}
           </div>
         ) : (
-          <PanelWithComparison tab={effectiveTab} panel={panels[0]} />
+          <PanelWithComparison
+            tab={effectiveTab}
+            panel={deferredPanels[0]}
+            comparisonFilteredRows={comparisonFilteredRows}
+          />
         )}
       </div>
     </div>

@@ -98,3 +98,30 @@ export function createColorMapping(
 
   return colorMap;
 }
+
+/**
+ * Create a color mapping from pre-computed ELN counts (avoids re-iterating rows).
+ */
+export function createColorMappingFromElnCounts(
+  category: string,
+  elnCounts: Map<string, number>,
+  combined?: boolean,
+): Map<string, string> {
+  const base = combined ? COMBINED_COLOURS : (BASE_COLOURS[category] ?? DEFAULT_COLOURS);
+
+  let maxElns = 0;
+  let minElns = Infinity;
+  for (const n of elnCounts.values()) {
+    if (n > maxElns) maxElns = n;
+    if (n < minElns) minElns = n;
+  }
+
+  const colorMap = new Map<string, string>();
+  for (const [catVal, cnt] of elnCounts) {
+    const factor =
+      maxElns === minElns ? 0.5 : (cnt - minElns) / (maxElns - minElns);
+    colorMap.set(catVal, interpolateHex(base.light, base.dark, factor));
+  }
+
+  return colorMap;
+}
