@@ -33,6 +33,7 @@ export interface FilterState {
   isFullDataLoaded: boolean;
   dropdownIndex: DropdownIndex | null;
   loadError: string | null;
+  datasetCache: Record<string, { rows: Row[]; index: DropdownIndex }>;
 
   // Version management
   availableVersions: VersionInfo[];
@@ -93,6 +94,25 @@ export interface FilterState {
   setFilters: (partial: Partial<FilterState>) => void;
 }
 
+/** Fetch, parse, and cache a single dataset version. Returns the cached entry. */
+async function fetchAndCacheVersion(
+  version: VersionInfo,
+  set: (partial: Partial<FilterState> | ((s: FilterState) => Partial<FilterState>)) => void,
+  get: () => FilterState,
+): Promise<{ rows: Row[]; index: DropdownIndex }> {
+  const existing = get().datasetCache[version.id];
+  if (existing) return existing;
+
+  const [index, buffer] = await Promise.all([
+    fetchDropdownIndex(version.index),
+    fetchParquetBuffer(version.parquet),
+  ]);
+  const rows = await parseDataset(buffer);
+  const entry = { rows, index };
+  set((s) => ({ datasetCache: { ...s.datasetCache, [version.id]: entry } }));
+  return entry;
+}
+
 export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
   dataset: [],
@@ -100,6 +120,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   isFullDataLoaded: false,
   dropdownIndex: null,
   loadError: null,
+  datasetCache: {},
 
   // Version management
   availableVersions: [],
@@ -214,25 +235,24 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     const latest = manifest.versions.find((v) => v.id === manifest.latest) ?? manifest.versions[0];
     set({ availableVersions: manifest.versions, activeVersion: latest.id });
 
-    // Phase 1: Fetch dropdown index (tiny JSON) → dropdowns become interactive
-    fetchDropdownIndex(latest.index)
-      .then((index) => set({ dropdownIndex: index }))
-      .catch((e) =>
-        set({ loadError: e instanceof Error ? e.message : 'Failed to load dropdown index' }),
-      );
-
-    // Phase 2: Fetch + parse full dataset (independent, doesn't block dropdowns)
+    // Phase 1+2: Fetch dropdown index + parquet, cache, and activate
     try {
-      const buffer = await fetchParquetBuffer(latest.parquet);
-      const rows = await parseDataset(buffer);
-      set({ dataset: rows, isFullDataLoaded: true });
+      const entry = await fetchAndCacheVersion(latest, set, get);
+      set({ dataset: entry.rows, dropdownIndex: entry.index, isFullDataLoaded: true });
     } catch (e) {
       set({
         loadError: e instanceof Error ? e.message : 'Failed to load dataset',
       });
     }
 
-    // Phase 3: Restore persisted upload from localStorage
+    // Phase 3: Preload remaining dataset versions in the background
+    for (const version of manifest.versions) {
+      if (version.id !== latest.id) {
+        fetchAndCacheVersion(version, set, get).catch(() => {/* preload failure is non-critical */});
+      }
+    }
+
+    // Phase 4: Restore persisted upload from localStorage
     const stored = loadUpload();
     if (stored) {
       set({
@@ -295,16 +315,14 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     const version = availableVersions.find((v) => v.id === versionId);
     if (!version) return;
 
-    set({ isLoadingVersion: true, loadError: null });
+    const isCached = !!get().datasetCache[versionId];
+    if (!isCached) set({ isLoadingVersion: true, loadError: null });
 
-    // Fetch new dropdown index + parquet in parallel
-    const indexPromise = fetchDropdownIndex(version.index);
     try {
-      const [index, buffer] = await Promise.all([indexPromise, fetchParquetBuffer(version.parquet)]);
-      const rows = await parseDataset(buffer);
+      const entry = await fetchAndCacheVersion(version, set, get);
       set({
-        dataset: rows,
-        dropdownIndex: index,
+        dataset: entry.rows,
+        dropdownIndex: entry.index,
         isFullDataLoaded: true,
         activeVersion: versionId,
         isLoadingVersion: false,
