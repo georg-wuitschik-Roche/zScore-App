@@ -77,7 +77,7 @@ export function Navbar() {
             }}
           />
           <h1 className="title">
-            Lessons from {dataset.length > 0 ? dataset.length.toLocaleString() : '...'} High-Throughput Experiments
+            Lessons from {(uploadedDataset ?? dataset).length > 0 ? (uploadedDataset ?? dataset).length.toLocaleString() : '...'} High-Throughput Experiments
           </h1>
 
           {/* Upload status indicator */}
