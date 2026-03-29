@@ -9,6 +9,14 @@ repos:
         pass_filenames: false
         additional_dependencies: [pandas>=2.0, numpy>=1.24, pyarrow>=14.0]
 
+      - id: version-dataset
+        name: Auto-version new dataset CSVs
+        entry: python3 scripts/version_dataset.py
+        language: python
+        files: '^datasets/.*\.csv$'
+        pass_filenames: false
+        additional_dependencies: [pandas>=2.0, numpy>=1.24, pyarrow>=14.0]
+
       - id: tsc
         name: TypeScript type check
         entry: bash -c 'cd frontend && npx tsc --noEmit'

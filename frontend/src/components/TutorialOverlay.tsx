@@ -12,6 +12,7 @@ import {
   TUTORIAL_STEPS,
 } from '../hooks/useTutorial';
 import { useFilterStore } from '../stores/filterStore';
+import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import { getReactantOptions } from '../data/dropdownOptions';
 
 // Steps 5-11 target elements inside the options panel
@@ -49,10 +50,8 @@ export function TutorialOverlay() {
   const setActiveTab = useFilterStore((s) => s.setActiveTab);
   const setSplitSelector = useFilterStore((s) => s.setSplitSelector);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
-  const dataset = useFilterStore((s) => s.dataset);
-  const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
 
-  const sourceData = uploadedDataset ?? dataset;
+  const sourceData = useEffectiveDataset();
   const availableReactants = useMemo(
     () => getReactantOptions(sourceData, reactionTypes),
     [sourceData, reactionTypes],

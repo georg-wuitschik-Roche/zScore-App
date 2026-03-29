@@ -1,10 +1,11 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import versionsPlugin from './vite-plugin-versions'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), versionsPlugin()],
   resolve: {
     alias: {
       // Use pre-built browser bundle to avoid Node.js builtin imports

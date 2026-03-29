@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useTutorialStore } from '../hooks/useTutorial';
+import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import {
   getReactionTypes,
   getFgOptions,
@@ -13,13 +14,13 @@ import {
   getReactantOptionsFromIndex,
 } from '../data/dropdownOptions';
 import { MultiSelect } from './MultiSelect';
+import { SettingsMenu } from './SettingsMenu';
 import { Footer } from './Footer';
 import { DEFAULTS, SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const dataset = useFilterStore((s) => s.dataset);
   const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
   const dropdownIndex = useFilterStore((s) => s.dropdownIndex);
   const setFilters = useFilterStore((s) => s.setFilters);
@@ -31,11 +32,14 @@ export function LandingPage() {
   const setFgB = useFilterStore((s) => s.setFgB);
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
   const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
-
+  const availableVersions = useFilterStore((s) => s.availableVersions);
+  const activeVersion = useFilterStore((s) => s.activeVersion);
+  const switchVersion = useFilterStore((s) => s.switchVersion);
+  const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
   // Use index for instant dropdowns; fall back to row scanning for uploaded CSVs
   const useIndex = !uploadedDataset && dropdownIndex !== null;
 
-  const rowData = uploadedDataset ?? dataset;
+  const rowData = useEffectiveDataset();
 
   const reactionTypeOptions = useMemo(
     () => useIndex
@@ -118,6 +122,9 @@ export function LandingPage() {
 
   return (
     <div className="landing-container">
+      <div className="landing-settings">
+        <SettingsMenu variant="light" />
+      </div>
       <img
         src="/assets/logo.svg"
         alt="Z-Score Dashboard"
@@ -127,6 +134,26 @@ export function LandingPage() {
       <p className="landing-subtitle">
         Search for a reaction type to explore z-score analytics
       </p>
+
+      {availableVersions.length > 1 && (
+        <div className="version-picker">
+          <span className="version-picker-label">Dataset:</span>
+          {availableVersions.map((v) => (
+            <button
+              key={v.id}
+              className={`version-pill${v.id === activeVersion ? ' active' : ''}`}
+              onClick={() => switchVersion(v.id)}
+              disabled={isLoadingVersion}
+            >
+              {v.label}{v.date ? ` (${v.date})` : ''}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isLoadingVersion && (
+        <div className="version-loading">Loading dataset...</div>
+      )}
 
       <div className="landing-filters">
         <div className="landing-filter-row">

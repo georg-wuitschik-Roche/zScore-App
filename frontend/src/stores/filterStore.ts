@@ -6,9 +6,16 @@
  */
 
 import { create } from 'zustand';
-import type { Row, DropdownIndex, SplitSelector, TabId } from '../data/types';
+import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode } from '../data/types';
 import { REQUIRED_COLUMNS } from '../data/types';
-import { fetchDropdownIndex, fetchParquetBuffer, parseDataset, parseCSVText } from '../data/loader';
+import {
+  fetchDropdownIndex,
+  fetchParquetBuffer,
+  parseDataset,
+  parseCSVText,
+  fetchVersionsManifest,
+} from '../data/loader';
+import { saveUpload, loadUpload, clearUpload as clearStoredUpload } from '../data/uploadStorage';
 
 // Default filter values — empty until user selects on landing page
 const DEFAULT_REACTION_TYPES: string[] = [];
@@ -26,6 +33,15 @@ export interface FilterState {
   isFullDataLoaded: boolean;
   dropdownIndex: DropdownIndex | null;
   loadError: string | null;
+
+  // Version management
+  availableVersions: VersionInfo[];
+  activeVersion: string;
+  isLoadingVersion: boolean;
+
+  // Upload mode & persistence
+  uploadMode: UploadMode;
+  uploadPersisted: boolean;
 
   // Filter controls
   reactionTypes: string[];
@@ -69,18 +85,30 @@ export interface FilterState {
   loadDataset: () => Promise<void>;
   setUploadedDataset: (rows: Row[] | null) => void;
   uploadCSV: (text: string, fileName?: string) => Promise<void>;
+  switchVersion: (versionId: string) => Promise<void>;
+  setUploadMode: (mode: UploadMode) => void;
+  clearUploadData: () => void;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
 }
 
-export const useFilterStore = create<FilterState>((set) => ({
+export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
   dataset: [],
   uploadedDataset: null,
   isFullDataLoaded: false,
   dropdownIndex: null,
   loadError: null,
+
+  // Version management
+  availableVersions: [],
+  activeVersion: '',
+  isLoadingVersion: false,
+
+  // Upload mode & persistence
+  uploadMode: 'replace',
+  uploadPersisted: false,
 
   // Default filter values
   reactionTypes: DEFAULT_REACTION_TYPES,
@@ -151,8 +179,9 @@ export const useFilterStore = create<FilterState>((set) => ({
   toggleOptionsPanel: () =>
     set((s) => ({ optionsPanelOpen: !s.optionsPanelOpen })),
 
-  resetFilters: () =>
-    set((s) => ({
+  resetFilters: () => {
+    clearStoredUpload();
+    set({
       reactionTypes: [],
       reactantTypes: [],
       fgA: [],
@@ -166,13 +195,22 @@ export const useFilterStore = create<FilterState>((set) => ({
       splitSelector: null,
       activeTab: 'boxplot',
       uploadedDataset: null,
-    })),
+      uploadFileName: null,
+      uploadMode: 'replace',
+      uploadPersisted: false,
+    });
+  },
 
   loadDataset: async () => {
     set({ loadError: null });
 
+    // Discover available dataset versions
+    const manifest = await fetchVersionsManifest();
+    const latest = manifest.versions.find((v) => v.id === manifest.latest) ?? manifest.versions[0];
+    set({ availableVersions: manifest.versions, activeVersion: latest.id });
+
     // Phase 1: Fetch dropdown index (tiny JSON) → dropdowns become interactive
-    fetchDropdownIndex()
+    fetchDropdownIndex(latest.index)
       .then((index) => set({ dropdownIndex: index }))
       .catch((e) =>
         set({ loadError: e instanceof Error ? e.message : 'Failed to load dropdown index' }),
@@ -180,7 +218,7 @@ export const useFilterStore = create<FilterState>((set) => ({
 
     // Phase 2: Fetch + parse full dataset (independent, doesn't block dropdowns)
     try {
-      const buffer = await fetchParquetBuffer();
+      const buffer = await fetchParquetBuffer(latest.parquet);
       const rows = await parseDataset(buffer);
       set({ dataset: rows, isFullDataLoaded: true });
     } catch (e) {
@@ -188,11 +226,23 @@ export const useFilterStore = create<FilterState>((set) => ({
         loadError: e instanceof Error ? e.message : 'Failed to load dataset',
       });
     }
+
+    // Phase 3: Restore persisted upload from localStorage
+    const stored = loadUpload();
+    if (stored) {
+      set({
+        uploadedDataset: stored.rows,
+        uploadFileName: stored.fileName,
+        uploadMode: stored.mode,
+        uploadPersisted: true,
+      });
+    }
   },
 
   setUploadedDataset: (rows) => set({ uploadedDataset: rows }),
 
   uploadCSV: async (text, fileName) => {
+    const { uploadMode } = get();
     try {
       const rows = await parseCSVText(text);
       if (rows.length === 0) {
@@ -217,10 +267,89 @@ export const useFilterStore = create<FilterState>((set) => ({
         return;
       }
 
-      set({ uploadedDataset: rows, uploadError: null, uploadFileName: fileName ?? null });
+      // Prefix ELN IDs with upload_ to avoid collisions when combining
+      if (uploadMode === 'combine') {
+        for (const row of rows) {
+          if (row.ELN_ID && !row.ELN_ID.startsWith('upload_')) {
+            row.ELN_ID = `upload_${row.ELN_ID}`;
+          }
+        }
+      }
+
+      const name = fileName ?? null;
+      const persisted = saveUpload(rows, name ?? 'upload.csv', uploadMode);
+      set({
+        uploadedDataset: rows,
+        uploadError: null,
+        uploadFileName: name,
+        uploadPersisted: persisted,
+      });
     } catch {
       set({ uploadError: 'Failed to parse CSV file. Check the format and encoding.' });
     }
+  },
+
+  switchVersion: async (versionId) => {
+    const { availableVersions } = get();
+    const version = availableVersions.find((v) => v.id === versionId);
+    if (!version) return;
+
+    set({ isLoadingVersion: true, loadError: null });
+
+    // Fetch new dropdown index + parquet in parallel
+    const indexPromise = fetchDropdownIndex(version.index);
+    try {
+      const [index, buffer] = await Promise.all([indexPromise, fetchParquetBuffer(version.parquet)]);
+      const rows = await parseDataset(buffer);
+      set({
+        dataset: rows,
+        dropdownIndex: index,
+        isFullDataLoaded: true,
+        activeVersion: versionId,
+        isLoadingVersion: false,
+        // Reset filters since the data universe changed
+        reactionTypes: [],
+        reactantTypes: [],
+        fgA: [],
+        fgB: [],
+        splitSelector: null,
+      });
+    } catch (e) {
+      set({
+        loadError: e instanceof Error ? e.message : 'Failed to load dataset version',
+        isLoadingVersion: false,
+      });
+    }
+  },
+
+  setUploadMode: (mode) => {
+    const { uploadMode: prev, uploadedDataset } = get();
+    if (mode === prev) return;
+    // Re-prefix ELN IDs when switching modes on existing upload
+    if (uploadedDataset) {
+      const rows = uploadedDataset.map((row) => {
+        if (mode === 'combine' && row.ELN_ID && !row.ELN_ID.startsWith('upload_')) {
+          return { ...row, ELN_ID: `upload_${row.ELN_ID}` };
+        }
+        if (mode === 'replace' && row.ELN_ID?.startsWith('upload_')) {
+          return { ...row, ELN_ID: row.ELN_ID.slice(7) };
+        }
+        return row;
+      });
+      const persisted = saveUpload(rows, get().uploadFileName ?? 'upload.csv', mode);
+      set({ uploadMode: mode, uploadedDataset: rows, uploadPersisted: persisted });
+    } else {
+      set({ uploadMode: mode });
+    }
+  },
+
+  clearUploadData: () => {
+    clearStoredUpload();
+    set({
+      uploadedDataset: null,
+      uploadFileName: null,
+      uploadPersisted: false,
+    });
   },
 
   clearUploadError: () => set({ uploadError: null }),

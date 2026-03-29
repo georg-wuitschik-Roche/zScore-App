@@ -135,6 +135,7 @@ button:hover {
 /* ================================================================== */
 
 .landing-container {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -144,6 +145,12 @@ button:hover {
     padding-top: 24px;
     padding-bottom: 0;
     text-align: center;
+}
+
+.landing-settings {
+    position: absolute;
+    top: 16px;
+    right: 16px;
     min-height: 100dvh;
     box-sizing: border-box;
 }
@@ -321,6 +328,26 @@ button:hover {
     color: var(--color-text);
 }
 
+.landing-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    color: var(--color-primary);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    border: 1px solid var(--color-primary);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.landing-upload-btn:hover {
+    background: var(--color-primary);
+    color: #fff;
+}
+
 .landing-about-btn {
     display: inline-flex;
     align-items: center;
@@ -492,6 +519,13 @@ button:hover {
     letter-spacing: -0.02em;
 }
 
+.title-dataset-name {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.55);
+    font-style: italic;
+}
+
 /* -- Settings gear & dropdown -- */
 .settings-wrapper {
     position: relative;
@@ -516,6 +550,16 @@ button:hover {
 .settings-toggle:hover {
     background: rgba(255, 255, 255, 0.1) !important;
     box-shadow: none !important;
+}
+
+.settings-toggle.light {
+    border-color: var(--color-border) !important;
+    color: var(--color-text-muted) !important;
+}
+
+.settings-toggle.light:hover {
+    background: var(--color-bg-hover) !important;
+    color: var(--color-text) !important;
 }
 
 .settings-dropdown {
@@ -1668,7 +1712,309 @@ label.tutorial-highlight {
 }
 
 /* ================================================================== */
-/* 16. TEXT SELECTION (plotly)                                         */
+/* 16. VERSION PICKER & UPLOAD MODE                                   */
+/* ================================================================== */
+
+/* Landing page version picker */
+.version-picker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.version-picker-label {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-right: 4px;
+}
+
+.version-pill {
+    padding: 4px 14px;
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+    background: var(--color-bg-input);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: background 0.15s, color 0.15s;
+}
+
+.version-pill:hover {
+    color: var(--color-text);
+    background: var(--color-bg-panel);
+}
+
+.version-pill.active {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.version-pill:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.version-loading {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+/* Navbar version dropdown */
+.version-nav-wrapper {
+    position: relative;
+    margin-left: 8px;
+}
+
+.version-nav-btn {
+    display: flex;
+    align-items: center;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-input);
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.version-nav-btn:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+}
+
+.version-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.version-nav-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    min-width: 120px;
+    padding: 4px;
+}
+
+.version-nav-dropdown.hidden {
+    display: none;
+}
+
+.version-nav-item {
+    display: block;
+    width: 100%;
+    padding: 6px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 13px;
+    color: var(--color-text);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.version-nav-item:hover {
+    background: var(--color-bg-hover);
+}
+
+.version-nav-item.active {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+/* Upload mode selection modal */
+.upload-mode-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.upload-mode-panel {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    padding: 24px;
+    max-width: 420px;
+    width: 90vw;
+}
+
+.upload-mode-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.upload-mode-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.upload-mode-close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.upload-mode-filename {
+    font-size: 13px;
+    color: #666;
+    margin: 0 0 16px;
+    font-family: var(--font-mono);
+}
+
+.upload-mode-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.upload-mode-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 16px;
+    border: 2px solid #ddd;
+    border-radius: var(--radius-md);
+    background: #f8f8f8;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.upload-mode-choice:hover {
+    border-color: var(--color-primary);
+    background: #f0f4ff;
+}
+
+.upload-mode-choice strong {
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.upload-mode-choice span {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Settings dropdown: inline row (label + control) */
+.settings-dropdown-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 14px;
+}
+
+.settings-dropdown-row-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+.settings-dropdown-divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: 4px 10px;
+}
+
+/* Upload mode pill toggle */
+.upload-mode-btns {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    background: var(--color-bg-input);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+}
+
+.upload-mode-btn {
+    flex: 1;
+    padding: 3px 0;
+    border: none;
+    border-radius: calc(var(--radius-sm) - 1px);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-align: center;
+    min-width: 0;
+}
+
+.upload-mode-btn:hover {
+    color: var(--color-text);
+}
+
+.upload-mode-btn.active {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-dropdown-btn-danger {
+    color: #c0392b !important;
+}
+
+.settings-dropdown-btn-danger:hover {
+    background: #fdecea !important;
+    color: #a93226 !important;
+}
+
+/* Upload clear button (inline x) */
+.upload-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.6;
+    vertical-align: middle;
+}
+
+.upload-clear-btn:hover {
+    opacity: 1;
+}
+
+/* ================================================================== */
+/* 17. TEXT SELECTION (plotly)                                         */
 /* ================================================================== */
 
 .js-plotly-plot text,

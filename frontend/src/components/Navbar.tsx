@@ -1,31 +1,31 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
+import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
+import { SettingsMenu } from './SettingsMenu';
 
 export function Navbar() {
   const navigate = useNavigate();
   const resetFilters = useFilterStore((s) => s.resetFilters);
-  const togglePresentationMode = useFilterStore(
-    (s) => s.togglePresentationMode,
-  );
-  const presentationMode = useFilterStore((s) => s.presentationMode);
-  const uploadCSV = useFilterStore((s) => s.uploadCSV);
-  const dataset = useFilterStore((s) => s.dataset);
   const uploadError = useFilterStore((s) => s.uploadError);
   const uploadFileName = useFilterStore((s) => s.uploadFileName);
   const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
   const clearUploadError = useFilterStore((s) => s.clearUploadError);
+  const availableVersions = useFilterStore((s) => s.availableVersions);
+  const activeVersion = useFilterStore((s) => s.activeVersion);
+  const switchVersion = useFilterStore((s) => s.switchVersion);
+  const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
+  const effectiveData = useEffectiveDataset();
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [versionOpen, setVersionOpen] = useState(false);
+  const versionRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (
-      settingsRef.current &&
-      !settingsRef.current.contains(e.target as Node)
+      versionRef.current &&
+      !versionRef.current.contains(e.target as Node)
     ) {
-      setSettingsOpen(false);
+      setVersionOpen(false);
     }
   }, []);
 
@@ -33,33 +33,6 @@ export function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [handleClickOutside]);
-
-  function handleUploadClick() {
-    fileInputRef.current?.click();
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      alert('File too large (max 50 MB)');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result;
-      if (typeof text === 'string') {
-        uploadCSV(text, file.name);
-        setSettingsOpen(false);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  }
-
-  function handleReset() {
-    resetFilters();
-  }
 
   return (
     <>
@@ -77,70 +50,46 @@ export function Navbar() {
             }}
           />
           <h1 className="title">
-            Lessons from {(uploadedDataset ?? dataset).length > 0 ? (uploadedDataset ?? dataset).length.toLocaleString() : '...'} High-Throughput Experiments
+            Lessons from {effectiveData.length > 0 ? effectiveData.length.toLocaleString() : '...'} High-Throughput Experiments
+            {uploadedDataset && uploadFileName && (
+              <span className="title-dataset-name"> — {uploadFileName}</span>
+            )}
           </h1>
 
-          {/* Upload status indicator */}
-          {uploadedDataset && uploadFileName && (
-            <span className="upload-status">
-              Using: {uploadFileName} ({uploadedDataset.length.toLocaleString()} rows)
-            </span>
+          {/* Version switcher (compact, only when >1 version) */}
+          {availableVersions.length > 1 && (
+            <div className="version-nav-wrapper" ref={versionRef}>
+              <button
+                className="version-nav-btn"
+                onClick={() => setVersionOpen((prev) => !prev)}
+                disabled={isLoadingVersion}
+              >
+                {availableVersions.find((v) => v.id === activeVersion)?.label ?? activeVersion}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 4 }}>
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              <div className={`version-nav-dropdown${versionOpen ? '' : ' hidden'}`}>
+                {availableVersions.map((v) => (
+                  <button
+                    key={v.id}
+                    className={`version-nav-item${v.id === activeVersion ? ' active' : ''}`}
+                    onClick={() => {
+                      switchVersion(v.id);
+                      setVersionOpen(false);
+                    }}
+                  >
+                    {v.label}{v.date ? ` (${v.date})` : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
-          {/* Settings gear + dropdown */}
-          <div className="settings-wrapper" ref={settingsRef}>
-            <button
-              className="settings-toggle"
-              id="settings-toggle"
-              onClick={() => setSettingsOpen((prev) => !prev)}
-              aria-label="Settings"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
-            <div
-              className={`settings-dropdown${settingsOpen ? '' : ' hidden'}`}
-            >
-              <div className="upload-container settings-dropdown-item">
-                <button
-                  className="settings-dropdown-btn"
-                  onClick={handleUploadClick}
-                >
-                  Upload Dataset
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-              </div>
-              <button
-                className={`settings-dropdown-btn${presentationMode ? ' active' : ''}`}
-                onClick={() => {
-                  togglePresentationMode();
-                  setSettingsOpen(false);
-                }}
-              >
-                {presentationMode ? 'Exit Presentation Mode' : 'Presentation Mode'}
-              </button>
-            </div>
-          </div>
+          <SettingsMenu />
 
           {/* Reset button */}
-          <button className="reset-btn-subtle" id="reset-btn" onClick={handleReset}>
+          <button className="reset-btn-subtle" id="reset-btn" onClick={() => resetFilters()}>
             <svg
               width="14"
               height="14"

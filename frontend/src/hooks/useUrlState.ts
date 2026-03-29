@@ -47,6 +47,8 @@ export function useUrlState(): void {
     maxComponents,
     activeTab,
     splitSelector,
+    activeVersion,
+    switchVersion,
     setFilters,
   } = useFilterStore((s) => s);
 
@@ -64,6 +66,7 @@ export function useUrlState(): void {
     const su = searchParams.get('su');
     const nc = searchParams.get('nc');
     const split = searchParams.get('split');
+    const ver = searchParams.get('ver');
 
     // Only restore if URL has params
     if (!rt && !cat && !fga && !fgb && !me) return;
@@ -85,6 +88,11 @@ export function useUrlState(): void {
     partial.splitSelector = split ? (URL_TO_SPLIT[split] ?? null) : null;
 
     setFilters(partial);
+
+    // Switch version if URL specifies one different from current
+    if (ver && ver !== activeVersion) {
+      switchVersion(ver);
+    }
 
     // Clear restore flag after a tick
     setTimeout(() => {
@@ -113,6 +121,7 @@ export function useUrlState(): void {
       params.set('nc', includeNullCategories ? '1' : '0');
       if (activeTab !== 'boxplot') params.set('tab', activeTab);
       if (splitSelector) params.set('split', SPLIT_URL_KEYS[splitSelector]);
+      if (activeVersion && activeVersion !== 'default') params.set('ver', activeVersion);
 
       setSearchParams(params, { replace: true });
     }, 250);
@@ -134,5 +143,6 @@ export function useUrlState(): void {
     maxComponents,
     activeTab,
     splitSelector,
+    activeVersion,
   ]);
 }

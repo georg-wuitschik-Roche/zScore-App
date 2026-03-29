@@ -19,8 +19,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CSV_PATH = ROOT / "z-Score Peaks with FG.csv"
-PARQUET_PATH = ROOT / "frontend" / "public" / "data" / "z-score-peaks.parquet"
-DROPDOWN_INDEX_PATH = ROOT / "frontend" / "public" / "data" / "dropdown-index.json"
+DATA_DIR = ROOT / "frontend" / "public" / "data"
+PARQUET_PATH = DATA_DIR / "z-score-peaks.parquet"
+DROPDOWN_INDEX_PATH = DATA_DIR / "dropdown-index.json"
+VERSIONS_PATH = DATA_DIR / "versions.json"
 FRONTEND_GOLDEN_DIR = ROOT / "frontend" / "golden"
 
 USED_COLUMNS = [
@@ -106,6 +108,37 @@ def _is_git_repo() -> bool:
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
+def update_versions_json() -> None:
+    """Update the default entry in versions.json with today's date."""
+    from datetime import date as dt_date
+
+    manifest: dict = {"versions": [], "latest": "default"}
+    if VERSIONS_PATH.exists():
+        with open(VERSIONS_PATH) as f:
+            manifest = json.load(f)
+
+    # Update or insert the default entry
+    default_entry = {
+        "id": "default",
+        "parquet": "/data/z-score-peaks.parquet",
+        "index": "/data/dropdown-index.json",
+        "label": "Default",
+        "date": dt_date.today().isoformat(),
+    }
+    found = False
+    for i, v in enumerate(manifest["versions"]):
+        if v["id"] == "default":
+            manifest["versions"][i] = default_entry
+            found = True
+            break
+    if not found:
+        manifest["versions"].insert(0, default_entry)
+
+    with open(VERSIONS_PATH, "w") as f:
+        json.dump(manifest, f, indent=2)
+    print(f"  Versions manifest → {VERSIONS_PATH.relative_to(ROOT)}")
+
+
 def stage_generated_files() -> None:
     """Stage all regenerated files for the commit (skipped in CI)."""
     if not _is_git_repo():
@@ -115,6 +148,7 @@ def stage_generated_files() -> None:
     files_to_stage = [
         str(PARQUET_PATH.relative_to(ROOT)),
         str(DROPDOWN_INDEX_PATH.relative_to(ROOT)),
+        str(VERSIONS_PATH.relative_to(ROOT)),
         str(FRONTEND_GOLDEN_DIR.relative_to(ROOT)),
     ]
     subprocess.run(
@@ -133,6 +167,7 @@ def main() -> int:
         return rc
 
     generate_dropdown_index()
+    update_versions_json()
     stage_generated_files()
 
     print("\nDone — all artifacts regenerated and staged.")

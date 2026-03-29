@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { useFilteredData } from '../hooks/useFilteredData';
+import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import {
   getReactionTypes,
   getFgOptions,
@@ -37,8 +38,6 @@ function SplitToggle({ selectorKey, values, id }: { selectorKey: SplitSelector; 
 }
 
 export function FilterControls() {
-  const dataset = useFilterStore((s) => s.dataset);
-  const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const fgA = useFilterStore((s) => s.fgA);
   const fgB = useFilterStore((s) => s.fgB);
@@ -48,7 +47,7 @@ export function FilterControls() {
   const setFgB = useFilterStore((s) => s.setFgB);
   const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
 
-  const sourceData = uploadedDataset ?? dataset;
+  const sourceData = useEffectiveDataset();
   const { stats } = useFilteredData();
 
   const reactionTypeOptions = useMemo(

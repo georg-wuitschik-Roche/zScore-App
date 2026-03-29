@@ -8,6 +8,7 @@
 import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
+import { useEffectiveDataset } from './useEffectiveDataset';
 import type { FilterParams, FilterStats, Row } from '../data/types';
 
 export interface FilteredResult {
@@ -17,8 +18,6 @@ export interface FilteredResult {
 
 export function useFilteredData(): FilteredResult {
   const {
-    dataset,
-    uploadedDataset,
     reactionTypes,
     reactantTypes,
     fgA,
@@ -31,7 +30,7 @@ export function useFilteredData(): FilteredResult {
     maxComponents,
   } = useFilterStore();
 
-  const sourceData = uploadedDataset ?? dataset;
+  const sourceData = useEffectiveDataset();
 
   return useMemo(() => {
     if (sourceData.length === 0) {

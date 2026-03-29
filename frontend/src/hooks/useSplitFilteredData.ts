@@ -8,12 +8,11 @@
 import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
+import { useEffectiveDataset } from './useEffectiveDataset';
 import type { FilterParams, SplitPanel } from '../data/types';
 
 export function useSplitFilteredData(): SplitPanel[] {
   const {
-    dataset,
-    uploadedDataset,
     reactionTypes,
     reactantTypes,
     fgA,
@@ -27,7 +26,7 @@ export function useSplitFilteredData(): SplitPanel[] {
     splitSelector,
   } = useFilterStore();
 
-  const sourceData = uploadedDataset ?? dataset;
+  const sourceData = useEffectiveDataset();
 
   return useMemo(() => {
     if (sourceData.length === 0) {

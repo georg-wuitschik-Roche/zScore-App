@@ -111,6 +111,24 @@ export type TabId = 'boxplot' | 'violin' | 'heatmap' | 'stats';
 /** Which filter dropdown is in split mode (null = combined). */
 export type SplitSelector = 'reactionTypes' | 'fgA' | 'fgB' | 'reactantTypes';
 
+/** Metadata for a single built-in dataset version. */
+export interface VersionInfo {
+  id: string;
+  parquet: string;
+  index: string;
+  label: string;
+  date?: string;
+}
+
+/** Manifest listing all available dataset versions. */
+export interface VersionsManifest {
+  versions: VersionInfo[];
+  latest: string;
+}
+
+/** Upload mode: replace built-in data or combine with it. */
+export type UploadMode = 'replace' | 'combine';
+
 /** URL abbreviations for split selectors. */
 export const SPLIT_URL_KEYS: Record<SplitSelector, string> = {
   reactionTypes: 'rt',
