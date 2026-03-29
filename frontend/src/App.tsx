@@ -10,9 +10,11 @@ const dashboardImport = () =>
 const Dashboard = lazy(dashboardImport);
 
 function AppContent() {
-  const { isFullDataLoaded, loadError, presentationMode, theme, loadDataset } =
-    useFilterStore();
-
+  const isFullDataLoaded = useFilterStore((s) => s.isFullDataLoaded);
+  const loadError = useFilterStore((s) => s.loadError);
+  const presentationMode = useFilterStore((s) => s.presentationMode);
+  const theme = useFilterStore((s) => s.theme);
+  const loadDataset = useFilterStore((s) => s.loadDataset);
   const dropdownIndex = useFilterStore((s) => s.dropdownIndex);
 
   useEffect(() => {

@@ -39,9 +39,8 @@ export interface FilterState {
   activeVersion: string;
   isLoadingVersion: boolean;
 
-  // Upload mode & persistence
+  // Upload mode
   uploadMode: UploadMode;
-  uploadPersisted: boolean;
 
   // Filter controls
   reactionTypes: string[];
@@ -84,12 +83,11 @@ export interface FilterState {
   resetFilters: () => void;
   clearUploadError: () => void;
   loadDataset: () => Promise<void>;
-  uploadCSV: (text: string, fileName?: string) => Promise<void>;
+  uploadCSV: (text: string, fileName?: string, mode?: UploadMode) => Promise<void>;
   switchVersion: (versionId: string) => Promise<void>;
   setUploadMode: (mode: UploadMode) => void;
   clearUploadData: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
-  setUploadedDataset: (rows: Row[] | null) => void;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
@@ -110,7 +108,6 @@ export const useFilterStore = create<FilterState>((set, get) => ({
 
   // Upload mode & persistence
   uploadMode: 'replace',
-  uploadPersisted: false,
 
   // Default filter values
   reactionTypes: DEFAULT_REACTION_TYPES,
@@ -206,8 +203,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       uploadedDataset: null,
       uploadFileName: null,
       uploadMode: 'replace',
-      uploadPersisted: false,
-    });
+        });
   },
 
   loadDataset: async () => {
@@ -243,13 +239,12 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         uploadedDataset: stored.rows,
         uploadFileName: stored.fileName,
         uploadMode: stored.mode,
-        uploadPersisted: true,
       });
     }
   },
 
-  uploadCSV: async (text, fileName) => {
-    const { uploadMode } = get();
+  uploadCSV: async (text, fileName, mode) => {
+    const uploadMode = mode ?? get().uploadMode;
     try {
       const rows = await parseCSVText(text);
       if (rows.length === 0) {
@@ -289,7 +284,6 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         uploadedDataset: rows,
         uploadError: null,
         uploadFileName: name,
-        uploadPersisted: persisted,
       });
     } catch {
       set({ uploadError: 'Failed to parse CSV file. Check the format and encoding.' });
@@ -338,7 +332,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         return row;
       });
       const persisted = saveUpload(rows, get().uploadFileName ?? 'upload.csv', mode);
-      set({ uploadMode: mode, uploadedDataset: rows, uploadPersisted: persisted });
+      set({ uploadMode: mode, uploadedDataset: rows });
     } else {
       set({ uploadMode: mode });
     }
@@ -349,8 +343,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     set({
       uploadedDataset: null,
       uploadFileName: null,
-      uploadPersisted: false,
-    });
+        });
   },
 
   clearUploadError: () => set({ uploadError: null }),

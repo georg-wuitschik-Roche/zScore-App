@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import { SettingsMenu } from './SettingsMenu';
+import { REQUIRED_COLUMNS } from '../data/types';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -76,11 +77,7 @@ export function Navbar() {
             <div className="upload-error-footer">
               <h4>Required Columns:</h4>
               <ul>
-                {[
-                  'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
-                  'Base', 'Catalyst', 'Solvent', 'Ligand',
-                  'Reaction Type', 'FG A', 'FG B', 'FG_sorted', 'z-Score',
-                ].map((col) => (
+                {REQUIRED_COLUMNS.map((col) => (
                   <li key={col}><code>{col}</code></li>
                 ))}
               </ul>

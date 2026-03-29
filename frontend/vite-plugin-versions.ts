@@ -83,16 +83,19 @@ function scanVersions(dataDir: string): VersionsManifest {
 
 export default function versionsPlugin(): Plugin {
   let dataDir: string;
+  let isBuild = false;
 
   return {
     name: 'zscore-versions',
 
     configResolved(config) {
       dataDir = join(config.publicDir, 'data');
+      isBuild = config.command === 'build';
     },
 
-    // At build time, write versions.json into public/data/
+    // At build time only, write versions.json into public/data/
     buildStart() {
+      if (!isBuild) return;
       const manifest = scanVersions(dataDir);
       const outPath = join(dataDir, 'versions.json');
       writeFileSync(outPath, JSON.stringify(manifest, null, 2));

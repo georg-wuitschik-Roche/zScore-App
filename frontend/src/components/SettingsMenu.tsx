@@ -42,7 +42,7 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   function handleConfirmUpload(mode: UploadMode) {
     if (!pendingUpload) return;
     setUploadMode(mode);
-    uploadCSV(pendingUpload.text, pendingUpload.name);
+    uploadCSV(pendingUpload.text, pendingUpload.name, mode);
     setPendingUpload(null);
   }
 
