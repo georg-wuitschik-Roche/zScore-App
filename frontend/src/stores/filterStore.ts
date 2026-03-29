@@ -67,6 +67,7 @@ export interface FilterState {
   presentationMode: boolean;
   optionsPanelOpen: boolean;
   theme: 'light' | 'dark';
+  themePreference: 'light' | 'dark' | 'auto';
   uploadError: string | null;
   uploadFileName: string | null;
 
@@ -92,7 +93,7 @@ export interface FilterState {
   switchVersion: (versionId: string) => Promise<void>;
   setUploadMode: (mode: UploadMode) => void;
   clearUploadData: () => void;
-  setTheme: (theme: 'light' | 'dark') => void;
+  setTheme: (theme: 'light' | 'dark' | 'auto') => void;
   setComparisonMode: (on: boolean) => void;
   setComparisonVersion: (versionId: string | null) => void;
   resetOptions: () => void;
@@ -119,6 +120,16 @@ async function fetchAndCacheVersion(
   set((s) => ({ datasetCache: { ...s.datasetCache, [version.id]: entry } }));
   return entry;
 }
+
+function getSystemTheme(): 'light' | 'dark' {
+  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function resolveTheme(pref: 'light' | 'dark' | 'auto'): 'light' | 'dark' {
+  return pref === 'auto' ? getSystemTheme() : pref;
+}
+
+const storedThemePref = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-theme') as 'light' | 'dark' | 'auto' | null) || 'auto';
 
 export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
@@ -160,8 +171,8 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   activeTab: 'boxplot',
   presentationMode: false,
   optionsPanelOpen: false,
-  theme: (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-theme') as 'light' | 'dark')
-    || (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  themePreference: storedThemePref,
+  theme: resolveTheme(storedThemePref),
   uploadError: null,
   uploadFileName: null,
 
@@ -211,10 +222,11 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     set((s) => ({ presentationMode: !s.presentationMode })),
   toggleOptionsPanel: () =>
     set((s) => ({ optionsPanelOpen: !s.optionsPanelOpen })),
-  setTheme: (theme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-    try { localStorage.setItem('zscore-theme', theme); } catch { /* ignore */ }
-    set({ theme });
+  setTheme: (pref) => {
+    const resolved = resolveTheme(pref);
+    document.documentElement.setAttribute('data-theme', resolved);
+    try { localStorage.setItem('zscore-theme', pref); } catch { /* ignore */ }
+    set({ themePreference: pref, theme: resolved });
   },
 
   resetFilters: () => {

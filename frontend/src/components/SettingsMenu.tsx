@@ -15,7 +15,7 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   const activeVersion = useFilterStore((s) => s.activeVersion);
   const switchVersion = useFilterStore((s) => s.switchVersion);
   const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
-  const theme = useFilterStore((s) => s.theme);
+  const themePreference = useFilterStore((s) => s.themePreference);
   const setTheme = useFilterStore((s) => s.setTheme);
   const comparisonMode = useFilterStore((s) => s.comparisonMode);
   const setComparisonMode = useFilterStore((s) => s.setComparisonMode);
@@ -198,13 +198,19 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
                   <span className="settings-row-label">Theme</span>
                   <div className="settings-pills">
                     <button
-                      className={`settings-pill${theme === 'light' ? ' active' : ''}`}
+                      className={`settings-pill${themePreference === 'auto' ? ' active' : ''}`}
+                      onClick={() => setTheme('auto')}
+                    >
+                      Auto
+                    </button>
+                    <button
+                      className={`settings-pill${themePreference === 'light' ? ' active' : ''}`}
                       onClick={() => setTheme('light')}
                     >
                       Light
                     </button>
                     <button
-                      className={`settings-pill${theme === 'dark' ? ' active' : ''}`}
+                      className={`settings-pill${themePreference === 'dark' ? ' active' : ''}`}
                       onClick={() => setTheme('dark')}
                     >
                       Dark

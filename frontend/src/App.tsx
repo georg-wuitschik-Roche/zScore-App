@@ -14,6 +14,7 @@ function AppContent() {
   const loadError = useFilterStore((s) => s.loadError);
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const theme = useFilterStore((s) => s.theme);
+  const themePreference = useFilterStore((s) => s.themePreference);
   const loadDataset = useFilterStore((s) => s.loadDataset);
   const dropdownIndex = useFilterStore((s) => s.dropdownIndex);
 
@@ -21,10 +22,23 @@ function AppContent() {
     loadDataset();
   }, [loadDataset]);
 
-  // Apply theme on mount
+  // Apply theme on mount and when it changes
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Track system theme changes when preference is 'auto'
+  useEffect(() => {
+    if (themePreference !== 'auto') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      const resolved = mq.matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', resolved);
+      useFilterStore.setState({ theme: resolved });
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [themePreference]);
 
   // Preload Dashboard + Plotly chunk once landing page is interactive
   useEffect(() => {
