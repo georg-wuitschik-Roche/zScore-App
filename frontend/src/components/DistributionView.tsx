@@ -1,9 +1,15 @@
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
-import type { Row } from '../data/types';
+import type { Row, RankDelta } from '../data/types';
 
-type ConfigBuilder = (rows: Row[], reactantTypes: string[], presentationMode: boolean) => PlotConfig;
+type ConfigBuilder = (
+  rows: Row[],
+  reactantTypes: string[],
+  presentationMode: boolean,
+  rankMap?: Map<string, RankDelta> | null,
+  isDark?: boolean,
+) => PlotConfig;
 
 interface Props {
   buildConfig: ConfigBuilder;
@@ -11,11 +17,13 @@ interface Props {
   rows: Row[];
   reactantTypes: string[];
   noDataHint?: string;
+  rankMap?: Map<string, RankDelta> | null;
 }
 
-export function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint }: Props) {
+export function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const isDark = useFilterStore((s) => s.theme) === 'dark';
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     const missing: string[] = [];
@@ -41,7 +49,7 @@ export function DistributionView({ buildConfig, label, rows, reactantTypes, noDa
     );
   }
 
-  const config = buildConfig(rows, reactantTypes, presentationMode);
+  const config = buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark);
 
   return (
     <div className="plot-container">

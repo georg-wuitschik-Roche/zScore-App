@@ -48,6 +48,8 @@ export function useUrlState(): void {
     activeTab,
     splitSelector,
     activeVersion,
+    comparisonMode,
+    comparisonVersion,
     switchVersion,
     setFilters,
   } = useFilterStore((s) => s);
@@ -67,6 +69,8 @@ export function useUrlState(): void {
     const nc = searchParams.get('nc');
     const split = searchParams.get('split');
     const ver = searchParams.get('ver');
+    const cmp = searchParams.get('cmp');
+    const cmpv = searchParams.get('cmpv');
 
     // Only restore if URL has params
     if (!rt && !cat && !fga && !fgb && !me) return;
@@ -86,6 +90,8 @@ export function useUrlState(): void {
     if (su !== null) partial.excludeScaleup = su === '1';
     if (nc !== null) partial.includeNullCategories = nc === '1';
     partial.splitSelector = split ? (URL_TO_SPLIT[split] ?? null) : null;
+    if (cmp !== null) partial.comparisonMode = cmp === '1';
+    if (cmpv) partial.comparisonVersion = cmpv;
 
     setFilters(partial);
 
@@ -122,6 +128,10 @@ export function useUrlState(): void {
       if (activeTab !== 'boxplot') params.set('tab', activeTab);
       if (splitSelector) params.set('split', SPLIT_URL_KEYS[splitSelector]);
       if (activeVersion && activeVersion !== 'default') params.set('ver', activeVersion);
+      if (comparisonMode) {
+        params.set('cmp', '1');
+        if (comparisonVersion) params.set('cmpv', comparisonVersion);
+      }
 
       setSearchParams(params, { replace: true });
     }, 250);
@@ -144,5 +154,7 @@ export function useUrlState(): void {
     activeTab,
     splitSelector,
     activeVersion,
+    comparisonMode,
+    comparisonVersion,
   ]);
 }

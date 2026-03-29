@@ -58,6 +58,10 @@ export interface FilterState {
   // Split mode
   splitSelector: SplitSelector | null;
 
+  // Version comparison
+  comparisonMode: boolean;
+  comparisonVersion: string | null; // null = auto (previous version)
+
   // UI state
   activeTab: TabId;
   presentationMode: boolean;
@@ -89,6 +93,8 @@ export interface FilterState {
   setUploadMode: (mode: UploadMode) => void;
   clearUploadData: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setComparisonMode: (on: boolean) => void;
+  setComparisonVersion: (versionId: string | null) => void;
 
   // Bulk update (for URL state restoration)
   setFilters: (partial: Partial<FilterState>) => void;
@@ -141,6 +147,10 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   minEln: DEFAULT_MIN_ELN,
   topnZscore: DEFAULT_TOPN_ZSCORE,
   maxComponents: DEFAULT_MAX_COMPONENTS,
+
+  // Version comparison
+  comparisonMode: false,
+  comparisonVersion: null,
 
   // Split mode
   splitSelector: null,
@@ -224,6 +234,8 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       uploadedDataset: null,
       uploadFileName: null,
       uploadMode: 'replace',
+      comparisonMode: false,
+      comparisonVersion: null,
         });
   },
 
@@ -299,7 +311,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       }
 
       const name = fileName ?? null;
-      const persisted = saveUpload(rows, name ?? 'upload.csv', uploadMode);
+      saveUpload(rows, name ?? 'upload.csv', uploadMode);
       set({
         uploadedDataset: rows,
         uploadError: null,
@@ -349,7 +361,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         }
         return row;
       });
-      const persisted = saveUpload(rows, get().uploadFileName ?? 'upload.csv', mode);
+      saveUpload(rows, get().uploadFileName ?? 'upload.csv', mode);
       set({ uploadMode: mode, uploadedDataset: rows });
     } else {
       set({ uploadMode: mode });
@@ -363,6 +375,9 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       uploadFileName: null,
         });
   },
+
+  setComparisonMode: (on) => set({ comparisonMode: on }),
+  setComparisonVersion: (versionId) => set({ comparisonVersion: versionId }),
 
   clearUploadError: () => set({ uploadError: null }),
 

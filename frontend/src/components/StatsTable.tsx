@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
-import type { Row } from '../data/types';
+import type { Row, RankDelta } from '../data/types';
 
 interface StatsTableProps {
   rows: Row[];
   reactantTypes: string[];
   noDataHint?: string;
+  rankMap?: Map<string, RankDelta> | null;
 }
 
 interface GroupStats {
@@ -54,7 +55,7 @@ function groupBy(rows: Row[], cols: string[]): Map<string, number[]> {
     const z = row['z-Score'];
     if (z === null || z === undefined || isNaN(z)) continue;
 
-    const key = cols.map((c) => String(row[c] ?? 'N/A')).join(' | ');
+    const key = cols.map((c) => String(row[c] ?? '(no value)')).join(' / ');
     const existing = groups.get(key);
     if (existing) {
       existing.push(z);
@@ -72,7 +73,7 @@ function cellColor(val: number): string {
   return 'inherit';
 }
 
-export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps) {
+export function StatsTable({ rows, reactantTypes, noDataHint, rankMap }: StatsTableProps) {
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
   const tableData = useMemo((): GroupStats[] => {
@@ -152,6 +153,8 @@ export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps)
               <th className="stats-th-group">
                 {reactantTypes.join(' / ')}
               </th>
+              {rankMap && <th>Δ Rank</th>}
+              {rankMap && <th>Δ Median</th>}
               <th>n</th>
               <th>Mean</th>
               <th>Std</th>
@@ -163,9 +166,21 @@ export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps)
             </tr>
           </thead>
           <tbody>
-            {tableData.map((row, i) => (
+            {tableData.map((row, i) => {
+              const delta = rankMap?.get(row.group);
+              return (
               <tr key={row.group} className={i % 2 === 0 ? 'stats-row-even' : ''}>
                 <td className="stats-group-cell">{row.group}</td>
+                {rankMap && (
+                  <td className={`stats-num-cell ${delta?.isNew ? 'stats-rank-new' : (delta?.rankChange ?? 0) > 0 ? 'stats-rank-up' : (delta?.rankChange ?? 0) < 0 ? 'stats-rank-down' : ''}`}>
+                    {delta?.isNew ? 'NEW' : delta ? (delta.rankChange > 0 ? `▲${delta.rankChange}` : delta.rankChange < 0 ? `▼${Math.abs(delta.rankChange)}` : '─') : ''}
+                  </td>
+                )}
+                {rankMap && (
+                  <td className={`stats-num-cell ${(delta?.medianDelta ?? 0) > 0 ? 'stats-rank-up' : (delta?.medianDelta ?? 0) < 0 ? 'stats-rank-down' : ''}`}>
+                    {delta?.isNew ? '' : delta ? (delta.medianDelta > 0 ? '+' : '') + delta.medianDelta.toFixed(4) : ''}
+                  </td>
+                )}
                 <td className="stats-num-cell">{row.count}</td>
                 <td className="stats-num-cell" style={{ color: cellColor(row.mean) }}>
                   {row.mean.toFixed(4)}
@@ -187,7 +202,8 @@ export function StatsTable({ rows, reactantTypes, noDataHint }: StatsTableProps)
                   {row.max.toFixed(4)}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

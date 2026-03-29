@@ -5,9 +5,9 @@
  * Port of plot_utils.create_boxplot() from Python.
  */
 
-import type { Row } from '../data/types';
+import type { Row, RankDelta } from '../data/types';
 import type { PlotConfig } from './types';
-import { buildDistributionConfig, HOVER_LABEL_STYLE } from './helpers';
+import { buildDistributionConfig, getHoverLabelStyle } from './helpers';
 
 export type { PlotConfig };
 
@@ -22,6 +22,8 @@ export function createBoxplotConfig(
   rows: Row[],
   reactantTypes: string[],
   presentationMode: boolean = false,
+  rankMap?: Map<string, RankDelta> | null,
+  isDark = false,
 ): PlotConfig {
   return buildDistributionConfig(rows, reactantTypes, presentationMode, (group) => ({
     type: 'box' as const,
@@ -40,6 +42,6 @@ export function createBoxplotConfig(
     text: group.hoverText,
     hoverinfo: 'text' as const,
     hoveron: 'points' as const,
-    hoverlabel: HOVER_LABEL_STYLE,
-  }));
+    hoverlabel: getHoverLabelStyle(isDark),
+  }), rankMap, isDark);
 }

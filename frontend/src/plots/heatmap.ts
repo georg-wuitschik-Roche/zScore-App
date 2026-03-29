@@ -8,17 +8,12 @@
  * Bounds: 5th to 95th percentile of valid median values.
  */
 
-import type { Row } from '../data/types';
+import type { Row, RankDelta } from '../data/types';
 import type { Data, Layout } from 'plotly.js';
 import type { PlotConfig } from './types';
+import { formatRankBadge, rankBadgeColor, getHoverLabelStyle, median, RANK_BADGE_TICK_PAD } from './helpers';
 
 export type { PlotConfig };
-
-function median(arr: number[]): number {
-  const s = [...arr].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 !== 0 ? s[m] : (s[m - 1] + s[m]) / 2;
-}
 
 function percentile(arr: number[], p: number): number {
   const s = [...arr].sort((a, b) => a - b);
@@ -34,10 +29,15 @@ function percentile(arr: number[], p: number): number {
  * First reactant type → y-axis (ordered by median ascending, best on top)
  * Second reactant type → x-axis (ordered by median descending)
  */
+/**
+ * @param axisRankMaps - Per-axis rank deltas: [0] = y-axis, [1] = x-axis
+ */
 export function createHeatmapConfig(
   rows: Row[],
   reactantTypes: string[],
   presentationMode: boolean = false,
+  axisRankMaps?: Map<string, RankDelta>[] | null,
+  isDark = false,
 ): PlotConfig {
   if (rows.length === 0 || reactantTypes.length < 2) {
     return { data: [], layout: {} };
@@ -97,26 +97,78 @@ export function createHeatmapConfig(
   }
 
   // Y-axis: ascending median (best performers at top)
-  const yArr = Array.from(yVals).sort(
+  const ySorted = Array.from(yVals).sort(
     (a, b) => (yMedians.get(a) ?? 0) - (yMedians.get(b) ?? 0),
   );
 
   // X-axis: descending median (best performers on left)
-  const xArr = Array.from(xVals).sort(
+  const xSorted = Array.from(xVals).sort(
     (a, b) => (xMedians.get(b) ?? 0) - (xMedians.get(a) ?? 0),
   );
 
+  // Build colored rank badge annotations for axis labels
+  const rankAnnotations: Partial<Layout>['annotations'] = [];
+  if (axisRankMaps && axisRankMaps.length >= 2) {
+    const yRankMap = axisRankMaps[0];
+    const xRankMap = axisRankMaps[1];
+    for (const label of ySorted) {
+      const delta = yRankMap.get(label);
+      if (delta) {
+        rankAnnotations.push({
+          text: `<b>${formatRankBadge(delta)}</b>`,
+          x: 0,
+          xref: 'paper',
+          xanchor: 'right',
+          xshift: -4,
+          y: label,
+          yref: 'y',
+          yanchor: 'middle',
+          showarrow: false,
+          font: {
+            size: presentationMode ? 18 : 13,
+            family: '"JetBrains Mono", monospace',
+            color: rankBadgeColor(delta),
+          },
+        });
+      }
+    }
+    for (const label of xSorted) {
+      const delta = xRankMap.get(label);
+      if (delta) {
+        rankAnnotations.push({
+          text: `<b>${formatRankBadge(delta)}</b>`,
+          y: 1,
+          yref: 'paper',
+          yanchor: 'bottom',
+          yshift: 4,
+          x: label,
+          xref: 'x',
+          xanchor: 'center',
+          showarrow: false,
+          font: {
+            size: presentationMode ? 18 : 13,
+            family: '"JetBrains Mono", monospace',
+            color: rankBadgeColor(delta),
+          },
+        });
+      }
+    }
+  }
+  const yArr = ySorted;
+  const xArr = xSorted;
+
   // Build z matrix (median per cell) and ELN count matrix
+  // Use original sorted keys for cell lookups, annotated labels for display
   const zMatrix: (number | null)[][] = [];
   const textMatrix: string[][] = [];
   const elnMatrix: number[][] = [];
 
-  for (const y of yArr) {
+  for (const y of ySorted) {
     const zRow: (number | null)[] = [];
     const textRow: string[] = [];
     const elnRow: number[] = [];
 
-    for (const x of xArr) {
+    for (const x of xSorted) {
       const scores = cellScores.get(`${x}|||${y}`);
       const elns = cellElns.get(`${x}|||${y}`);
 
@@ -197,22 +249,19 @@ export function createHeatmapConfig(
       hoverongaps: false,
       customdata: customdata as unknown as number[][],
       hovertemplate:
-        '<span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">REAGENTS</span><br>' +
+        `<span style="font-size:11px;color:${isDark ? '#aaa' : '#888'};text-transform:uppercase;letter-spacing:1px">REAGENTS</span><br>` +
         '<b>%{y}</b><br>' +
         '<b>%{x}</b><br><br>' +
-        '<span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px">RESULTS</span><br>' +
+        `<span style="font-size:11px;color:${isDark ? '#aaa' : '#888'};text-transform:uppercase;letter-spacing:1px">RESULTS</span><br>` +
         'Median z-Score: <b>%{z:.3f}</b><br>' +
         'ELNs: <b>%{customdata[0]}</b>' +
         '<extra></extra>',
-      hoverlabel: {
-        bgcolor: '#fff',
-        bordercolor: '#e0e0e0',
-        font: { size: 14, family: '"JetBrains Mono", monospace', color: '#222' },
-        align: 'left' as const,
-      },
+      hoverlabel: getHoverLabelStyle(isDark),
     },
   ];
 
+  const bg = isDark ? 'rgba(0,0,0,0)' : '#fff';
+  const axisColor = isDark ? '#aaa' : undefined;
   const layout: Partial<Layout> = {
     title: {
       text: `Median z-Score: ${yCol} vs ${xCol}`,
@@ -223,27 +272,30 @@ export function createHeatmapConfig(
       },
     },
     xaxis: {
-      title: { text: xCol, font: { size: fontSize + 2, family: monoFont }, standoff: 20 },
+      title: { text: xCol, font: { size: fontSize + 2, family: monoFont, color: axisColor }, standoff: 20 },
       tickangle: -45,
-      tickfont: { size: presentationMode ? 16 : 13, family: monoFont },
+      tickfont: { size: presentationMode ? 16 : 13, family: monoFont, color: axisColor },
       side: 'bottom',
       automargin: true,
       showgrid: false,
     },
     yaxis: {
-      title: { text: yCol, font: { size: fontSize + 2, family: monoFont }, standoff: 20 },
-      tickfont: { size: presentationMode ? 16 : 13, family: monoFont },
+      title: { text: yCol, font: { size: fontSize + 2, family: monoFont, color: axisColor }, standoff: 20 },
+      tickfont: { size: presentationMode ? 16 : 13, family: monoFont, color: axisColor },
       automargin: true,
       showgrid: false,
+      ticksuffix: rankAnnotations.length > 0 ? RANK_BADGE_TICK_PAD : undefined,
     },
     height,
     margin: { t: 60, b: 180, l: 220, r: 30 },
-    paper_bgcolor: '#fff',
-    plot_bgcolor: '#fff',
+    paper_bgcolor: bg,
+    plot_bgcolor: bg,
     font: {
       family: '"DM Sans", "Helvetica Neue", sans-serif',
       size: fontSize,
+      color: isDark ? '#ddd' : undefined,
     },
+    annotations: rankAnnotations.length > 0 ? rankAnnotations : undefined,
   };
 
   return { data, layout };

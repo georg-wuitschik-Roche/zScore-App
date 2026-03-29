@@ -5,6 +5,8 @@ import { createViolinConfig } from '../plots/violin';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
 import { useSplitFilteredData } from '../hooks/useSplitFilteredData';
+import { useComparisonRanks } from '../hooks/useComparisonData';
+import type { ComparisonResult } from '../hooks/useComparisonData';
 import type { TabId, SplitPanel } from '../data/types';
 
 interface TabDef {
@@ -20,7 +22,7 @@ const TABS: TabDef[] = [
   { id: 'stats', label: 'Stats', requiresMultiReactant: false },
 ];
 
-function renderPanel(tab: TabId, panel: SplitPanel) {
+function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult | null) {
   const { rows, reactantTypes, stats } = panel;
   const noDataHint = stats.noDataHint;
   switch (tab) {
@@ -32,6 +34,7 @@ function renderPanel(tab: TabId, panel: SplitPanel) {
           rows={rows}
           reactantTypes={reactantTypes}
           noDataHint={noDataHint}
+          rankMap={comparison?.rankMap}
         />
       );
     case 'violin':
@@ -42,17 +45,34 @@ function renderPanel(tab: TabId, panel: SplitPanel) {
           rows={rows}
           reactantTypes={reactantTypes}
           noDataHint={noDataHint}
+          rankMap={comparison?.rankMap}
         />
       );
     case 'heatmap':
       return (
-        <HeatmapView rows={rows} reactantTypes={reactantTypes} noDataHint={noDataHint} />
+        <HeatmapView
+          rows={rows}
+          reactantTypes={reactantTypes}
+          noDataHint={noDataHint}
+          axisRankMaps={comparison?.axisRankMaps}
+        />
       );
     case 'stats':
       return (
-        <StatsTable rows={rows} reactantTypes={reactantTypes} noDataHint={noDataHint} />
+        <StatsTable
+          rows={rows}
+          reactantTypes={reactantTypes}
+          noDataHint={noDataHint}
+          rankMap={comparison?.rankMap}
+        />
       );
   }
+}
+
+/** Wrapper that calls useComparisonRanks per panel so each gets its own rank deltas. */
+function PanelWithComparison({ tab, panel }: { tab: TabId; panel: SplitPanel }) {
+  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes);
+  return renderPanel(tab, panel, comparison);
 }
 
 export function AnalysisTabs() {
@@ -98,12 +118,12 @@ export function AnalysisTabs() {
             {panels.map((panel) => (
               <div key={panel.label} className="split-panel">
                 <div className="split-panel-label">{panel.label}</div>
-                {renderPanel(effectiveTab, panel)}
+                <PanelWithComparison tab={effectiveTab} panel={panel} />
               </div>
             ))}
           </div>
         ) : (
-          renderPanel(effectiveTab, panels[0])
+          <PanelWithComparison tab={effectiveTab} panel={panels[0]} />
         )}
       </div>
     </div>

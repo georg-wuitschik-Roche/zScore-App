@@ -129,6 +129,13 @@ export interface VersionsManifest {
 /** Upload mode: replace built-in data or combine with it. */
 export type UploadMode = 'replace' | 'combine';
 
+/** Rank change info for a single category when comparing dataset versions. */
+export interface RankDelta {
+  rankChange: number;   // positive = moved up, negative = moved down
+  medianDelta: number;  // change in median z-Score
+  isNew: boolean;       // exists in current version but not in comparison version
+}
+
 /** URL abbreviations for split selectors. */
 export const SPLIT_URL_KEYS: Record<SplitSelector, string> = {
   reactionTypes: 'rt',

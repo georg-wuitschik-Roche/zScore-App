@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useFilterStore } from '../stores/filterStore';
+import { resolveComparisonVersion } from '../data/comparison';
 import type { UploadMode } from '../data/types';
 
 export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
@@ -16,6 +17,10 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   const isLoadingVersion = useFilterStore((s) => s.isLoadingVersion);
   const theme = useFilterStore((s) => s.theme);
   const setTheme = useFilterStore((s) => s.setTheme);
+  const comparisonMode = useFilterStore((s) => s.comparisonMode);
+  const setComparisonMode = useFilterStore((s) => s.setComparisonMode);
+  const comparisonVersion = useFilterStore((s) => s.comparisonVersion);
+  const setComparisonVersion = useFilterStore((s) => s.setComparisonVersion);
 
   const [open, setOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ text: string; name: string } | null>(null);
@@ -135,6 +140,55 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
                   </>
                 )}
               </div>
+
+              {/* COMPARISON section */}
+              {availableVersions.length > 1 && (
+                <div className="settings-section">
+                  <h3 className="settings-section-title">Version Comparison</h3>
+
+                  <div className="settings-row">
+                    <span className="settings-row-label">Compare</span>
+                    <div className="settings-pills">
+                      <button
+                        className={`settings-pill${!comparisonMode ? ' active' : ''}`}
+                        onClick={() => setComparisonMode(false)}
+                      >
+                        Off
+                      </button>
+                      <button
+                        className={`settings-pill${comparisonMode ? ' active' : ''}`}
+                        onClick={() => setComparisonMode(true)}
+                      >
+                        On
+                      </button>
+                    </div>
+                  </div>
+
+                  {comparisonMode && (
+                    <div className="settings-row">
+                      <span className="settings-row-label">Compare with</span>
+                      <div className="settings-pills">
+                        {availableVersions
+                          .filter((v) => v.id !== activeVersion)
+                          .map((v) => {
+                            const resolved = resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion);
+                            const isSelected = v.id === resolved;
+                            return (
+                              <button
+                                key={v.id}
+                                className={`settings-pill settings-pill-with-sub${isSelected ? ' active' : ''}`}
+                                onClick={() => setComparisonVersion(v.id)}
+                              >
+                                {v.label}
+                                {v.date && <span className="settings-pill-date">{v.date}</span>}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* APPEARANCE section */}
               <div className="settings-section">

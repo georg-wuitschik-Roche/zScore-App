@@ -285,7 +285,11 @@
     fill: transparent !important;
 }
 
-[data-theme="dark"] .js-plotly-plot text {
+[data-theme="dark"] .js-plotly-plot .xtick text,
+[data-theme="dark"] .js-plotly-plot .ytick text,
+[data-theme="dark"] .js-plotly-plot .g-xtitle text,
+[data-theme="dark"] .js-plotly-plot .g-ytitle text,
+[data-theme="dark"] .js-plotly-plot .g-gtitle text {
     fill: var(--color-text) !important;
 }
 
@@ -1531,6 +1535,10 @@ button:hover {
     border-color: var(--color-primary);
 }
 
+[data-theme="dark"] .filter-panel input[type="checkbox"]:checked::after {
+    border-color: #333;
+}
+
 .checklist-item {
     display: inline-flex;
     align-items: center;
@@ -1659,6 +1667,21 @@ button:hover {
 }
 
 .stats-median-cell {
+    font-weight: 600;
+}
+
+.stats-rank-up {
+    color: var(--stats-positive) !important;
+    font-weight: 600;
+}
+
+.stats-rank-down {
+    color: var(--stats-negative) !important;
+    font-weight: 600;
+}
+
+.stats-rank-new {
+    color: #2196F3 !important;
     font-weight: 600;
 }
 

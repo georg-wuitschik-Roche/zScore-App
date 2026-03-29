@@ -1,17 +1,19 @@
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
-import type { Row } from '../data/types';
+import type { Row, RankDelta } from '../data/types';
 
 interface Props {
   rows: Row[];
   reactantTypes: string[];
   noDataHint?: string;
+  axisRankMaps?: Map<string, RankDelta>[] | null;
 }
 
-export function HeatmapView({ rows, reactantTypes, noDataHint }: Props) {
+export function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const isDark = useFilterStore((s) => s.theme) === 'dark';
 
   if (reactionTypes.length === 0 || reactantTypes.length < 2) {
     const missing: string[] = [];
@@ -37,7 +39,7 @@ export function HeatmapView({ rows, reactantTypes, noDataHint }: Props) {
     );
   }
 
-  const config = createHeatmapConfig(rows, reactantTypes, presentationMode);
+  const config = createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark);
 
   return (
     <div className="plot-container">
