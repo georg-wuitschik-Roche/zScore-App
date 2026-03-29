@@ -8,7 +8,7 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
-import type { FilterState } from '../stores/filterStore';
+import type { FilterState } from '../stores/filterStore'; // used for Partial<FilterState>
 import { SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
 
@@ -34,25 +34,23 @@ export function useUrlState(): void {
   const isRestoringRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const {
-    reactionTypes,
-    reactantTypes,
-    fgA,
-    fgB,
-    excludeCui,
-    excludeScaleup,
-    includeNullCategories,
-    minEln,
-    topnZscore,
-    maxComponents,
-    activeTab,
-    splitSelector,
-    activeVersion,
-    comparisonMode,
-    comparisonVersion,
-    switchVersion,
-    setFilters,
-  } = useFilterStore((s) => s);
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+  const fgA = useFilterStore((s) => s.fgA);
+  const fgB = useFilterStore((s) => s.fgB);
+  const excludeCui = useFilterStore((s) => s.excludeCui);
+  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
+  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
+  const minEln = useFilterStore((s) => s.minEln);
+  const topnZscore = useFilterStore((s) => s.topnZscore);
+  const maxComponents = useFilterStore((s) => s.maxComponents);
+  const activeTab = useFilterStore((s) => s.activeTab);
+  const splitSelector = useFilterStore((s) => s.splitSelector);
+  const activeVersion = useFilterStore((s) => s.activeVersion);
+  const comparisonMode = useFilterStore((s) => s.comparisonMode);
+  const comparisonVersion = useFilterStore((s) => s.comparisonVersion);
+  const switchVersion = useFilterStore((s) => s.switchVersion);
+  const setFilters = useFilterStore((s) => s.setFilters);
 
   // Restore from URL on mount (or browser back/forward)
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { DistributionView } from './DistributionView';
 import { createBoxplotConfig } from '../plots/boxplot';
@@ -70,10 +71,10 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
 }
 
 /** Wrapper that calls useComparisonRanks per panel so each gets its own rank deltas. */
-function PanelWithComparison({ tab, panel }: { tab: TabId; panel: SplitPanel }) {
+const PanelWithComparison = memo(function PanelWithComparison({ tab, panel }: { tab: TabId; panel: SplitPanel }) {
   const comparison = useComparisonRanks(panel.rows, panel.reactantTypes);
   return renderPanel(tab, panel, comparison);
-}
+});
 
 export function AnalysisTabs() {
   const activeTab = useFilterStore((s) => s.activeTab);

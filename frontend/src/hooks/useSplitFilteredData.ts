@@ -12,19 +12,17 @@ import { useEffectiveDataset } from './useEffectiveDataset';
 import type { FilterParams, SplitPanel } from '../data/types';
 
 export function useSplitFilteredData(): SplitPanel[] {
-  const {
-    reactionTypes,
-    reactantTypes,
-    fgA,
-    fgB,
-    excludeCui,
-    excludeScaleup,
-    includeNullCategories,
-    minEln,
-    topnZscore,
-    maxComponents,
-    splitSelector,
-  } = useFilterStore();
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+  const fgA = useFilterStore((s) => s.fgA);
+  const fgB = useFilterStore((s) => s.fgB);
+  const excludeCui = useFilterStore((s) => s.excludeCui);
+  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
+  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
+  const minEln = useFilterStore((s) => s.minEln);
+  const topnZscore = useFilterStore((s) => s.topnZscore);
+  const maxComponents = useFilterStore((s) => s.maxComponents);
+  const splitSelector = useFilterStore((s) => s.splitSelector);
 
   const sourceData = useEffectiveDataset();
 

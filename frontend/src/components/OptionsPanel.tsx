@@ -1,5 +1,31 @@
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { useFilteredData } from '../hooks/useFilteredData';
+
+const SLIDER_DEBOUNCE_MS = 120;
+
+/** Local slider state that debounces store updates for smooth dragging. */
+function useDebouncedSlider(
+  storeValue: number,
+  storeSetter: (v: number) => void,
+): [number, (v: number) => void] {
+  const [local, setLocal] = useState(storeValue);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Sync local state when store value changes externally (e.g. URL restore)
+  useEffect(() => { setLocal(storeValue); }, [storeValue]);
+
+  const update = useCallback(
+    (v: number) => {
+      setLocal(v);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => storeSetter(v), SLIDER_DEBOUNCE_MS);
+    },
+    [storeSetter],
+  );
+
+  return [local, update];
+}
 
 export function OptionsPanel() {
   const optionsPanelOpen = useFilterStore((s) => s.optionsPanelOpen);
@@ -24,6 +50,10 @@ export function OptionsPanel() {
   const { rows, stats } = useFilteredData();
 
   const maxComponentsCap = stats.maxComponentsCap ?? 10;
+
+  const [localMinEln, setLocalMinEln] = useDebouncedSlider(minEln, setMinEln);
+  const [localTopn, setLocalTopn] = useDebouncedSlider(topnZscore, setTopnZscore);
+  const [localMaxComp, setLocalMaxComp] = useDebouncedSlider(maxComponents, setMaxComponents);
 
   function handleDownloadCSV() {
     if (rows.length === 0) return;
@@ -103,10 +133,10 @@ export function OptionsPanel() {
               min={1}
               max={20}
               step={1}
-              value={minEln}
-              onChange={(e) => setMinEln(Number(e.target.value))}
+              value={localMinEln}
+              onChange={(e) => setLocalMinEln(Number(e.target.value))}
             />
-            <span className="slider-value">{minEln}</span>
+            <span className="slider-value">{localMinEln}</span>
           </div>
 
           <label>Top-N z-Score per (ELN_ID, selected reactant type(s)):</label>
@@ -116,10 +146,10 @@ export function OptionsPanel() {
               min={1}
               max={10}
               step={1}
-              value={topnZscore}
-              onChange={(e) => setTopnZscore(Number(e.target.value))}
+              value={localTopn}
+              onChange={(e) => setLocalTopn(Number(e.target.value))}
             />
-            <span className="slider-value">{topnZscore}</span>
+            <span className="slider-value">{localTopn}</span>
           </div>
 
           <label>Max Components to Display:</label>
@@ -129,11 +159,11 @@ export function OptionsPanel() {
               min={1}
               max={Math.max(maxComponentsCap, 1)}
               step={1}
-              value={Math.min(maxComponents, maxComponentsCap)}
-              onChange={(e) => setMaxComponents(Number(e.target.value))}
+              value={Math.min(localMaxComp, maxComponentsCap)}
+              onChange={(e) => setLocalMaxComp(Number(e.target.value))}
             />
             <span className="slider-value">
-              {Math.min(maxComponents, maxComponentsCap)}
+              {Math.min(localMaxComp, maxComponentsCap)}
             </span>
           </div>
         </div>

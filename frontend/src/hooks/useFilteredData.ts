@@ -17,18 +17,16 @@ export interface FilteredResult {
 }
 
 export function useFilteredData(): FilteredResult {
-  const {
-    reactionTypes,
-    reactantTypes,
-    fgA,
-    fgB,
-    excludeCui,
-    excludeScaleup,
-    includeNullCategories,
-    minEln,
-    topnZscore,
-    maxComponents,
-  } = useFilterStore();
+  const reactionTypes = useFilterStore((s) => s.reactionTypes);
+  const reactantTypes = useFilterStore((s) => s.reactantTypes);
+  const fgA = useFilterStore((s) => s.fgA);
+  const fgB = useFilterStore((s) => s.fgB);
+  const excludeCui = useFilterStore((s) => s.excludeCui);
+  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
+  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
+  const minEln = useFilterStore((s) => s.minEln);
+  const topnZscore = useFilterStore((s) => s.topnZscore);
+  const maxComponents = useFilterStore((s) => s.maxComponents);
 
   const sourceData = useEffectiveDataset();
 

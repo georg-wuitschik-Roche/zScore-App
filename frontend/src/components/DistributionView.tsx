@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
@@ -20,10 +21,15 @@ interface Props {
   rankMap?: Map<string, RankDelta> | null;
 }
 
-export function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap }: Props) {
+export const DistributionView = memo(function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
+
+  const config = useMemo(
+    () => rows.length > 0 ? buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark) : null,
+    [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark],
+  );
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     const missing: string[] = [];
@@ -39,7 +45,7 @@ export function DistributionView({ buildConfig, label, rows, reactantTypes, noDa
     );
   }
 
-  if (rows.length === 0) {
+  if (!config) {
     return (
       <div className="plot-container">
         <p className="no-data-message">
@@ -48,8 +54,6 @@ export function DistributionView({ buildConfig, label, rows, reactantTypes, noDa
       </div>
     );
   }
-
-  const config = buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark);
 
   return (
     <div className="plot-container">
@@ -62,4 +66,4 @@ export function DistributionView({ buildConfig, label, rows, reactantTypes, noDa
       />
     </div>
   );
-}
+});

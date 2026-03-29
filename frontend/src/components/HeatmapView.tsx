@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
@@ -10,10 +11,17 @@ interface Props {
   axisRankMaps?: Map<string, RankDelta>[] | null;
 }
 
-export function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: Props) {
+export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
+
+  const config = useMemo(
+    () => rows.length > 0 && reactantTypes.length >= 2
+      ? createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark)
+      : null,
+    [rows, reactantTypes, presentationMode, axisRankMaps, isDark],
+  );
 
   if (reactionTypes.length === 0 || reactantTypes.length < 2) {
     const missing: string[] = [];
@@ -29,7 +37,7 @@ export function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: P
     );
   }
 
-  if (rows.length === 0) {
+  if (!config) {
     return (
       <div className="plot-container">
         <p className="no-data-message">
@@ -38,8 +46,6 @@ export function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: P
       </div>
     );
   }
-
-  const config = createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark);
 
   return (
     <div className="plot-container">
@@ -52,4 +58,4 @@ export function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: P
       />
     </div>
   );
-}
+});
