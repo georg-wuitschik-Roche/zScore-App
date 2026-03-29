@@ -849,11 +849,10 @@ button:hover {
 
 .split-panel-label {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 500;
     color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.02em;
     margin-bottom: 8px;
     padding: 4px 0;
     border-bottom: 1px solid var(--color-border);
