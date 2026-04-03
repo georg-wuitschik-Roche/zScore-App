@@ -13,31 +13,31 @@ tools:
 Analyze the codebase for performance issues:
 
 ## Data Processing
-- Check `data_utils.py` filter chain for unnecessary copies or redundant operations
-- Verify cache hit rates — look for cache key collisions or excessive evictions
-- Check for vectorized operations vs Python loops in DataFrame processing
-- Look for `apply()` calls that could be replaced with vectorized operations
+- Check `filterChain.ts` filter steps for unnecessary array copies or redundant operations
+- Verify filter chain runs in <50ms for 67K rows
+- Look for O(n^2) patterns in filter steps or dropdown option computation
+- Check `dropdownOptions.ts` for expensive conditioning logic
 
-## Visualization
-- Check `plot_utils.py` for traces with excessive data points
+## Rendering
+- Check Plotly configs in `plots/*.ts` for traces with excessive data points
 - Verify adaptive height calculations don't cause layout thrashing
-- Look for redundant figure updates or unnecessary re-renders
-- Check export resolution vs file size tradeoffs
+- Look for unnecessary React re-renders (missing useMemo, unstable props)
+- Check that `Plot.tsx` wrapper doesn't re-render on every state change
 
 ## Memory
-- Check for DataFrame copies that aren't freed
-- Look for growing caches without bounds (max 50 entries enforced?)
-- Verify `uploaded-data-store` JSON serialization isn't duplicating large datasets
-- Check for circular references or retained closures in callbacks
+- Look for data array copies that aren't necessary
+- Check Zustand store for stale state that should be cleaned up
+- Verify uploaded dataset storage doesn't leak memory
+- Check for closures retaining large data arrays
+
+## Bundle Size
+- Verify plotly.js-dist-min is used (not full plotly.js)
+- Look for unnecessary imports that increase bundle size
+- Check for tree-shaking opportunities
 
 ## Startup
-- Check import-time data loading performance
-- Verify GCS fallback doesn't block startup on network errors
-- Look for unnecessary imports that slow module loading
-
-Run profiling commands where helpful:
-```bash
-python -c "import time; t=time.time(); import data_utils; print(f'Import: {time.time()-t:.2f}s')"
-```
+- Check Parquet loading and parsing performance
+- Verify version manifest fetching doesn't block initial render
+- Look for unnecessary work during initial mount
 
 Output findings as a prioritized list with estimated impact (high/medium/low).

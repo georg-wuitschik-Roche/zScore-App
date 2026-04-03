@@ -1,74 +1,52 @@
 ---
 paths:
-  - "plot_utils.py"
-  - "export_boxplots.py"
-  - "generate_supplementary_figures.py"
+  - "frontend/src/plots/**"
 ---
 
 # Plotting Conventions (Plotly)
 
-## Function Signatures
-Plot functions return `tuple[go.Figure, int]` — the figure and computed height.
-
-```python
-# Good
-def create_boxplot(
-    dff: pd.DataFrame,
-    reactant_types: list[str],
-    base_height: int = 800,
-    presentation_mode: bool = False,
-    reaction_type: str | None = None,
-    max_categories: int | None = None,
-) -> tuple[go.Figure, int]:
-    ...
+## Architecture
 ```
+helpers.ts (core)
+  ├── prepareDistributionData()   — groups rows, sorts by median, builds customdata
+  ├── buildDistributionConfig()   — generic builder: takes a per-group trace builder fn
+  ├── buildMedianTrace()          — invisible scatter for median tooltip
+  └── buildRankAnnotation()       — comparison rank badge
+
+boxplot.ts  → calls buildDistributionConfig() with box trace builder
+violin.ts   → calls prepareDistributionData() + adds KDE-bounded median lines
+heatmap.ts  → standalone: builds z-matrix from rows (no shared builder)
+colors.ts   → ELN density → interpolated color
+```
+
+## Generic Builder Pattern
+`helpers.ts` contains `buildDistributionConfig(rows, reactantTypes, presentationMode, buildTrace, ...)`. This groups data, sorts by median, and calls `buildTrace(group)` for each category. Boxplot and violin plug in different trace builders but share all the data preparation, layout, colorbar, and rank annotation logic.
+
+When adding a new distribution plot type, implement a trace builder function and pass it to `buildDistributionConfig` — don't duplicate the grouping/sorting/layout logic.
 
 ## Color Mapping
-Use `BASE_COLOURS` dict with `(light, dark)` tuples. Interpolate based on ELN count density.
-
-```python
-# Good - use existing color map
-color = BASE_COLOURS.get(category, ("#e0e0e0", "#333333"))
-interpolated = interpolate_color(color[0], color[1], density)
-
-# Bad - hardcoded hex in plot calls
-fig.add_trace(go.Box(marker_color="#ff6347"))
-```
+Use `colors.ts` for ELN density-based color interpolation. Never hardcode colors in plot configs. The density is based on unique ELN count per category.
 
 ## Hover Templates
-Use comprehensive HTML hover templates showing all relevant experiment details.
+Use `customdata` + `hovertemplate` pattern for rich hover info. Never use `text` + `hoverinfo`.
 
-```python
-# Good - rich hover info
-hovertemplate = (
-    "<b>%{customdata[0]}</b><br>"
-    "Plate: %{customdata[1]} | Coord: %{customdata[2]}<br>"
-    "z-Score: %{x:.2f}<br>"
-    "<extra></extra>"
-)
+```ts
+// Good — customdata array built per-row in prepareDistributionData
+hovertemplate: "<b>%{customdata[0]}</b><br>z-Score: %{x:.2f}<extra></extra>"
 ```
 
-## Export Settings
-- Publication plots: 48px title, 32px body text
-- PNG: 1600px wide, 4x scale factor
-- Strip titles for paper exports
-- Safe filenames: spaces → underscores, slashes → hyphens
-
-```python
-# Good
-fig.write_image(
-    path,
-    width=1600,
-    height=computed_height,
-    scale=4,
-    format="png",
-)
-```
+## Dark Mode
+All plot configs receive an `isDark` boolean. Use it for:
+- Grid/axis colors, text colors, background
+- Colorbar styling
+- Hover label backgrounds (`getHoverLabelStyle(isDark)`)
+- Rank badge colors (`rankBadgeColor()`)
 
 ## Adaptive Height
-Calculate height dynamically based on category count.
+`max(800, numCategories * 110)` — computed in `prepareDistributionData()`. Presentation mode adds larger fonts (title, axes).
 
-```python
-# Good
-height = max(base_height, len(categories) * 110 + overhead)
-```
+## Comparison Rank Annotations
+When comparison mode is active, `buildRankAnnotation()` adds badges next to each y-axis category showing rank change (NEW, up, down, unchanged). These are Plotly annotation objects with hover text showing detailed comparison info.
+
+## Export
+PNG export via `Plotly.toImage()` at high resolution. Strip unnecessary annotations for clean exports.

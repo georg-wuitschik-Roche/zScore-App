@@ -1,6 +1,6 @@
 ---
 description: Git workflow conventions for this project
-user_invocable: false
+disable-model-invocation: true
 ---
 
 # Git Conventions
@@ -13,7 +13,7 @@ user_invocable: false
 ## Commit Messages
 - Use imperative mood: "Add upload validation" not "Added upload validation"
 - Keep first line under 72 characters
-- Reference the module affected: "callbacks: fix presentation mode toggle"
+- Reference the module affected: "filterStore: fix reset behavior"
 
 ## Safety Rules
 - Never force push to `main`
@@ -26,5 +26,5 @@ user_invocable: false
 - `.env` or credentials files
 - `settings.local.json`
 - Large data files (>10 MB) — the CSV is already tracked but avoid adding more
-- `__pycache__/` directories
-- `exports/` output files (generated, not source)
+- `node_modules/` directory
+- `frontend/dist/` build output
