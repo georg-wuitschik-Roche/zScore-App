@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode } from '../data/types';
-import { REQUIRED_COLUMNS } from '../data/types';
+import { REQUIRED_COLUMNS, isTabId } from '../data/types';
 import {
   fetchDropdownIndex,
   fetchParquetBuffer,
@@ -130,6 +130,8 @@ function resolveTheme(pref: 'light' | 'dark' | 'auto'): 'light' | 'dark' {
 }
 
 const storedThemePref = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-theme') as 'light' | 'dark' | 'auto' | null) || 'auto';
+const storedTab = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-tab')) || null;
+const initialTab: TabId = storedTab && isTabId(storedTab) ? storedTab : 'violin';
 
 export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
@@ -168,7 +170,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   splitSelector: null,
 
   // UI state
-  activeTab: 'boxplot',
+  activeTab: initialTab,
   presentationMode: false,
   optionsPanelOpen: false,
   themePreference: storedThemePref,
@@ -217,7 +219,11 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   setTopnZscore: (val) => set({ topnZscore: val }),
   setMaxComponents: (val) => set({ maxComponents: val }),
   setSplitSelector: (selector) => set({ splitSelector: selector }),
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveTab: (tab) => {
+    if (tab === get().activeTab) return;
+    try { localStorage.setItem('zscore-tab', tab); } catch { /* ignore */ }
+    set({ activeTab: tab });
+  },
   togglePresentationMode: () =>
     set((s) => ({ presentationMode: !s.presentationMode })),
   toggleOptionsPanel: () =>
@@ -243,7 +249,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       topnZscore: DEFAULT_TOPN_ZSCORE,
       maxComponents: DEFAULT_MAX_COMPONENTS,
       splitSelector: null,
-      activeTab: 'boxplot',
+      activeTab: initialTab,
       uploadedDataset: null,
       uploadFileName: null,
       uploadMode: 'replace',

@@ -123,7 +123,7 @@ export function useUrlState(): void {
       params.set('cui', excludeCui ? '1' : '0');
       params.set('su', excludeScaleup ? '1' : '0');
       params.set('nc', includeNullCategories ? '1' : '0');
-      if (activeTab !== 'boxplot') params.set('tab', activeTab);
+      if (activeTab !== 'violin') params.set('tab', activeTab);
       if (splitSelector) params.set('split', SPLIT_URL_KEYS[splitSelector]);
       if (activeVersion && activeVersion !== 'default') params.set('ver', activeVersion);
       if (comparisonMode) {

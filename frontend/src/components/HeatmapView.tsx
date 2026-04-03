@@ -2,25 +2,26 @@ import { memo, useMemo } from 'react';
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
-import type { Row, RankDelta } from '../data/types';
+import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 
 interface Props {
   rows: Row[];
   reactantTypes: string[];
   noDataHint?: string;
   axisRankMaps?: Map<string, RankDelta>[] | null;
+  comparisonInfo?: ComparisonInfo;
 }
 
-export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps }: Props) {
+export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDataHint, axisRankMaps, comparisonInfo }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
 
   const config = useMemo(
     () => rows.length > 0 && reactantTypes.length >= 2
-      ? createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark)
+      ? createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark, comparisonInfo)
       : null,
-    [rows, reactantTypes, presentationMode, axisRankMaps, isDark],
+    [rows, reactantTypes, presentationMode, axisRankMaps, isDark, comparisonInfo],
   );
 
   if (reactionTypes.length === 0 || reactantTypes.length < 2) {

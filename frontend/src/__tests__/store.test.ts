@@ -29,7 +29,7 @@ const INITIAL_STATE: Partial<FilterState> = {
   topnZscore: 5,
   maxComponents: 10,
   splitSelector: null,
-  activeTab: 'boxplot',
+  activeTab: 'violin',
   presentationMode: false,
   optionsPanelOpen: false,
   uploadError: null,
@@ -79,8 +79,8 @@ describe('initial state', () => {
     expect(state.fgB).toEqual([]);
   });
 
-  it('has boxplot as default active tab', () => {
-    expect(useFilterStore.getState().activeTab).toBe('boxplot');
+  it('has violin as default active tab', () => {
+    expect(useFilterStore.getState().activeTab).toBe('violin');
   });
 
   it('has presentationMode=false by default', () => {
@@ -188,10 +188,10 @@ describe('resetFilters', () => {
     expect(useFilterStore.getState().uploadedDataset).toBeNull();
   });
 
-  it('resets activeTab to boxplot', () => {
+  it('resets activeTab to violin', () => {
     useFilterStore.setState({ activeTab: 'heatmap' });
     useFilterStore.getState().resetFilters();
-    expect(useFilterStore.getState().activeTab).toBe('boxplot');
+    expect(useFilterStore.getState().activeTab).toBe('violin');
   });
 });
 

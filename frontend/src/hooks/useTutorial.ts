@@ -78,7 +78,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     targetId: 'view-toggle',
     title: 'Explore Results',
-    body: 'Switch between Boxplot, Violin, Heatmap, and Statistics views. Violin plots show the full distribution shape with individual data points.',
+    body: 'Switch between Violin, Boxplot, Heatmap, and Statistics views. Violin plots show the full distribution shape with individual data points.',
   },
   {
     targetId: 'split-toggle',

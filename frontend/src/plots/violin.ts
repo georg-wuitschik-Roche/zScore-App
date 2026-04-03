@@ -5,7 +5,7 @@
  * Uses violin traces for kernel density visualization.
  */
 
-import type { Row, RankDelta } from '../data/types';
+import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { PlotConfig } from './types';
 import { prepareDistributionData, buildMedianTrace, getHoverLabelStyle } from './helpers';
 import type { Data } from 'plotly.js';
@@ -63,8 +63,9 @@ export function createViolinConfig(
   presentationMode: boolean = false,
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
+  comparisonInfo?: ComparisonInfo | null,
 ): PlotConfig {
-  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark);
+  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo);
   if (!prepared) return { data: [], layout: {} };
 
   const data: Data[] = prepared.groups

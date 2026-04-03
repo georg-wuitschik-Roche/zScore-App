@@ -2,7 +2,7 @@ import { memo, useMemo } from 'react';
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
-import type { Row, RankDelta } from '../data/types';
+import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 
 type ConfigBuilder = (
   rows: Row[],
@@ -10,6 +10,7 @@ type ConfigBuilder = (
   presentationMode: boolean,
   rankMap?: Map<string, RankDelta> | null,
   isDark?: boolean,
+  comparisonInfo?: ComparisonInfo | null,
 ) => PlotConfig;
 
 interface Props {
@@ -19,16 +20,17 @@ interface Props {
   reactantTypes: string[];
   noDataHint?: string;
   rankMap?: Map<string, RankDelta> | null;
+  comparisonInfo?: ComparisonInfo;
 }
 
-export const DistributionView = memo(function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap }: Props) {
+export const DistributionView = memo(function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap, comparisonInfo }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
 
   const config = useMemo(
-    () => rows.length > 0 ? buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark) : null,
-    [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark],
+    () => rows.length > 0 ? buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo) : null,
+    [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo],
   );
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {

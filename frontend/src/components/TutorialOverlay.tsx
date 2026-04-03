@@ -98,18 +98,18 @@ export function TutorialOverlay() {
   useEffect(() => {
     if (!active || step !== 12) return;
     const timers = [
-      setTimeout(() => setActiveTab('violin'), 800),
+      setTimeout(() => setActiveTab('boxplot'), 800),
       setTimeout(() => setActiveTab('heatmap'), 3600),
       setTimeout(() => setActiveTab('stats'), 6400),
-      setTimeout(() => setActiveTab('boxplot'), 9200),
+      setTimeout(() => setActiveTab('violin'), 9200),
     ];
     return () => timers.forEach(clearTimeout);
   }, [active, step, setActiveTab]);
 
-  // Step 13 — set reactants to Catalyst + Base + Solvent, show boxplots, enable split
+  // Step 13 — set reactants to Catalyst + Base + Solvent, show violin, enable split
   useEffect(() => {
     if (!active || step !== 13) return;
-    setActiveTab('boxplot');
+    setActiveTab('violin');
     const preferred = ['Catalyst', 'Base', 'Solvent'].filter((r) => availableReactants.includes(r));
     const needsUpdate =
       preferred.length >= 2

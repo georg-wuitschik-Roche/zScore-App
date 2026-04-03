@@ -9,23 +9,34 @@ import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
 import { computeRankDeltas, resolveComparisonVersion } from '../data/comparison';
-import type { Row, RankDelta, FilterParams } from '../data/types';
+import type { Row, RankDelta, FilterParams, ComparisonInfo } from '../data/types';
 
 export interface ComparisonResult {
   /** Rank deltas keyed by compound reactant key (e.g. "PdCl2 / DMF") */
   rankMap: Map<string, RankDelta>;
   /** Per-axis rank deltas for heatmaps: one map per individual reactant type column */
   axisRankMaps: Map<string, RankDelta>[];
+  /** Labels for the two datasets being compared */
+  info: ComparisonInfo;
+}
+
+interface ComparisonFilterResult {
+  rows: Row[];
+  info: ComparisonInfo;
+}
+
+/** Format a version label from id + optional date. */
+function formatVersionLabel(id: string, date?: string): string {
+  return date ? `${id} (${date})` : id;
 }
 
 /**
  * Run the filter chain on the comparison dataset once.
  *
- * Returns the filtered comparison rows, or null when comparison mode is off
- * or comparison data is unavailable. Call this once in a parent component and
- * pass the result to each panel so the filter chain isn't duplicated per panel.
+ * Returns the filtered comparison rows + version labels, or null when
+ * comparison mode is off or comparison data is unavailable.
  */
-export function useComparisonFilteredRows(): Row[] | null {
+export function useComparisonFilteredRows(): ComparisonFilterResult | null {
   const comparisonMode = useFilterStore((s) => s.comparisonMode);
   const comparisonVersion = useFilterStore((s) => s.comparisonVersion);
   const activeVersion = useFilterStore((s) => s.activeVersion);
@@ -49,13 +60,23 @@ export function useComparisonFilteredRows(): Row[] | null {
     return resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion, !!uploadedDataset);
   }, [comparisonMode, comparisonVersion, activeVersion, availableVersions, uploadedDataset]);
 
+  const info = useMemo((): ComparisonInfo | null => {
+    if (!comparisonVersionId) return null;
+    const activeV = availableVersions.find((v) => v.id === activeVersion);
+    const compV = availableVersions.find((v) => v.id === comparisonVersionId);
+    return {
+      currentLabel: activeV ? formatVersionLabel(activeV.label, activeV.date) : activeVersion,
+      comparisonLabel: compV ? formatVersionLabel(compV.label, compV.date) : comparisonVersionId,
+    };
+  }, [comparisonVersionId, activeVersion, availableVersions]);
+
   const rawComparisonRows = useMemo(() => {
     if (!comparisonVersionId) return null;
     return datasetCache[comparisonVersionId]?.rows ?? null;
   }, [comparisonVersionId, datasetCache]);
 
   return useMemo(() => {
-    if (!comparisonMode || !rawComparisonRows) return null;
+    if (!comparisonMode || !rawComparisonRows || !info) return null;
 
     const params: FilterParams = {
       reactionTypes,
@@ -70,10 +91,11 @@ export function useComparisonFilteredRows(): Row[] | null {
       maxComponents,
     };
 
-    return filterData(rawComparisonRows, params).rows;
+    return { rows: filterData(rawComparisonRows, params).rows, info };
   }, [
     comparisonMode,
     rawComparisonRows,
+    info,
     reactionTypes,
     reactantTypes,
     fgA,
@@ -95,10 +117,12 @@ export function useComparisonFilteredRows(): Row[] | null {
 export function useComparisonRanks(
   currentRows: Row[],
   reactantTypes: string[],
-  comparisonFilteredRows: Row[] | null,
+  comparisonResult: ComparisonFilterResult | null,
 ): ComparisonResult | null {
   return useMemo(() => {
-    if (!comparisonFilteredRows || reactantTypes.length === 0) return null;
+    if (!comparisonResult || reactantTypes.length === 0) return null;
+
+    const { rows: comparisonFilteredRows, info } = comparisonResult;
 
     // Compound-key rank deltas (for boxplot/violin/stats)
     const rankMap = computeRankDeltas(currentRows, comparisonFilteredRows, reactantTypes);
@@ -108,6 +132,6 @@ export function useComparisonRanks(
       computeRankDeltas(currentRows, comparisonFilteredRows, [col]),
     );
 
-    return { rankMap, axisRankMaps };
-  }, [comparisonFilteredRows, currentRows, reactantTypes]);
+    return { rankMap, axisRankMaps, info };
+  }, [comparisonResult, currentRows, reactantTypes]);
 }

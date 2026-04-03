@@ -107,6 +107,8 @@ export type DropdownIndex = Record<string, DropdownIndexEntry>;
 
 /** Analysis view tab identifiers. */
 export type TabId = 'boxplot' | 'violin' | 'heatmap' | 'stats';
+const TAB_IDS: readonly string[] = ['boxplot', 'violin', 'heatmap', 'stats'] satisfies readonly TabId[];
+export function isTabId(s: string): s is TabId { return TAB_IDS.includes(s); }
 
 /** Which filter dropdown is in split mode (null = combined). */
 export type SplitSelector = 'reactionTypes' | 'fgA' | 'fgB' | 'reactantTypes';
@@ -131,9 +133,19 @@ export type UploadMode = 'replace' | 'combine';
 
 /** Rank change info for a single category when comparing dataset versions. */
 export interface RankDelta {
-  rankChange: number;   // positive = moved up, negative = moved down
-  medianDelta: number;  // change in median z-Score
-  isNew: boolean;       // exists in current version but not in comparison version
+  rankChange: number;       // positive = moved up, negative = moved down
+  medianDelta: number;      // change in median z-Score
+  isNew: boolean;           // exists in current version but not in comparison version
+  currentRank: number;      // 1-based rank in current dataset
+  comparisonRank: number;   // 1-based rank in comparison dataset (0 if new)
+  currentMedian: number;    // median z-Score in current dataset
+  comparisonMedian: number; // median z-Score in comparison dataset (0 if new)
+}
+
+/** Labels identifying the two datasets in a comparison. */
+export interface ComparisonInfo {
+  currentLabel: string;     // e.g. "v2 (2026-03-29)"
+  comparisonLabel: string;  // e.g. "v1 (2025-09-25)"
 }
 
 /** URL abbreviations for split selectors. */

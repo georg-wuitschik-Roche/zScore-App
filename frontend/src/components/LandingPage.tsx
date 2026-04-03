@@ -84,7 +84,6 @@ export function LandingPage() {
       fgB,
       reactantTypes,
       splitSelector: split,
-      activeTab: 'boxplot',
       optionsPanelOpen: false,
     });
 
@@ -105,7 +104,6 @@ export function LandingPage() {
       reactionTypes: ['Buchwald-Hartwig'],
       reactantTypes: ['Catalyst'],
       splitSelector: null,
-      activeTab: 'boxplot',
       optionsPanelOpen: false,
     });
     startTutorial();

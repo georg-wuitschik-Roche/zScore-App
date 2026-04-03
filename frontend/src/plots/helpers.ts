@@ -5,7 +5,7 @@
  * so that each plot type only needs to define its trace-specific properties.
  */
 
-import type { Row, RankDelta } from '../data/types';
+import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { Data, Layout } from 'plotly.js';
 import { createColorMappingFromElnCounts } from './colors';
 import type { PlotConfig } from './types';
@@ -62,8 +62,62 @@ export function rankBadgeColor(delta: RankDelta): string {
   return '#999';
 }
 
+/** Build a rich HTML hover tooltip for a rank badge annotation. */
+export function rankBadgeHoverText(delta: RankDelta, info?: ComparisonInfo | null, isDark = false): string {
+  const dim = isDark ? '#aaa' : '#999';
+  const header =
+    `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">COMPARISON</span><br>`;
+
+  const versionLine = info
+    ? `${info.comparisonLabel} → ${info.currentLabel}<br><br>`
+    : '';
+
+  if (delta.isNew) {
+    return (
+      header + versionLine +
+      `<b style="color:#2196F3">NEW</b><br>` +
+      `<span style="color:${dim}">Not in comparison dataset</span><br><br>` +
+      `<span style="color:${dim}">Median:</span> <b>${delta.currentMedian.toFixed(3)}</b>`
+    );
+  }
+
+  const rankColor = rankBadgeColor(delta);
+  const badge = formatRankBadge(delta);
+  const mSign = delta.medianDelta >= 0 ? '+' : '';
+
+  return (
+    header + versionLine +
+    `<span style="color:${dim}">Rank:</span> ${delta.comparisonRank} → <b>${delta.currentRank}</b> ` +
+    `<span style="color:${rankColor}"><b>${badge}</b></span><br>` +
+    `<span style="color:${dim}">Median:</span> ${delta.comparisonMedian.toFixed(3)} → <b>${delta.currentMedian.toFixed(3)}</b> ` +
+    `<span style="color:${dim}">(${mSign}${delta.medianDelta.toFixed(3)})</span>`
+  );
+}
+
 /** Whitespace appended to y-axis tick labels to make room for rank badge annotations. */
 export const RANK_BADGE_TICK_PAD = '        ';
+
+/** Build a Plotly annotation object for a rank badge next to an axis label. */
+export function buildRankAnnotation(
+  delta: RankDelta,
+  label: string,
+  axis: 'y' | 'x-top',
+  fontSize: number,
+  comparisonInfo?: ComparisonInfo | null,
+  isDark = false,
+): Partial<Layout>['annotations'] extends (infer A)[] | undefined ? A : never {
+  const positioning = axis === 'y'
+    ? { x: 0, xref: 'paper' as const, xanchor: 'right' as const, xshift: -4, y: label, yref: 'y' as const, yanchor: 'middle' as const }
+    : { y: 1, yref: 'paper' as const, yanchor: 'bottom' as const, yshift: 4, x: label, xref: 'x' as const, xanchor: 'center' as const };
+  return {
+    text: `<b>${formatRankBadge(delta)}</b>`,
+    hovertext: rankBadgeHoverText(delta, comparisonInfo, isDark),
+    hoverlabel: getHoverLabelStyle(isDark),
+    ...positioning,
+    showarrow: false,
+    font: { size: fontSize, family: '"JetBrains Mono", monospace', color: rankBadgeColor(delta) },
+  };
+}
 
 // ── Prepared data structures ──────────────────────────────────────────
 
@@ -101,6 +155,7 @@ export function prepareDistributionData(
   presentationMode: boolean,
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
+  comparisonInfo?: ComparisonInfo | null,
 ): PreparedData | null {
   if (rows.length === 0 || reactantTypes.length === 0) return null;
 
@@ -201,25 +256,11 @@ export function prepareDistributionData(
   // Build colored rank badge annotations (positioned next to y-axis labels)
   const rankAnnotations: Partial<Layout>['annotations'] = [];
   if (rankMap && rankMap.size > 0) {
+    const badgeSize = presentationMode ? 20 : 15;
     for (const group of groups) {
       const delta = rankMap.get(group.name);
       if (delta) {
-        rankAnnotations.push({
-          text: `<b>${formatRankBadge(delta)}</b>`,
-          x: 0,
-          xref: 'paper',
-          xanchor: 'right',
-          xshift: -4,
-          y: group.name,
-          yref: 'y',
-          yanchor: 'middle',
-          showarrow: false,
-          font: {
-            size: presentationMode ? 20 : 15,
-            family: '"JetBrains Mono", monospace',
-            color: rankBadgeColor(delta),
-          },
-        });
+        rankAnnotations.push(buildRankAnnotation(delta, group.name, 'y', badgeSize, comparisonInfo, isDark));
       }
     }
   }
@@ -313,8 +354,9 @@ export function buildDistributionConfig(
   buildTrace: (group: PreparedGroup) => Data,
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
+  comparisonInfo?: ComparisonInfo | null,
 ): PlotConfig {
-  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark);
+  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo);
   if (!prepared) return { data: [], layout: {} };
 
   const data: Data[] = prepared.groups

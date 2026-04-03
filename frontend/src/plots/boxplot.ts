@@ -5,7 +5,7 @@
  * Port of plot_utils.create_boxplot() from Python.
  */
 
-import type { Row, RankDelta } from '../data/types';
+import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { PlotConfig } from './types';
 import { buildDistributionConfig, getHoverLabelStyle } from './helpers';
 
@@ -24,6 +24,7 @@ export function createBoxplotConfig(
   presentationMode: boolean = false,
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
+  comparisonInfo?: ComparisonInfo | null,
 ): PlotConfig {
   return buildDistributionConfig(rows, reactantTypes, presentationMode, (group) => ({
     type: 'box' as const,
@@ -43,5 +44,5 @@ export function createBoxplotConfig(
     hovertemplate: group.hovertemplate,
     hoveron: 'points' as const,
     hoverlabel: getHoverLabelStyle(isDark),
-  }), rankMap, isDark);
+  }), rankMap, isDark, comparisonInfo);
 }

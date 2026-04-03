@@ -8,7 +8,7 @@ import { StatsTable } from './StatsTable';
 import { useSplitFilteredData } from '../hooks/useSplitFilteredData';
 import { useComparisonFilteredRows, useComparisonRanks } from '../hooks/useComparisonData';
 import type { ComparisonResult } from '../hooks/useComparisonData';
-import type { TabId, SplitPanel, Row } from '../data/types';
+import type { TabId, SplitPanel } from '../data/types';
 
 interface TabDef {
   id: TabId;
@@ -17,8 +17,8 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { id: 'boxplot', label: 'Boxplot', requiresMultiReactant: false },
   { id: 'violin', label: 'Violin', requiresMultiReactant: false },
+  { id: 'boxplot', label: 'Boxplot', requiresMultiReactant: false },
   { id: 'heatmap', label: 'Heatmap', requiresMultiReactant: true },
   { id: 'stats', label: 'Stats', requiresMultiReactant: false },
 ];
@@ -26,6 +26,7 @@ const TABS: TabDef[] = [
 function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult | null) {
   const { rows, reactantTypes, stats } = panel;
   const noDataHint = stats.noDataHint;
+  const comparisonInfo = comparison?.info;
   switch (tab) {
     case 'boxplot':
       return (
@@ -36,6 +37,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           reactantTypes={reactantTypes}
           noDataHint={noDataHint}
           rankMap={comparison?.rankMap}
+          comparisonInfo={comparisonInfo}
         />
       );
     case 'violin':
@@ -47,6 +49,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           reactantTypes={reactantTypes}
           noDataHint={noDataHint}
           rankMap={comparison?.rankMap}
+          comparisonInfo={comparisonInfo}
         />
       );
     case 'heatmap':
@@ -56,6 +59,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           reactantTypes={reactantTypes}
           noDataHint={noDataHint}
           axisRankMaps={comparison?.axisRankMaps}
+          comparisonInfo={comparisonInfo}
         />
       );
     case 'stats':
@@ -74,13 +78,13 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
 const PanelWithComparison = memo(function PanelWithComparison({
   tab,
   panel,
-  comparisonFilteredRows,
+  comparisonResult,
 }: {
   tab: TabId;
   panel: SplitPanel;
-  comparisonFilteredRows: Row[] | null;
+  comparisonResult: ReturnType<typeof useComparisonFilteredRows>;
 }) {
-  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes, comparisonFilteredRows);
+  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes, comparisonResult);
   return renderPanel(tab, panel, comparison);
 });
 
@@ -95,7 +99,7 @@ export function AnalysisTabs() {
   const deferredPanels = useDeferredValue(panels);
 
   // Filter comparison data once (not per panel)
-  const comparisonFilteredRows = useComparisonFilteredRows();
+  const comparisonResult = useComparisonFilteredRows();
 
   const isSplit = deferredPanels.length > 1;
 
@@ -136,7 +140,7 @@ export function AnalysisTabs() {
                 <PanelWithComparison
                   tab={effectiveTab}
                   panel={panel}
-                  comparisonFilteredRows={comparisonFilteredRows}
+                  comparisonResult={comparisonResult}
                 />
               </div>
             ))}
@@ -145,7 +149,7 @@ export function AnalysisTabs() {
           <PanelWithComparison
             tab={effectiveTab}
             panel={deferredPanels[0]}
-            comparisonFilteredRows={comparisonFilteredRows}
+            comparisonResult={comparisonResult}
           />
         )}
       </div>

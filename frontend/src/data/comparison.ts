@@ -22,7 +22,9 @@ export function resolveComparisonVersion(
   // With an upload active, default to the active built-in version as baseline
   if (hasUpload) return activeVersion;
   const idx = availableVersions.findIndex((v) => v.id === activeVersion);
-  if (idx <= 0) return availableVersions.length > 1 ? availableVersions[0].id : null;
+  if (idx < 0) return availableVersions.length > 0 ? availableVersions[0].id : null;
+  // Pick the previous version, or the next one if already at the start
+  if (idx === 0) return availableVersions.length > 1 ? availableVersions[1].id : null;
   return availableVersions[idx - 1].id;
 }
 
@@ -83,7 +85,12 @@ export function computeRankDeltas(
     const comparisonMedian = comparisonMedians.get(name);
 
     if (comparisonMedian === undefined) {
-      result.set(name, { rankChange: 0, medianDelta: 0, isNew: true });
+      const currentRank = currentRanks.get(name)!;
+      result.set(name, {
+        rankChange: 0, medianDelta: 0, isNew: true,
+        currentRank, comparisonRank: 0,
+        currentMedian, comparisonMedian: 0,
+      });
     } else {
       const currentRank = currentRanks.get(name)!;
       const comparisonRank = comparisonRanks.get(name)!;
@@ -91,6 +98,8 @@ export function computeRankDeltas(
         rankChange: comparisonRank - currentRank, // positive = moved up
         medianDelta: currentMedian - comparisonMedian,
         isNew: false,
+        currentRank, comparisonRank,
+        currentMedian, comparisonMedian,
       });
     }
   }

@@ -8,10 +8,10 @@
  * Bounds: 5th to 95th percentile of valid median values.
  */
 
-import type { Row, RankDelta } from '../data/types';
+import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { Data, Layout } from 'plotly.js';
 import type { PlotConfig } from './types';
-import { formatRankBadge, rankBadgeColor, getHoverLabelStyle, median, RANK_BADGE_TICK_PAD } from './helpers';
+import { buildRankAnnotation, getHoverLabelStyle, median, RANK_BADGE_TICK_PAD } from './helpers';
 
 export type { PlotConfig };
 
@@ -38,6 +38,7 @@ export function createHeatmapConfig(
   presentationMode: boolean = false,
   axisRankMaps?: Map<string, RankDelta>[] | null,
   isDark = false,
+  comparisonInfo?: ComparisonInfo | null,
 ): PlotConfig {
   if (rows.length === 0 || reactantTypes.length < 2) {
     return { data: [], layout: {} };
@@ -111,46 +112,17 @@ export function createHeatmapConfig(
   if (axisRankMaps && axisRankMaps.length >= 2) {
     const yRankMap = axisRankMaps[0];
     const xRankMap = axisRankMaps[1];
+    const badgeSize = presentationMode ? 18 : 13;
     for (const label of ySorted) {
       const delta = yRankMap.get(label);
       if (delta) {
-        rankAnnotations.push({
-          text: `<b>${formatRankBadge(delta)}</b>`,
-          x: 0,
-          xref: 'paper',
-          xanchor: 'right',
-          xshift: -4,
-          y: label,
-          yref: 'y',
-          yanchor: 'middle',
-          showarrow: false,
-          font: {
-            size: presentationMode ? 18 : 13,
-            family: '"JetBrains Mono", monospace',
-            color: rankBadgeColor(delta),
-          },
-        });
+        rankAnnotations.push(buildRankAnnotation(delta, label, 'y', badgeSize, comparisonInfo, isDark));
       }
     }
     for (const label of xSorted) {
       const delta = xRankMap.get(label);
       if (delta) {
-        rankAnnotations.push({
-          text: `<b>${formatRankBadge(delta)}</b>`,
-          y: 1,
-          yref: 'paper',
-          yanchor: 'bottom',
-          yshift: 4,
-          x: label,
-          xref: 'x',
-          xanchor: 'center',
-          showarrow: false,
-          font: {
-            size: presentationMode ? 18 : 13,
-            family: '"JetBrains Mono", monospace',
-            color: rankBadgeColor(delta),
-          },
-        });
+        rankAnnotations.push(buildRankAnnotation(delta, label, 'x-top', badgeSize, comparisonInfo, isDark));
       }
     }
   }
