@@ -13,8 +13,6 @@ import type { Data, Layout } from 'plotly.js';
 import type { PlotConfig } from './types';
 import { buildRankAnnotation, getHoverLabelStyle, median, RANK_BADGE_TICK_PAD } from './helpers';
 
-export type { PlotConfig };
-
 function percentile(arr: number[], p: number): number {
   const s = [...arr].sort((a, b) => a - b);
   const idx = (p / 100) * (s.length - 1);

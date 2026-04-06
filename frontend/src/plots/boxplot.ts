@@ -9,8 +9,6 @@ import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { PlotConfig } from './types';
 import { buildDistributionConfig, getHoverLabelStyle } from './helpers';
 
-export type { PlotConfig };
-
 /**
  * Build Plotly boxplot config from filtered rows.
  *

@@ -7,8 +7,7 @@
 
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { PlotConfig } from './types';
-import { prepareDistributionData, buildMedianTrace, getHoverLabelStyle } from './helpers';
-import type { Data } from 'plotly.js';
+import { buildDistributionConfig, getHoverLabelStyle } from './helpers';
 
 /** Silverman's rule-of-thumb bandwidth (matches Plotly's default KDE) */
 function silvermanBandwidth(data: number[]): number {
@@ -66,57 +65,41 @@ export function createViolinConfig(
   comparisonInfo?: ComparisonInfo | null,
   showElnLegend = true,
 ): PlotConfig {
-  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
-  if (!prepared) return { data: [], layout: {} };
-
-  const data: Data[] = prepared.groups
-    .map((group) => [
-      {
-        type: 'violin' as const,
-        x: group.zScores,
-        y: Array(group.zScores.length).fill(group.name),
-        orientation: 'h' as const,
-        name: group.name,
-        points: 'all' as const,
-        jitter: 0.3,
-        pointpos: -1.5,
-        marker: { color: group.color, size: 6, opacity: 0.5 },
-        line: { color: '#333', width: 1.5 },
-        fillcolor: group.color,
-        showlegend: false,
-        customdata: group.customdata,
-        hovertemplate: group.hovertemplate,
-        hoveron: 'points' as const,
-        hoverlabel: getHoverLabelStyle(isDark),
-      } as Data,
-      buildMedianTrace(group.name, group.medianVal, group.zScores.length, group.elnCount, isDark),
-    ])
-    .flat();
-  if (prepared.colorbarTrace) data.push(prepared.colorbarTrace);
-
-  // Dashed median lines bounded by violin outline
-  const MAX_HALF_WIDTH = 0.4; // Plotly's default max half-width per category
-  const shapes = prepared.groups.map((group) => {
-    const idx = prepared.categoryOrder.indexOf(group.name);
-    const fraction = violinFractionAt(group.zScores, group.medianVal);
-    const halfWidth = fraction * MAX_HALF_WIDTH;
-    return {
-      type: 'line' as const,
-      x0: group.medianVal,
-      x1: group.medianVal,
-      y0: idx - halfWidth,
-      y1: idx + halfWidth,
-      yref: 'y' as const,
-      xref: 'x' as const,
-      line: { color: '#333', width: 1.5, dash: 'dash' as const },
-    };
+  return buildDistributionConfig(rows, reactantTypes, presentationMode, (group) => ({
+    type: 'violin' as const,
+    x: group.zScores,
+    y: Array(group.zScores.length).fill(group.name),
+    orientation: 'h' as const,
+    name: group.name,
+    points: 'all' as const,
+    jitter: 0.3,
+    pointpos: -1.5,
+    marker: { color: group.color, size: 6, opacity: 0.5 },
+    line: { color: '#333', width: 1.5 },
+    fillcolor: group.color,
+    showlegend: false,
+    customdata: group.customdata,
+    hovertemplate: group.hovertemplate,
+    hoveron: 'points' as const,
+    hoverlabel: getHoverLabelStyle(isDark),
+  }), rankMap, isDark, comparisonInfo, showElnLegend, (prepared) => {
+    // Dashed median lines bounded by violin outline
+    const MAX_HALF_WIDTH = 0.4;
+    const shapes = prepared.groups.map((group) => {
+      const idx = prepared.categoryOrder.indexOf(group.name);
+      const fraction = violinFractionAt(group.zScores, group.medianVal);
+      const halfWidth = fraction * MAX_HALF_WIDTH;
+      return {
+        type: 'line' as const,
+        x0: group.medianVal,
+        x1: group.medianVal,
+        y0: idx - halfWidth,
+        y1: idx + halfWidth,
+        yref: 'y' as const,
+        xref: 'x' as const,
+        line: { color: '#333', width: 1.5, dash: 'dash' as const },
+      };
+    });
+    return { shapes };
   });
-
-  return {
-    data,
-    layout: {
-      ...prepared.layout,
-      shapes,
-    },
-  };
 }

@@ -119,13 +119,13 @@ describe('createBoxplotConfig', () => {
       expect(presFontSize).toBeGreaterThan(normalFontSize);
     });
 
-    it('presentationMode=true increases title font size', () => {
+    it('presentationMode=true increases body font size', () => {
       const normal = createBoxplotConfig(FIXTURE, ['Catalyst'], false);
       const presentation = createBoxplotConfig(FIXTURE, ['Catalyst'], true);
 
-      const normalTitleSize = (normal.layout.title as { font: { size: number } }).font.size;
-      const presTitleSize = (presentation.layout.title as { font: { size: number } }).font.size;
-      expect(presTitleSize).toBeGreaterThan(normalTitleSize);
+      const normalFontSize = (normal.layout.font as { size: number }).size;
+      const presFontSize = (presentation.layout.font as { size: number }).size;
+      expect(presFontSize).toBeGreaterThan(normalFontSize);
     });
 
     it('presentationMode=false uses standard font size (14)', () => {
@@ -214,10 +214,10 @@ describe('createBoxplotConfig', () => {
       }
     });
 
-    it('title includes the grouping column name', () => {
+    it('title is empty (header shown outside plot)', () => {
       const config = createBoxplotConfig(FIXTURE, ['Catalyst']);
       const titleText = (config.layout.title as { text: string }).text;
-      expect(titleText).toContain('Catalyst');
+      expect(titleText).toBe('');
     });
 
     it('rows with null z-Score are excluded from traces', () => {

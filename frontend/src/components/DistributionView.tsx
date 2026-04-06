@@ -21,7 +21,7 @@ interface Props {
   reactantTypes: string[];
   noDataHint?: string;
   rankMap?: Map<string, RankDelta> | null;
-  comparisonInfo?: ComparisonInfo;
+  comparisonInfo?: ComparisonInfo | null;
 }
 
 export const DistributionView = memo(function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap, comparisonInfo }: Props) {

@@ -414,7 +414,9 @@ export function getHoverLabelStyle(isDark = false) {
   };
 }
 
-/** Build a PlotConfig from prepared data, using a trace builder for each group */
+/** Build a PlotConfig from prepared data, using a trace builder for each group.
+ *  An optional layoutModifier receives the prepared data to add plot-type-specific
+ *  layout properties (e.g. violin median-line shapes). */
 export function buildDistributionConfig(
   rows: Row[],
   reactantTypes: string[],
@@ -424,6 +426,7 @@ export function buildDistributionConfig(
   isDark = false,
   comparisonInfo?: ComparisonInfo | null,
   showElnLegend = true,
+  layoutModifier?: (prepared: PreparedData) => Partial<Layout>,
 ): PlotConfig {
   const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
   if (!prepared) return { data: [], layout: {} };
@@ -433,5 +436,9 @@ export function buildDistributionConfig(
     .flat();
   if (prepared.colorbarTrace) data.push(prepared.colorbarTrace);
 
-  return { data, layout: prepared.layout };
+  const layout = layoutModifier
+    ? { ...prepared.layout, ...layoutModifier(prepared) }
+    : prepared.layout;
+
+  return { data, layout };
 }

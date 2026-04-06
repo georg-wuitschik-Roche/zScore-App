@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode } from '../data/types';
-import { REQUIRED_COLUMNS, isTabId } from '../data/types';
+import { DEFAULTS, REQUIRED_COLUMNS, isTabId } from '../data/types';
 import {
   fetchDropdownIndex,
   fetchParquetBuffer,
@@ -17,14 +17,6 @@ import {
 } from '../data/loader';
 import { saveUpload, loadUpload, clearUpload as clearStoredUpload } from '../data/uploadStorage';
 
-// Default filter values — empty until user selects on landing page
-const DEFAULT_REACTION_TYPES: string[] = [];
-const DEFAULT_FG_A: string[] = [];
-const DEFAULT_FG_B: string[] = [];
-const DEFAULT_REACTANT_TYPES: string[] = [];
-const DEFAULT_MIN_ELN = 5;
-const DEFAULT_TOPN_ZSCORE = 5;
-const DEFAULT_MAX_COMPONENTS = 10;
 
 export interface FilterState {
   // Data
@@ -155,16 +147,16 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   uploadMode: 'replace',
 
   // Default filter values
-  reactionTypes: DEFAULT_REACTION_TYPES,
-  reactantTypes: DEFAULT_REACTANT_TYPES,
-  fgA: DEFAULT_FG_A,
-  fgB: DEFAULT_FG_B,
-  excludeCui: true,
-  excludeScaleup: true,
-  includeNullCategories: true,
-  minEln: DEFAULT_MIN_ELN,
-  topnZscore: DEFAULT_TOPN_ZSCORE,
-  maxComponents: DEFAULT_MAX_COMPONENTS,
+  reactionTypes: DEFAULTS.reactionTypes,
+  reactantTypes: DEFAULTS.reactantTypes,
+  fgA: DEFAULTS.fgA,
+  fgB: DEFAULTS.fgB,
+  excludeCui: DEFAULTS.excludeCui,
+  excludeScaleup: DEFAULTS.excludeScaleup,
+  includeNullCategories: DEFAULTS.includeNullCategories,
+  minEln: DEFAULTS.minEln,
+  topnZscore: DEFAULTS.topnZscore,
+  maxComponents: DEFAULTS.maxComponents,
 
   // Version comparison
   comparisonMode: false,
@@ -248,16 +240,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   resetFilters: () => {
     clearStoredUpload();
     set({
-      reactionTypes: [],
-      reactantTypes: [],
-      fgA: [],
-      fgB: [],
-      excludeCui: true,
-      excludeScaleup: true,
-      includeNullCategories: true,
-      minEln: DEFAULT_MIN_ELN,
-      topnZscore: DEFAULT_TOPN_ZSCORE,
-      maxComponents: DEFAULT_MAX_COMPONENTS,
+      ...DEFAULTS,
       splitSelector: null,
       activeTab: initialTab,
       uploadedDataset: null,
@@ -407,12 +390,12 @@ export const useFilterStore = create<FilterState>((set, get) => ({
 
   resetOptions: () =>
     set({
-      minEln: DEFAULT_MIN_ELN,
-      topnZscore: DEFAULT_TOPN_ZSCORE,
-      maxComponents: DEFAULT_MAX_COMPONENTS,
-      excludeCui: true,
-      excludeScaleup: true,
-      includeNullCategories: true,
+      minEln: DEFAULTS.minEln,
+      topnZscore: DEFAULTS.topnZscore,
+      maxComponents: DEFAULTS.maxComponents,
+      excludeCui: DEFAULTS.excludeCui,
+      excludeScaleup: DEFAULTS.excludeScaleup,
+      includeNullCategories: DEFAULTS.includeNullCategories,
     }),
 
   setComparisonMode: (on) => set({ comparisonMode: on }),
@@ -422,6 +405,3 @@ export const useFilterStore = create<FilterState>((set, get) => ({
 
   setFilters: (partial) => set(partial),
 }));
-
-export { DEFAULT_REACTION_TYPES, DEFAULT_FG_A, DEFAULT_FG_B, DEFAULT_REACTANT_TYPES };
-export { DEFAULT_MIN_ELN, DEFAULT_TOPN_ZSCORE, DEFAULT_MAX_COMPONENTS };
