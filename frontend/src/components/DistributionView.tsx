@@ -22,18 +22,23 @@ interface Props {
   noDataHint?: string;
   rankMap?: Map<string, RankDelta> | null;
   comparisonInfo?: ComparisonInfo | null;
+  heightOverride?: number;
 }
 
-export const DistributionView = memo(function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap, comparisonInfo }: Props) {
+export const DistributionView = memo(function DistributionView({ buildConfig, label, rows, reactantTypes, noDataHint, rankMap, comparisonInfo, heightOverride }: Props) {
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
   const showElnLegend = useFilterStore((s) => s.showElnLegend);
 
-  const config = useMemo(
-    () => rows.length > 0 ? buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend) : null,
-    [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend],
-  );
+  const config = useMemo(() => {
+    if (rows.length === 0) return null;
+    const c = buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
+    if (heightOverride && c.layout) {
+      c.layout.height = heightOverride;
+    }
+    return c;
+  }, [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend, heightOverride]);
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     const missing: string[] = [];

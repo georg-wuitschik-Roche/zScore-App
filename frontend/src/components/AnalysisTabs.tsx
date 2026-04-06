@@ -1,4 +1,4 @@
-import { memo, useDeferredValue } from 'react';
+import { memo, useDeferredValue, useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { DistributionView } from './DistributionView';
 import { createBoxplotConfig } from '../plots/boxplot';
@@ -6,7 +6,7 @@ import { createViolinConfig } from '../plots/violin';
 import { HeatmapView } from './HeatmapView';
 import { StatsTable } from './StatsTable';
 import { useSplitFilteredData } from '../hooks/useSplitFilteredData';
-import { useComparisonFilteredRows, useComparisonRanks } from '../hooks/useComparisonData';
+import { useComparisonRawData, useComparisonRanks } from '../hooks/useComparisonData';
 import type { ComparisonResult } from '../hooks/useComparisonData';
 import type { TabId, SplitPanel } from '../data/types';
 
@@ -23,7 +23,7 @@ const TABS: TabDef[] = [
   { id: 'stats', label: 'Stats', requiresMultiReactant: false },
 ];
 
-function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult | null) {
+function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult | null, heightOverride?: number) {
   const { rows, reactantTypes, stats } = panel;
   const noDataHint = stats.noDataHint;
   const comparisonInfo = comparison?.info;
@@ -38,6 +38,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           noDataHint={noDataHint}
           rankMap={comparison?.rankMap}
           comparisonInfo={comparisonInfo}
+          heightOverride={heightOverride}
         />
       );
     case 'violin':
@@ -50,6 +51,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           noDataHint={noDataHint}
           rankMap={comparison?.rankMap}
           comparisonInfo={comparisonInfo}
+          heightOverride={heightOverride}
         />
       );
     case 'heatmap':
@@ -74,18 +76,20 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
   }
 }
 
-/** Wrapper that computes rank deltas per panel using pre-filtered comparison rows. */
+/** Wrapper that filters comparison data per-panel and computes rank deltas. */
 const PanelWithComparison = memo(function PanelWithComparison({
   tab,
   panel,
-  comparisonResult,
+  comparisonRawData,
+  heightOverride,
 }: {
   tab: TabId;
   panel: SplitPanel;
-  comparisonResult: ReturnType<typeof useComparisonFilteredRows>;
+  comparisonRawData: ReturnType<typeof useComparisonRawData>;
+  heightOverride?: number;
 }) {
-  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes, comparisonResult);
-  return renderPanel(tab, panel, comparison);
+  const comparison = useComparisonRanks(panel.rows, panel.reactantTypes, comparisonRawData);
+  return renderPanel(tab, panel, comparison, heightOverride);
 });
 
 export function AnalysisTabs() {
@@ -98,8 +102,8 @@ export function AnalysisTabs() {
   // Defer panel data so tab buttons and UI stay responsive while charts recompute
   const deferredPanels = useDeferredValue(panels);
 
-  // Filter comparison data once (not per panel)
-  const comparisonResult = useComparisonFilteredRows();
+  // Resolve comparison version + raw rows (filtering deferred to per-panel)
+  const comparisonRawData = useComparisonRawData();
 
   const isSplit = deferredPanels.length > 1;
 
@@ -120,6 +124,20 @@ export function AnalysisTabs() {
   const toggleElnLegend = useFilterStore((s) => s.toggleElnLegend);
 
   const isDistributionTab = effectiveTab === 'violin' || effectiveTab === 'boxplot';
+
+  // Compute shared plot height so all split panels align
+  const splitHeight = useMemo(() => {
+    if (!isSplit || !isDistributionTab) return undefined;
+    let maxCategories = 0;
+    for (const panel of deferredPanels) {
+      const keys = new Set<string>();
+      for (const row of panel.rows) {
+        keys.add(panel.reactantTypes.map((col) => String(row[col] ?? '(no value)')).join(' / '));
+      }
+      maxCategories = Math.max(maxCategories, keys.size);
+    }
+    return Math.max(800, maxCategories * 110);
+  }, [isSplit, isDistributionTab, deferredPanels]);
 
   return (
     <div className="analysis-view">
@@ -156,7 +174,8 @@ export function AnalysisTabs() {
                 <PanelWithComparison
                   tab={effectiveTab}
                   panel={panel}
-                  comparisonResult={comparisonResult}
+                  comparisonRawData={comparisonRawData}
+                  heightOverride={splitHeight}
                 />
               </div>
             ))}
@@ -167,7 +186,7 @@ export function AnalysisTabs() {
             <PanelWithComparison
               tab={effectiveTab}
               panel={deferredPanels[0]}
-              comparisonResult={comparisonResult}
+              comparisonRawData={comparisonRawData}
             />
           </div>
         )}

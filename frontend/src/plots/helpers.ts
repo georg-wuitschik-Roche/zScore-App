@@ -69,14 +69,15 @@ export function rankBadgeHoverText(delta: RankDelta, info?: ComparisonInfo | nul
     `<span style="color:${dim};font-size:12px;letter-spacing:0.05em">COMPARISON</span><br>`;
 
   const versionLine = info
-    ? `${info.comparisonLabel} → ${info.currentLabel}<br><br>`
+    ? `<span style="color:${dim}">Viewing:</span> <b>${info.currentLabel}</b><br>` +
+      `<span style="color:${dim}">Baseline:</span> ${info.comparisonLabel}<br><br>`
     : '';
 
   if (delta.isNew) {
     return (
       header + versionLine +
       `<b style="color:#2196F3">NEW</b><br>` +
-      `<span style="color:${dim}">Not in comparison dataset</span><br><br>` +
+      `<span style="color:${dim}">Not in baseline dataset</span><br><br>` +
       `<span style="color:${dim}">Median:</span> <b>${delta.currentMedian.toFixed(3)}</b>`
     );
   }
@@ -187,6 +188,51 @@ function buildElnColorbar(
   };
 }
 
+// ── Tick label wrapping ──────────────────────────────────────────────
+
+/**
+ * Wrap a long tick label by inserting `<br>` at natural break points
+ * so Plotly renders it as multi-line, saving horizontal space.
+ */
+export function wrapTickLabel(label: string, maxLen = 18): string {
+  if (label.length <= maxLen) return label;
+
+  // Split at spaces (covers compound keys like "CatA / BaseB" too)
+  const parts = label.split(' ');
+  if (parts.length > 1) {
+    const lines: string[] = [];
+    let current = parts[0];
+    for (let i = 1; i < parts.length; i++) {
+      if ((current + ' ' + parts[i]).length <= maxLen) {
+        current += ' ' + parts[i];
+      } else {
+        lines.push(current);
+        current = parts[i];
+      }
+    }
+    lines.push(current);
+    return lines.join('<br>');
+  }
+
+  // No spaces — break after closing bracket nearest to the middle
+  const breakPattern = /[\]\)]/g;
+  let bestBreak = -1;
+  let match;
+  while ((match = breakPattern.exec(label)) !== null) {
+    const pos = match.index + 1;
+    if (pos >= 4 && pos <= label.length - 2) {
+      bestBreak = pos;
+      if (pos >= maxLen * 0.5) break;
+    }
+  }
+  if (bestBreak > 0) {
+    return label.slice(0, bestBreak) + '<br>' + label.slice(bestBreak);
+  }
+
+  // Last resort: hard break
+  return label.slice(0, maxLen) + '<br>' + label.slice(maxLen);
+}
+
 // ── Prepared data structures ──────────────────────────────────────────
 
 export interface PreparedGroup {
@@ -260,7 +306,7 @@ export function prepareDistributionData(
       zScores.sort((a, b) => a - b);
       return { name, rows: groupRows, zScores, medianVal: medianOfSorted(zScores) };
     })
-    .sort((a, b) => b.medianVal - a.medianVal);
+    .sort((a, b) => b.medianVal - a.medianVal || a.name.localeCompare(b.name));
 
   // Reverse for Plotly y-axis (bottom-to-top)
   const categoryOrder = sorted.map((g) => g.name).reverse();
@@ -335,6 +381,13 @@ export function prepareDistributionData(
   // Layout
   const fontSize = presentationMode ? 18 : 14;
   const numCategories = sorted.length;
+  const wrappedLabels = categoryOrder.map((label) => wrapTickLabel(label));
+  const hasRankBadges = rankAnnotations.length > 0;
+  // Bake rank badge padding into ticktext (ticksuffix is ignored with custom ticktext)
+  const tickLabels = hasRankBadges
+    ? wrappedLabels.map((l) =>
+        l.split('<br>').map((line) => line + RANK_BADGE_TICK_PAD).join('<br>'))
+    : wrappedLabels;
   const height = Math.max(800, numCategories * 110);
 
   const bg = isDark ? 'rgba(0,0,0,0)' : '#fff';
@@ -360,9 +413,10 @@ export function prepareDistributionData(
       automargin: true,
       categoryorder: 'array',
       categoryarray: categoryOrder,
+      tickvals: categoryOrder,
+      ticktext: tickLabels,
       showgrid: false,
       tickfont: { size: presentationMode ? 20 : 14, family: '"JetBrains Mono", "Fira Code", monospace', color: axisColor },
-      ticksuffix: rankAnnotations.length > 0 ? RANK_BADGE_TICK_PAD : undefined,
       domain: showElnLegend ? [0, 0.97] : undefined,
     },
     height,

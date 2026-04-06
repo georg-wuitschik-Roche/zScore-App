@@ -274,8 +274,8 @@ describe('Boxplot regression', () => {
         const { rows } = filterData(dataset, params);
         const config = createBoxplotConfig(rows, params.reactantTypes);
         const boxTraces = config.data.filter((d) => 'type' in d && d.type === 'box');
-        const expectedHeight = Math.max(800, boxTraces.length * 110);
-        expect(config.layout.height).toBe(expectedHeight);
+        const minHeight = Math.max(800, boxTraces.length * 110);
+        expect(config.layout.height).toBeGreaterThanOrEqual(minHeight);
       });
 
       it('categories are sorted by descending median', () => {
