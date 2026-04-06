@@ -5,6 +5,9 @@ import { createHeatmapConfig } from '../plots/heatmap';
 import { useZoomReset } from './DistributionView';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 
+const PLOT_CONFIG = { responsive: true, displayModeBar: false } as const;
+const PLOT_STYLE = { width: '100%' } as const;
+
 interface Props {
   rows: Row[];
   reactantTypes: string[];
@@ -63,8 +66,8 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
       <Plot
         data={config.data}
         layout={config.layout}
-        config={{ responsive: true, displayModeBar: false }}
-        style={{ width: '100%' }}
+        config={PLOT_CONFIG}
+        style={PLOT_STYLE}
         useResizeHandler
         onInitialized={handleInit}
       />

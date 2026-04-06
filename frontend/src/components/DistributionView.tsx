@@ -4,6 +4,9 @@ import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 
+const PLOT_CONFIG = { responsive: true, displayModeBar: false } as const;
+const PLOT_STYLE = { width: '100%' } as const;
+
 export function useZoomReset() {
   const [isZoomed, setIsZoomed] = useState(false);
   const plotDivRef = useRef<ReturnType<typeof Plotly.newPlot> extends Promise<infer R> ? R : unknown>(null);
@@ -104,8 +107,8 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
         key={showElnLegend ? 'legend' : 'no-legend'}
         data={config.data}
         layout={config.layout}
-        config={{ responsive: true, displayModeBar: false }}
-        style={{ width: '100%' }}
+        config={PLOT_CONFIG}
+        style={PLOT_STYLE}
         useResizeHandler
         onInitialized={handleInit}
       />
