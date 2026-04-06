@@ -1505,13 +1505,13 @@ button:hover {
 }
 
 .filter-options-row.sliders { margin-bottom: 16px; }
-.filter-options-row.downloads { margin-top: 16px; justify-content: flex-end; }
+.filter-options-row.downloads { margin-top: 16px; justify-content: flex-end; gap: 10px; }
 .options-actions {
     display: inline-flex;
     gap: 10px;
 }
 .options-btn {
-    background: transparent;
+    background: var(--color-bg);
     border: 1px solid var(--color-border);
     color: var(--color-text-secondary);
     padding: 10px 22px;
