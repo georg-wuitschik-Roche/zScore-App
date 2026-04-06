@@ -266,8 +266,8 @@ describe('Boxplot regression', () => {
         const config = createBoxplotConfig(rows, params.reactantTypes);
         const boxTraces = config.data.filter((d) => 'type' in d && d.type === 'box');
         const scatterTraces = config.data.filter((d) => 'type' in d && d.type === 'scatter');
-        // Each box trace has a matching invisible median marker
-        expect(scatterTraces.length).toBe(boxTraces.length);
+        // Each box trace has a matching invisible median marker, plus 1 colorbar trace
+        expect(scatterTraces.length).toBe(boxTraces.length + 1);
       });
 
       it('height scales with number of categories', () => {

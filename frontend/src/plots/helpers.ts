@@ -7,7 +7,7 @@
 
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { Data, Layout } from 'plotly.js';
-import { createColorMappingFromElnCounts } from './colors';
+import { createColorMappingFromElnCounts, BASE_COLOURS, COMBINED_COLOURS, DEFAULT_COLOURS } from './colors';
 import type { PlotConfig } from './types';
 
 // ── Formatting helpers ────────────────────────────────────────────────
@@ -119,6 +119,74 @@ export function buildRankAnnotation(
   };
 }
 
+// ── ELN density colorbar ─────────────────────────────────────────────
+
+const MONO_FONT = '"JetBrains Mono", "Fira Code", monospace';
+
+/** "ELN Count" label annotation positioned to the left of the colorbar. */
+function buildElnLabel(presentationMode: boolean, axisColor?: string) {
+  return {
+    text: '<b>ELN Count</b>',
+    xref: 'paper' as const,
+    yref: 'paper' as const,
+    x: 0,
+    xanchor: 'right' as const,
+    xshift: -8,
+    y: 1,
+    yanchor: 'bottom' as const,
+    yshift: 4,
+    showarrow: false,
+    font: { size: presentationMode ? 14 : 11, family: MONO_FONT, color: axisColor ?? '#999' },
+  };
+}
+
+/** Invisible scatter trace with a colorbar showing the ELN density gradient. */
+function buildElnColorbar(
+  category: string,
+  combined: boolean,
+  groups: { elnCount: number }[],
+  presentationMode: boolean,
+  axisColor?: string,
+): Data {
+  const base = combined ? COMBINED_COLOURS : (BASE_COLOURS[category] ?? DEFAULT_COLOURS);
+  const elnValues = groups.map((g) => g.elnCount);
+  const minElns = Math.min(...elnValues);
+  const maxElns = Math.max(...elnValues);
+  const range = maxElns - minElns;
+  return {
+    type: 'scatter' as const,
+    x: [null],
+    y: [null],
+    mode: 'markers' as const,
+    marker: {
+      color: [minElns, maxElns],
+      colorscale: [[0, base.light], [1, base.dark]],
+      cmin: minElns,
+      cmax: maxElns,
+      showscale: true,
+      colorbar: {
+        title: null,
+        tick0: 0,
+        dtick: Math.max(1, Math.ceil(range / 4 / 5) * 5) || 5,
+        tickfont: { size: presentationMode ? 13 : 10, family: MONO_FONT, color: axisColor },
+        thickness: 10,
+        lenmode: 'fraction' as const,
+        len: 1,
+        orientation: 'h' as const,
+        yref: 'paper' as const,
+        y: 1,
+        yanchor: 'bottom' as const,
+        ypad: 2,
+        outlinewidth: 0,
+      },
+      size: 0.01,
+      opacity: 0,
+    },
+    showlegend: false,
+    hoverinfo: 'skip' as const,
+  };
+}
+
 // ── Prepared data structures ──────────────────────────────────────────
 
 export interface PreparedGroup {
@@ -138,6 +206,8 @@ export interface PreparedData {
   groups: PreparedGroup[];
   categoryOrder: string[];
   layout: Partial<Layout>;
+  /** Invisible scatter trace that renders a colorbar showing the ELN density gradient (null when hidden). */
+  colorbarTrace: Data | null;
 }
 
 // ── Core preparation logic ────────────────────────────────────────────
@@ -156,12 +226,9 @@ export function prepareDistributionData(
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
   comparisonInfo?: ComparisonInfo | null,
+  showElnLegend = true,
 ): PreparedData | null {
   if (rows.length === 0 || reactantTypes.length === 0) return null;
-
-  const groupCol = reactantTypes.length === 1
-    ? reactantTypes[0]
-    : reactantTypes.join(' / ');
 
   // Single pass: group rows by category, collect ELN sets for color mapping
   const groupMap = new Map<string, Row[]>();
@@ -273,14 +340,7 @@ export function prepareDistributionData(
   const bg = isDark ? 'rgba(0,0,0,0)' : '#fff';
   const axisColor = isDark ? '#aaa' : undefined;
   const layout: Partial<Layout> = {
-    title: {
-      text: `z-Score Distribution by ${groupCol}`,
-      font: {
-        size: presentationMode ? 28 : 20,
-        family: '"JetBrains Mono", "Fira Code", monospace',
-        color: '#999',
-      },
-    },
+    title: { text: '' },
     xaxis: {
       title: {
         text: 'z-Score',
@@ -303,10 +363,11 @@ export function prepareDistributionData(
       showgrid: false,
       tickfont: { size: presentationMode ? 20 : 14, family: '"JetBrains Mono", "Fira Code", monospace', color: axisColor },
       ticksuffix: rankAnnotations.length > 0 ? RANK_BADGE_TICK_PAD : undefined,
+      domain: showElnLegend ? [0, 0.97] : undefined,
     },
     height,
     showlegend: false,
-    margin: { t: 60, b: 80, l: 200, r: 50 },
+    margin: { t: showElnLegend ? 32 : 4, b: 80, l: 200, r: 50 },
     paper_bgcolor: bg,
     plot_bgcolor: bg,
     font: {
@@ -317,7 +378,14 @@ export function prepareDistributionData(
     annotations: rankAnnotations.length > 0 ? rankAnnotations : undefined,
   };
 
-  return { groups, categoryOrder, layout };
+  // ELN density colorbar + label (conditional on showElnLegend)
+  let colorbarTrace: Data | null = null;
+  if (showElnLegend) {
+    colorbarTrace = buildElnColorbar(reactantTypes[0], combined, groups, presentationMode, axisColor);
+    layout.annotations = [...(layout.annotations ?? []), buildElnLabel(presentationMode, axisColor)];
+  }
+
+  return { groups, categoryOrder, layout, colorbarTrace };
 }
 
 // ── Shared trace builders ─────────────────────────────────────────────
@@ -355,13 +423,15 @@ export function buildDistributionConfig(
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
   comparisonInfo?: ComparisonInfo | null,
+  showElnLegend = true,
 ): PlotConfig {
-  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo);
+  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
   if (!prepared) return { data: [], layout: {} };
 
   const data: Data[] = prepared.groups
     .map((group) => [buildTrace(group), buildMedianTrace(group.name, group.medianVal, group.zScores.length, group.elnCount, isDark)])
     .flat();
+  if (prepared.colorbarTrace) data.push(prepared.colorbarTrace);
 
   return { data, layout: prepared.layout };
 }

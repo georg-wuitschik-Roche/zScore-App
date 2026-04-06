@@ -64,8 +64,9 @@ export function createViolinConfig(
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
   comparisonInfo?: ComparisonInfo | null,
+  showElnLegend = true,
 ): PlotConfig {
-  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo);
+  const prepared = prepareDistributionData(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
   if (!prepared) return { data: [], layout: {} };
 
   const data: Data[] = prepared.groups
@@ -91,6 +92,7 @@ export function createViolinConfig(
       buildMedianTrace(group.name, group.medianVal, group.zScores.length, group.elnCount, isDark),
     ])
     .flat();
+  if (prepared.colorbarTrace) data.push(prepared.colorbarTrace);
 
   // Dashed median lines bounded by violin outline
   const MAX_HALF_WIDTH = 0.4; // Plotly's default max half-width per category

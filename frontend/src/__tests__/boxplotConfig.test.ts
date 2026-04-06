@@ -196,7 +196,7 @@ describe('createBoxplotConfig', () => {
 
     it('each category produces a box trace and a median scatter trace', () => {
       const config = createBoxplotConfig(FIXTURE, ['Catalyst']);
-      // 3 categories → 3 box traces + 3 scatter traces = 6 total
+      // 3 categories → 3 box traces + 3 median scatter traces + 1 colorbar trace
       const boxCount = config.data.filter(
         (d) => (d as Record<string, unknown>).type === 'box',
       ).length;
@@ -204,7 +204,7 @@ describe('createBoxplotConfig', () => {
         (d) => (d as Record<string, unknown>).type === 'scatter',
       ).length;
       expect(boxCount).toBe(3);
-      expect(scatterCount).toBe(3);
+      expect(scatterCount).toBe(4);
     });
 
     it('box traces have showlegend=false', () => {

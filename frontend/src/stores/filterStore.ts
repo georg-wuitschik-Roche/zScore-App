@@ -66,6 +66,7 @@ export interface FilterState {
   activeTab: TabId;
   presentationMode: boolean;
   optionsPanelOpen: boolean;
+  showElnLegend: boolean;
   theme: 'light' | 'dark';
   themePreference: 'light' | 'dark' | 'auto';
   uploadError: string | null;
@@ -86,6 +87,7 @@ export interface FilterState {
   setActiveTab: (tab: TabId) => void;
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
+  toggleElnLegend: () => void;
   resetFilters: () => void;
   clearUploadError: () => void;
   loadDataset: () => Promise<void>;
@@ -132,6 +134,8 @@ function resolveTheme(pref: 'light' | 'dark' | 'auto'): 'light' | 'dark' {
 const storedThemePref = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-theme') as 'light' | 'dark' | 'auto' | null) || 'auto';
 const storedTab = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-tab')) || null;
 const initialTab: TabId = storedTab && isTabId(storedTab) ? storedTab : 'violin';
+const storedElnLegend = typeof localStorage !== 'undefined' && localStorage.getItem('zscore-eln-legend');
+const initialElnLegend = storedElnLegend !== null ? storedElnLegend !== '0' : true;
 
 export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
@@ -173,6 +177,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   activeTab: initialTab,
   presentationMode: false,
   optionsPanelOpen: false,
+  showElnLegend: initialElnLegend,
   themePreference: storedThemePref,
   theme: resolveTheme(storedThemePref),
   uploadError: null,
@@ -228,6 +233,11 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     set((s) => ({ presentationMode: !s.presentationMode })),
   toggleOptionsPanel: () =>
     set((s) => ({ optionsPanelOpen: !s.optionsPanelOpen })),
+  toggleElnLegend: () => {
+    const next = !get().showElnLegend;
+    try { localStorage.setItem('zscore-eln-legend', next ? '1' : '0'); } catch { /* ignore */ }
+    set({ showElnLegend: next });
+  },
   setTheme: (pref) => {
     const resolved = resolveTheme(pref);
     document.documentElement.setAttribute('data-theme', resolved);

@@ -25,6 +25,7 @@ export function createBoxplotConfig(
   rankMap?: Map<string, RankDelta> | null,
   isDark = false,
   comparisonInfo?: ComparisonInfo | null,
+  showElnLegend = true,
 ): PlotConfig {
   return buildDistributionConfig(rows, reactantTypes, presentationMode, (group) => ({
     type: 'box' as const,
@@ -44,5 +45,5 @@ export function createBoxplotConfig(
     hovertemplate: group.hovertemplate,
     hoveron: 'points' as const,
     hoverlabel: getHoverLabelStyle(isDark),
-  }), rankMap, isDark, comparisonInfo);
+  }), rankMap, isDark, comparisonInfo, showElnLegend);
 }

@@ -11,6 +11,7 @@ type ConfigBuilder = (
   rankMap?: Map<string, RankDelta> | null,
   isDark?: boolean,
   comparisonInfo?: ComparisonInfo | null,
+  showElnLegend?: boolean,
 ) => PlotConfig;
 
 interface Props {
@@ -27,10 +28,11 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
   const presentationMode = useFilterStore((s) => s.presentationMode);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
+  const showElnLegend = useFilterStore((s) => s.showElnLegend);
 
   const config = useMemo(
-    () => rows.length > 0 ? buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo) : null,
-    [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo],
+    () => rows.length > 0 ? buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend) : null,
+    [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend],
   );
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
@@ -60,6 +62,7 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
   return (
     <div className="plot-container">
       <Plot
+        key={showElnLegend ? 'legend' : 'no-legend'}
         data={config.data}
         layout={config.layout}
         config={{ responsive: true, displayModeBar: false }}

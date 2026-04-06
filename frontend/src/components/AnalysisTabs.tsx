@@ -116,19 +116,35 @@ export function AnalysisTabs() {
     (tab) => !tab.requiresMultiReactant || showHeatmap,
   );
 
+  const showElnLegend = useFilterStore((s) => s.showElnLegend);
+  const toggleElnLegend = useFilterStore((s) => s.toggleElnLegend);
+
+  const isDistributionTab = effectiveTab === 'violin' || effectiveTab === 'boxplot';
+
   return (
     <div className="analysis-view">
-      <div className="view-toggle" id="view-toggle">
-        {visibleTabs.map((tab) => (
+      <div className="view-toggle-row">
+        {isDistributionTab && (
           <button
-            key={tab.id}
-            className={`view-toggle-btn${effectiveTab === tab.id ? ' active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-            title={tab.label}
+            className={`eln-legend-btn${showElnLegend ? ' active' : ''}`}
+            onClick={toggleElnLegend}
+            title={showElnLegend ? 'Hide ELN count legend' : 'Show ELN count legend'}
           >
-            {tab.label}
+            Legend
           </button>
-        ))}
+        )}
+        <div className="view-toggle" id="view-toggle">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`view-toggle-btn${effectiveTab === tab.id ? ' active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+              title={tab.label}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="view-content">
@@ -146,11 +162,14 @@ export function AnalysisTabs() {
             ))}
           </div>
         ) : (
-          <PanelWithComparison
-            tab={effectiveTab}
-            panel={deferredPanels[0]}
-            comparisonResult={comparisonResult}
-          />
+          <div>
+            <div className="split-panel-label">{reactantTypes.join(' / ')}</div>
+            <PanelWithComparison
+              tab={effectiveTab}
+              panel={deferredPanels[0]}
+              comparisonResult={comparisonResult}
+            />
+          </div>
         )}
       </div>
     </div>

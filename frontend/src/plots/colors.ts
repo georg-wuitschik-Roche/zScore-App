@@ -19,7 +19,7 @@ export const BASE_COLOURS: Record<string, { light: string; dark: string }> = {
   'Secondary Solvent': { light: '#98FB98', dark: '#228B22' }, // light green
 };
 
-const DEFAULT_COLOURS = { light: '#D3D3D3', dark: '#696969' }; // grey
+export const DEFAULT_COLOURS = { light: '#D3D3D3', dark: '#696969' }; // grey
 
 /** Distinct palette used when multiple reactant types are combined */
 export const COMBINED_COLOURS = { light: '#B0BEC5', dark: '#263238' }; // blue-grey → dark slate
