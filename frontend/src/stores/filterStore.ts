@@ -350,6 +350,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         isFullDataLoaded: true,
         activeVersion: versionId,
         isLoadingVersion: false,
+        comparisonVersion: null,
       });
     } catch (e) {
       set({

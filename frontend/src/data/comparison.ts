@@ -18,7 +18,7 @@ export function resolveComparisonVersion(
   explicitVersion: string | null,
   hasUpload = false,
 ): string | null {
-  if (explicitVersion) return explicitVersion;
+  if (explicitVersion && (hasUpload || explicitVersion !== activeVersion)) return explicitVersion;
   // With an upload active, default to the active built-in version as baseline
   if (hasUpload) return activeVersion;
   const idx = availableVersions.findIndex((v) => v.id === activeVersion);
@@ -51,9 +51,9 @@ function computeMedianRanking(
   return medians;
 }
 
-/** Assign 1-based ranks from a median map (rank 1 = highest median). */
+/** Assign 1-based ranks from a median map (rank 1 = highest median, alphabetical tie-break). */
 function assignRanks(medians: Map<string, number>): Map<string, number> {
-  const sorted = Array.from(medians.entries()).sort((a, b) => b[1] - a[1]);
+  const sorted = Array.from(medians.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const ranks = new Map<string, number>();
   for (let i = 0; i < sorted.length; i++) {
     ranks.set(sorted[i][0], i + 1);
@@ -74,6 +74,7 @@ export function computeRankDeltas(
 ): Map<string, RankDelta> {
   const currentMedians = computeMedianRanking(currentRows, reactantTypes);
   const comparisonMedians = computeMedianRanking(comparisonRows, reactantTypes);
+
 
   const currentRanks = assignRanks(currentMedians);
   const comparisonRanks = assignRanks(comparisonMedians);

@@ -1,8 +1,12 @@
 /**
  * Hooks for comparing the current dataset version against a previous one.
  *
- * useComparisonFilteredRows — runs the filter chain on the comparison dataset ONCE.
- * useComparisonRanks        — computes rank deltas using pre-filtered comparison rows.
+ * useComparisonRawData — resolves comparison version, returns raw rows + filter params.
+ * useComparisonRanks   — filters comparison rows per-panel and computes rank deltas.
+ *
+ * Filtering happens per-panel (not globally) so that split panels get comparison
+ * data filtered with the panel's specific reactantTypes — otherwise maxComponents
+ * and minEln grouping would use compound keys that don't match the panel's grouping.
  */
 
 import { useMemo } from 'react';
@@ -20,8 +24,12 @@ export interface ComparisonResult {
   info: ComparisonInfo;
 }
 
-interface ComparisonFilterResult {
-  rows: Row[];
+export interface ComparisonRawData {
+  /** Unfiltered rows from the comparison version */
+  rawRows: Row[];
+  /** Base filter params (reactantTypes will be overridden per-panel) */
+  baseParams: FilterParams;
+  /** Labels for the two datasets being compared */
   info: ComparisonInfo;
 }
 
@@ -31,12 +39,13 @@ function formatVersionLabel(id: string, date?: string): string {
 }
 
 /**
- * Run the filter chain on the comparison dataset once.
+ * Resolve the comparison version and return the raw (unfiltered) comparison rows
+ * along with the base filter params and version labels.
  *
- * Returns the filtered comparison rows + version labels, or null when
- * comparison mode is off or comparison data is unavailable.
+ * Filtering is deferred to useComparisonRanks so each split panel can apply
+ * its own reactantTypes to the filter chain.
  */
-export function useComparisonFilteredRows(): ComparisonFilterResult | null {
+export function useComparisonRawData(): ComparisonRawData | null {
   const comparisonMode = useFilterStore((s) => s.comparisonMode);
   const comparisonVersion = useFilterStore((s) => s.comparisonVersion);
   const activeVersion = useFilterStore((s) => s.activeVersion);
@@ -75,27 +84,7 @@ export function useComparisonFilteredRows(): ComparisonFilterResult | null {
     return datasetCache[comparisonVersionId]?.rows ?? null;
   }, [comparisonVersionId, datasetCache]);
 
-  return useMemo(() => {
-    if (!comparisonMode || !rawComparisonRows || !info) return null;
-
-    const params: FilterParams = {
-      reactionTypes,
-      reactantTypes,
-      fgA,
-      fgB,
-      excludeCui,
-      excludeScaleup,
-      includeNullCategories,
-      minEln,
-      topnZscore,
-      maxComponents,
-    };
-
-    return { rows: filterData(rawComparisonRows, params).rows, info };
-  }, [
-    comparisonMode,
-    rawComparisonRows,
-    info,
+  const baseParams = useMemo((): FilterParams => ({
     reactionTypes,
     reactantTypes,
     fgA,
@@ -106,23 +95,38 @@ export function useComparisonFilteredRows(): ComparisonFilterResult | null {
     minEln,
     topnZscore,
     maxComponents,
+  }), [
+    reactionTypes, reactantTypes, fgA, fgB,
+    excludeCui, excludeScaleup, includeNullCategories,
+    minEln, topnZscore, maxComponents,
   ]);
+
+  return useMemo(() => {
+    if (!comparisonMode || !rawComparisonRows || !info) return null;
+    return { rawRows: rawComparisonRows, baseParams, info };
+  }, [comparisonMode, rawComparisonRows, baseParams, info]);
 }
 
 /**
- * Compute rank deltas for a single panel using pre-filtered comparison rows.
+ * Filter comparison rows for a specific panel and compute rank deltas.
  *
- * This is cheap (just grouping + median + sorting) — no filter chain involved.
+ * Runs the filter chain with the panel's reactantTypes (which may differ from
+ * the store's reactantTypes when split mode is active). This ensures that
+ * maxComponents, minEln, and topN grouping match the panel's grouping.
  */
 export function useComparisonRanks(
   currentRows: Row[],
   reactantTypes: string[],
-  comparisonResult: ComparisonFilterResult | null,
+  comparisonRawData: ComparisonRawData | null,
 ): ComparisonResult | null {
   return useMemo(() => {
-    if (!comparisonResult || reactantTypes.length === 0) return null;
+    if (!comparisonRawData || reactantTypes.length === 0) return null;
 
-    const { rows: comparisonFilteredRows, info } = comparisonResult;
+    const { rawRows, baseParams, info } = comparisonRawData;
+
+    // Filter comparison rows with this panel's reactantTypes
+    const panelParams: FilterParams = { ...baseParams, reactantTypes };
+    const { rows: comparisonFilteredRows } = filterData(rawRows, panelParams);
 
     // Compound-key rank deltas (for boxplot/violin/stats)
     const rankMap = computeRankDeltas(currentRows, comparisonFilteredRows, reactantTypes);
@@ -133,5 +137,5 @@ export function useComparisonRanks(
     );
 
     return { rankMap, axisRankMaps, info };
-  }, [comparisonResult, currentRows, reactantTypes]);
+  }, [comparisonRawData, currentRows, reactantTypes]);
 }
