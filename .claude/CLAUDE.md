@@ -165,3 +165,4 @@ Always follow the guidelines defined in these skill files:
 - `.claude/skills/dev/SKILL.md` — Development workflow
 - `.claude/skills/build/SKILL.md` — Production build
 - `.claude/skills/lint/SKILL.md` — Linting and type checking
+- `.claude/skills/tutorial/SKILL.md` — Tutorial system modification guidelines

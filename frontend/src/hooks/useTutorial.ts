@@ -1,5 +1,5 @@
 /**
- * Tutorial state machine — 19-step walkthrough.
+ * Tutorial state machine — 21-step walkthrough.
  *
  * Each step has a target element ID, title, body text, and a gating
  * condition that determines whether the user has completed the step.
@@ -76,9 +76,19 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     body: 'Export the filtered data as CSV or save the current plot as a high-resolution PNG.',
   },
   {
+    targetId: 'reset-options-btn',
+    title: 'Reset Options',
+    body: 'Click to reset all option panel settings (sliders, checkboxes) back to their defaults.',
+  },
+  {
     targetId: 'view-toggle',
     title: 'Explore Results',
     body: 'Switch between Violin, Boxplot, Heatmap, and Statistics views. Violin plots show the full distribution shape with individual data points.',
+  },
+  {
+    targetId: null,
+    title: 'Zoom into Plots',
+    body: 'Click and drag on any plot to zoom into a region. A "Reset Zoom" button will appear to restore the full view. You can also double-click the plot to reset.',
   },
   {
     targetId: 'split-toggle',
@@ -186,16 +196,20 @@ export function useIsStepSatisfied(): boolean {
     case 11:
       return true; // downloads — informational, click Next to proceed
     case 12:
-      return true; // tabs — auto-cycled, click Next to proceed
+      return true; // reset options — informational, click Next to proceed
     case 13:
-      return true; // split — auto-enabled, click Next to proceed
+      return true; // tabs — auto-cycled, click Next to proceed
     case 14:
-      return true; // settings: data
+      return true; // zoom into plots — informational, click Next to proceed
     case 15:
-      return true; // settings: comparison
+      return true; // split — auto-enabled, click Next to proceed
     case 16:
-      return true; // settings: appearance
+      return true; // settings: data
     case 17:
+      return true; // settings: comparison
+    case 18:
+      return true; // settings: appearance
+    case 19:
       return true; // reset
     default:
       return true;

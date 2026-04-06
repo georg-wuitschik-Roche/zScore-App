@@ -14,4 +14,5 @@ const createPlotlyComponent =
     : (_createPlotlyComponent as { default: typeof _createPlotlyComponent }).default;
 
 const Plot = createPlotlyComponent(Plotly);
+export { Plotly };
 export default Plot;

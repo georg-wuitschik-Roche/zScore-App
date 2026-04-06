@@ -184,39 +184,44 @@ export function OptionsPanel() {
         style={{
           display: optionsPanelOpen ? 'block' : 'none',
           maxHeight: optionsPanelOpen ? '500px' : '0',
-          padding: optionsPanelOpen ? '20px' : '0 20px',
+          padding: optionsPanelOpen ? '32px 20px 20px' : '0 20px',
         }}
       >
         {/* Sliders row */}
         <div className="filter-options-row sliders">
-          <label>Minimum Number of ELNs:</label>
-          <div className="slider-wrap min-eln" id="min-eln-slider">
-            <input
-              type="range"
-              min={1}
-              max={20}
-              step={1}
-              value={localMinEln}
-              onChange={(e) => setLocalMinEln(Number(e.target.value))}
-            />
-            <EditableSliderValue value={localMinEln} min={1} max={20} onChange={setLocalMinEln} />
+          <div className="slider-group" id="min-eln-slider">
+            <label>Minimum Number of ELNs:</label>
+            <div className="slider-wrap min-eln">
+              <input
+                type="range"
+                min={1}
+                max={20}
+                step={1}
+                value={localMinEln}
+                onChange={(e) => setLocalMinEln(Number(e.target.value))}
+              />
+              <EditableSliderValue value={localMinEln} min={1} max={20} onChange={setLocalMinEln} />
+            </div>
           </div>
 
-          <label>Top-N z-Score per (ELN_ID, selected reactant type(s)):</label>
-          <div className="slider-wrap topn" id="topn-slider">
-            <input
-              type="range"
-              min={1}
-              max={10}
-              step={1}
-              value={localTopn}
-              onChange={(e) => setLocalTopn(Number(e.target.value))}
-            />
-            <EditableSliderValue value={localTopn} min={1} max={10} onChange={setLocalTopn} />
+          <div className="slider-group" id="topn-slider">
+            <label>Top-N z-Score per (ELN_ID, selected reactant type(s)):</label>
+            <div className="slider-wrap topn">
+              <input
+                type="range"
+                min={1}
+                max={10}
+                step={1}
+                value={localTopn}
+                onChange={(e) => setLocalTopn(Number(e.target.value))}
+              />
+              <EditableSliderValue value={localTopn} min={1} max={10} onChange={setLocalTopn} />
+            </div>
           </div>
 
-          <label>Max Components to Display:</label>
-          <div className="slider-wrap max-comp" id="max-comp-slider">
+          <div className="slider-group" id="max-comp-slider">
+            <label>Max Components to Display:</label>
+            <div className="slider-wrap max-comp">
             <input
               type="range"
               min={1}
@@ -231,6 +236,7 @@ export function OptionsPanel() {
               max={Math.max(maxComponentsCap, 1)}
               onChange={setLocalMaxComp}
             />
+            </div>
           </div>
         </div>
 
@@ -267,8 +273,8 @@ export function OptionsPanel() {
           <span id="download-buttons" className="options-actions">
             <button className="options-btn" onClick={handleDownloadCSV}>Download CSV</button>
             <button className="options-btn" onClick={handleDownloadPNG}>Download PNG</button>
-            <button className="options-btn options-btn-reset" onClick={resetOptions}>Reset Options</button>
           </span>
+          <button className="options-btn options-btn-reset" id="reset-options-btn" onClick={resetOptions}>Reset Options</button>
         </div>
       </div>
     </>

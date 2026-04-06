@@ -1,8 +1,33 @@
-import { memo, useMemo } from 'react';
-import Plot from './Plot';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Plot, { Plotly } from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
+
+export function useZoomReset() {
+  const [isZoomed, setIsZoomed] = useState(false);
+  const plotDivRef = useRef<ReturnType<typeof Plotly.newPlot> extends Promise<infer R> ? R : unknown>(null);
+
+  const handleInit = useCallback((_figure: unknown, graphDiv: never) => {
+    plotDivRef.current = graphDiv;
+    (graphDiv as { on: (e: string, h: (d: Record<string, unknown>) => void) => void }).on(
+      'plotly_relayout',
+      (data: Record<string, unknown>) => {
+        const keys = Object.keys(data);
+        if (keys.some(k => /[xy]axis\d*\.range/.test(k))) setIsZoomed(true);
+        else if (keys.some(k => /[xy]axis\d*\.autorange/.test(k))) setIsZoomed(false);
+      },
+    );
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    if (plotDivRef.current) {
+      Plotly.relayout(plotDivRef.current, { 'xaxis.autorange': true, 'yaxis.autorange': true });
+    }
+  }, []);
+
+  return { isZoomed, setIsZoomed, handleInit, resetZoom };
+}
 
 type ConfigBuilder = (
   rows: Row[],
@@ -31,6 +56,8 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
   const isDark = useFilterStore((s) => s.theme) === 'dark';
   const showElnLegend = useFilterStore((s) => s.showElnLegend);
 
+  const { isZoomed, setIsZoomed, handleInit, resetZoom } = useZoomReset();
+
   const config = useMemo(() => {
     if (rows.length === 0) return null;
     const c = buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
@@ -39,6 +66,8 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     }
     return c;
   }, [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend, heightOverride]);
+
+  useEffect(() => { setIsZoomed(false); }, [config, setIsZoomed]);
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     const missing: string[] = [];
@@ -65,7 +94,12 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
   }
 
   return (
-    <div className="plot-container">
+    <div className="plot-container plot-container--zoomable">
+      {isZoomed && (
+        <button className="reset-zoom-btn" onClick={resetZoom} title="Reset zoom">
+          Reset Zoom
+        </button>
+      )}
       <Plot
         key={showElnLegend ? 'legend' : 'no-legend'}
         data={config.data}
@@ -73,6 +107,7 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
         config={{ responsive: true, displayModeBar: false }}
         style={{ width: '100%' }}
         useResizeHandler
+        onInitialized={handleInit}
       />
     </div>
   );

@@ -1543,6 +1543,12 @@ button:hover {
     letter-spacing: 0.06em;
 }
 
+.slider-group {
+    display: flex;
+    align-items: center;
+    border-radius: var(--radius-md);
+}
+
 .slider-wrap {
     display: flex;
     align-items: center;
@@ -1653,6 +1659,30 @@ button:hover {
 /* ================================================================== */
 
 .plot-container { width: 100%; margin-bottom: 60px; }
+
+.plot-container--zoomable { position: relative; }
+
+.reset-zoom-btn {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    z-index: 10;
+    padding: 5px 12px;
+    border: 1px solid var(--color-border-btn);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.15s, background 0.15s;
+}
+
+.reset-zoom-btn:hover {
+    opacity: 1;
+    background: var(--color-bg-hover);
+}
 
 .empty-state {
     display: flex;
@@ -2080,22 +2110,25 @@ button.tutorial-highlight,
 .filter-toggle-btn.tutorial-highlight {
     outline: 2px solid var(--color-primary) !important;
     box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1) !important;
+    background: var(--color-primary-light) !important;
 }
 
 .navbar .tutorial-highlight {
     outline-color: #fff !important;
     box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255, 255, 255, 0.2) !important;
 }
 
 #download-buttons.tutorial-highlight {
-    outline: none !important;
-    box-shadow: none !important;
+    display: inline-flex !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--color-primary-light) !important;
 }
 
-#download-buttons.tutorial-highlight button {
-    outline: 2px solid var(--color-primary);
-    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
-    border-radius: var(--radius-md);
+.control-col.tutorial-highlight {
+    background: var(--color-primary-light) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 3px var(--color-primary-light) !important;
 }
 
 .multi-select.tutorial-highlight,
@@ -2103,9 +2136,13 @@ button.tutorial-highlight,
     z-index: 9998 !important;
 }
 
+.slider-group.tutorial-highlight,
 label.tutorial-highlight {
     display: inline-flex !important;
     align-items: center !important;
+    background: var(--color-primary-light) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 3px var(--color-primary-light) !important;
 }
 
 /* Boost navbar stacking context when it contains a highlighted element */

@@ -1,5 +1,5 @@
 /**
- * Tutorial overlay — 19-step guided walkthrough.
+ * Tutorial overlay — 21-step guided walkthrough.
  *
  * Shows a floating panel with step title/body, highlights the target
  * element, and gates progression on user interaction.
@@ -15,14 +15,14 @@ import { useFilterStore } from '../stores/filterStore';
 import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import { getReactantOptions } from '../data/dropdownOptions';
 
-// Steps 5-11 target elements inside the options panel
-const STEPS_REQUIRING_PANEL_OPEN = new Set([5, 6, 7, 8, 9, 10, 11]);
+// Steps 5-12 target elements inside the options panel
+const STEPS_REQUIRING_PANEL_OPEN = new Set([5, 6, 7, 8, 9, 10, 11, 12]);
 
-// Steps 14-16 are settings sub-panels, step 17 is reset — all in navbar
-const STEPS_IN_NAVBAR = new Set([14, 15, 16, 17]);
+// Steps 16-18 are settings sub-panels, step 19 is reset — all in navbar
+const STEPS_IN_NAVBAR = new Set([16, 17, 18, 19]);
 
-// Steps 14-16 show settings modal side-by-side with tutorial
-const SETTINGS_STEPS = new Set([14, 15, 16]);
+// Steps 16-18 show settings modal side-by-side with tutorial
+const SETTINGS_STEPS = new Set([16, 17, 18]);
 
 export function TutorialOverlay() {
   const active = useTutorialStore((s) => s.active);
@@ -80,9 +80,9 @@ export function TutorialOverlay() {
     };
   }, [active, step]);
 
-  // Step 12a — ensure 2+ reactant types so heatmap tab is visible
+  // Step 13a — ensure 2+ reactant types so heatmap tab is visible
   useEffect(() => {
-    if (!active || step !== 12) return;
+    if (!active || step !== 13) return;
     if (reactantTypes.length < 2) {
       const preferred = ['Base', 'Solvent'].filter((r) => availableReactants.includes(r));
       if (preferred.length >= 2) {
@@ -94,9 +94,9 @@ export function TutorialOverlay() {
     }
   }, [active, step, reactantTypes, availableReactants, setReactantTypes]);
 
-  // Step 12b — cycle through tabs (separate effect to avoid restart on reactantTypes change)
+  // Step 13b — cycle through tabs (separate effect to avoid restart on reactantTypes change)
   useEffect(() => {
-    if (!active || step !== 12) return;
+    if (!active || step !== 13) return;
     const timers = [
       setTimeout(() => setActiveTab('boxplot'), 800),
       setTimeout(() => setActiveTab('heatmap'), 3600),
@@ -106,9 +106,9 @@ export function TutorialOverlay() {
     return () => timers.forEach(clearTimeout);
   }, [active, step, setActiveTab]);
 
-  // Step 13 — set reactants to Catalyst + Base + Solvent, show violin, enable split
+  // Step 15 — set reactants to Catalyst + Base + Solvent, show violin, enable split
   useEffect(() => {
-    if (!active || step !== 13) return;
+    if (!active || step !== 15) return;
     setActiveTab('violin');
     const preferred = ['Catalyst', 'Base', 'Solvent'].filter((r) => availableReactants.includes(r));
     const needsUpdate =
@@ -128,7 +128,7 @@ export function TutorialOverlay() {
     return () => clearTimeout(timer);
   }, [active, step, reactantTypes, availableReactants, setReactantTypes, setSplitSelector]);
 
-  // Steps 14-16 — auto-open settings modal, keep open across sub-steps
+  // Steps 16-18 — auto-open settings modal, keep open across sub-steps
   const isSettingsStep = SETTINGS_STEPS.has(step);
   useEffect(() => {
     if (!active || !isSettingsStep) return;

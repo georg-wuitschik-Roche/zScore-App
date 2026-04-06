@@ -1,7 +1,8 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
+import { useZoomReset } from './DistributionView';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 
 interface Props {
@@ -17,12 +18,16 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
 
+  const { isZoomed, setIsZoomed, handleInit, resetZoom } = useZoomReset();
+
   const config = useMemo(
     () => rows.length > 0 && reactantTypes.length >= 2
       ? createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark, comparisonInfo)
       : null,
     [rows, reactantTypes, presentationMode, axisRankMaps, isDark, comparisonInfo],
   );
+
+  useEffect(() => { setIsZoomed(false); }, [config, setIsZoomed]);
 
   if (reactionTypes.length === 0 || reactantTypes.length < 2) {
     const missing: string[] = [];
@@ -49,13 +54,19 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
   }
 
   return (
-    <div className="plot-container">
+    <div className="plot-container plot-container--zoomable">
+      {isZoomed && (
+        <button className="reset-zoom-btn" onClick={resetZoom} title="Reset zoom">
+          Reset Zoom
+        </button>
+      )}
       <Plot
         data={config.data}
         layout={config.layout}
         config={{ responsive: true, displayModeBar: false }}
         style={{ width: '100%' }}
         useResizeHandler
+        onInitialized={handleInit}
       />
     </div>
   );
