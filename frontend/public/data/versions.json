@@ -1,6 +1,13 @@
 {
   "versions": [
     {
+      "id": "default",
+      "parquet": "/data/z-score-peaks.parquet",
+      "index": "/data/dropdown-index.json",
+      "label": "Default",
+      "date": "2026-04-08"
+    },
+    {
       "id": "v1",
       "parquet": "/data/v1.parquet",
       "index": "/data/v1-dropdown-index.json",

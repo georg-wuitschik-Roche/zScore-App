@@ -166,7 +166,7 @@ function buildElnColorbar(
       cmax: maxElns,
       showscale: true,
       colorbar: {
-        title: null,
+        title: undefined,
         tick0: 0,
         dtick: Math.max(1, Math.ceil(range / 4 / 5) * 5) || 5,
         tickfont: { size: presentationMode ? 13 : 10, family: MONO_FONT, color: axisColor },

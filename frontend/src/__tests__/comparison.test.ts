@@ -65,7 +65,7 @@ async function loadParquet(filename: string): Promise<Row[]> {
 function makeRow(overrides: Partial<Row>): Row {
   return {
     ELN_ID: 'ELN001',
-    PLATENUMBER: 1,
+    PLATENUMBER: '1',
     Coordinate: 'A1',
     AREA_TOTAL_REDUCED: 50,
     Base: null,

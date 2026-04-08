@@ -11,9 +11,9 @@ export function useZoomReset() {
   const [isZoomed, setIsZoomed] = useState(false);
   const plotDivRef = useRef<ReturnType<typeof Plotly.newPlot> extends Promise<infer R> ? R : unknown>(null);
 
-  const handleInit = useCallback((_figure: unknown, graphDiv: never) => {
+  const handleInit = useCallback((_figure: unknown, graphDiv: HTMLElement) => {
     plotDivRef.current = graphDiv;
-    (graphDiv as { on: (e: string, h: (d: Record<string, unknown>) => void) => void }).on(
+    (graphDiv as unknown as { on: (e: string, h: (d: Record<string, unknown>) => void) => void }).on(
       'plotly_relayout',
       (data: Record<string, unknown>) => {
         const keys = Object.keys(data);
