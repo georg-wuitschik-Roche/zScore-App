@@ -96,11 +96,9 @@ zScore-App/
 │   ├── vite.config.ts
 │   └── tsconfig.json
 ├── scripts/
-│   ├── regenerate_from_csv.py   # Parquet regeneration
 │   └── version_dataset.py       # Dataset versioning
 ├── .devcontainer/               # Dev container config + lifecycle scripts
 ├── .github/workflows/           # CI/CD (deploy, pages)
-├── z-Score Peaks with FG.csv    # Source dataset (~15MB)
 ├── pyproject.toml               # Ruff config
 ├── .pre-commit-config.yaml
 └── LICENSE
@@ -116,7 +114,6 @@ zScore-App/
 | TypeScript check | `cd frontend && npx tsc --noEmit` |
 | Tests (all) | `cd frontend && npx vitest run` |
 | Tests (watch) | `cd frontend && npx vitest` |
-| Regenerate Parquet | `python scripts/regenerate_from_csv.py` |
 | Version dataset | `python scripts/version_dataset.py` |
 | Lint | `cd frontend && npx eslint .` |
 

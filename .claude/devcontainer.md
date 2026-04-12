@@ -9,7 +9,7 @@ Two lifecycle scripts in `.devcontainer/`:
 | `post-create.sh` | `postCreateCommand` | Once, when the container is first built |
 | `start-dev.sh` | `postStartCommand` | Every time the container starts |
 
-**`post-create.sh`** handles one-time setup: system packages (tmux), Python deps + pre-commit, Node deps, and parquet generation from CSV.
+**`post-create.sh`** handles one-time setup: system packages (tmux), Python deps + pre-commit, and Node deps.
 
 **`start-dev.sh`** starts the Vite dev server with safety nets: verifies `node_modules` exists (retries npm install 3x if missing), then runs Vite with auto-restart on crash (up to 5 times). Logs to `/tmp/dev-server.log`.
 
@@ -33,20 +33,7 @@ ls frontend/node_modules/.vite   # does the Vite cache exist?
 If `node_modules` is missing, `start-dev.sh` will auto-install. If it keeps failing, check network connectivity and run `cd frontend && npm install` manually.
 
 ### Parquet data file missing
-The parquet is gitignored and built from `z-Score Peaks with FG.csv`. `post-create.sh` generates it automatically. To regenerate manually:
-```bash
-cd /workspaces/zScore-App
-python3 -c "
-import pandas as pd
-df = pd.read_csv('z-Score Peaks with FG.csv', encoding='utf-8')
-USED = ['ELN_ID','PLATENUMBER','Coordinate','AREA_TOTAL_REDUCED',
-        'Base','Catalyst','Solvent','Ligand','Additive',
-        'Coupling Reagent','Secondary Solvent','Tertiary Solvent',
-        'Reaction Type','FG A','FG B','FG_sorted','z-Score','output_column']
-df[[c for c in USED if c in df.columns]].to_parquet(
-    'frontend/public/data/z-score-peaks.parquet', compression='zstd', index=False)
-"
-```
+Parquet files are committed to the repo via the `add-dataset/` workflow. To add a new version, drop a CSV into `add-dataset/` and commit — the pre-commit hook converts it to Parquet automatically.
 
 ## History
 

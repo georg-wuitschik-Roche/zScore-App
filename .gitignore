@@ -33,6 +33,9 @@ exports/
 .DS_Store
 Thumbs.db
 
+# Source CSV (data lives in Parquet now)
+z-Score Peaks with FG.csv
+
 # Secrets
 .env
 .env.*
