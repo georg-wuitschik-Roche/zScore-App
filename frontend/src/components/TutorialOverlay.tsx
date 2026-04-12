@@ -1,5 +1,5 @@
 /**
- * Tutorial overlay — 21-step guided walkthrough.
+ * Tutorial overlay — 22-step guided walkthrough.
  *
  * Shows a floating panel with step title/body, highlights the target
  * element, and gates progression on user interaction.
@@ -18,11 +18,11 @@ import { getReactantOptions } from '../data/dropdownOptions';
 // Steps 5-12 target elements inside the options panel
 const STEPS_REQUIRING_PANEL_OPEN = new Set([5, 6, 7, 8, 9, 10, 11, 12]);
 
-// Steps 16-18 are settings sub-panels, step 19 is reset — all in navbar
-const STEPS_IN_NAVBAR = new Set([16, 17, 18, 19]);
+// Steps 17-19 are settings sub-panels, step 20 is reset — all in navbar
+const STEPS_IN_NAVBAR = new Set([17, 18, 19, 20]);
 
-// Steps 16-18 show settings modal side-by-side with tutorial
-const SETTINGS_STEPS = new Set([16, 17, 18]);
+// Steps 17-19 show settings modal side-by-side with tutorial
+const SETTINGS_STEPS = new Set([17, 18, 19]);
 
 export function TutorialOverlay() {
   const active = useTutorialStore((s) => s.active);

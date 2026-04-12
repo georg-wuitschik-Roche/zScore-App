@@ -1,5 +1,5 @@
 /**
- * Tutorial state machine — 21-step walkthrough.
+ * Tutorial state machine — 22-step walkthrough.
  *
  * Each step has a target element ID, title, body text, and a gating
  * condition that determines whether the user has completed the step.
@@ -94,6 +94,11 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     targetId: 'split-toggle',
     title: 'Split / Combined Mode',
     body: 'When 2+ values are selected in a dropdown, use Split to compare them side by side. Combined overlays everything in one plot.',
+  },
+  {
+    targetId: null,
+    title: 'Cross-Filter Panels',
+    body: 'Click any category name on the y-axis to cross-filter: other panels will only show reactions that used the selected category. Ctrl+click to multi-select. Click the margin area or use the Clear button to reset.',
   },
   {
     targetId: 'settings-section-data',
@@ -204,12 +209,14 @@ export function useIsStepSatisfied(): boolean {
     case 15:
       return true; // split — auto-enabled, click Next to proceed
     case 16:
-      return true; // settings: data
+      return true; // cross-filter — informational, click Next to proceed
     case 17:
-      return true; // settings: comparison
+      return true; // settings: data
     case 18:
-      return true; // settings: appearance
+      return true; // settings: comparison
     case 19:
+      return true; // settings: appearance
+    case 20:
       return true; // reset
     default:
       return true;

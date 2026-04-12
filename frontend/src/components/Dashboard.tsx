@@ -12,7 +12,7 @@ export function Dashboard() {
   const tutorialStep = useTutorialStore((s) => s.step);
 
   return (
-    <div className={`dashboard-content${tutorialActive ? ' tutorial-active' : ''}${tutorialActive && tutorialStep >= 16 && tutorialStep <= 18 ? ' tutorial-step-settings' : ''}`}>
+    <div className={`dashboard-content${tutorialActive ? ' tutorial-active' : ''}${tutorialActive && tutorialStep >= 17 && tutorialStep <= 19 ? ' tutorial-step-settings' : ''}`}>
       <Navbar />
       <FilterControls />
       <OptionsPanel />
