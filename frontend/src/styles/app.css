@@ -1225,7 +1225,8 @@ button:hover {
     color: var(--color-text);
 }
 
-.multi-select-option:hover { background: var(--color-bg-hover); }
+.multi-select-option:hover,
+.multi-select-option.highlighted { background: var(--color-bg-hover); }
 .multi-select-option.selected { background: var(--color-primary-light); }
 
 /* ================================================================== */

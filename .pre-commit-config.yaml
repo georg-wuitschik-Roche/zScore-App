@@ -28,6 +28,6 @@ repos:
         name: Vitest tests
         entry: bash -c 'cd frontend && npx vitest run --reporter=dot'
         language: system
-        stages: [pre-push]
+        stages: [pre-commit]
         files: '^frontend/'
         pass_filenames: false
