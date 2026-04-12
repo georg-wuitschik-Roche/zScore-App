@@ -23,7 +23,7 @@ const TABS: TabDef[] = [
   { id: 'stats', label: 'Stats', requiresMultiReactant: false },
 ];
 
-function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult | null, heightOverride?: number) {
+function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult | null, heightOverride?: number, panelId?: string) {
   const { rows, reactantTypes, stats } = panel;
   const noDataHint = stats.noDataHint;
   const comparisonInfo = comparison?.info;
@@ -39,6 +39,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           rankMap={comparison?.rankMap}
           comparisonInfo={comparisonInfo}
           heightOverride={heightOverride}
+          panelId={panelId}
         />
       );
     case 'violin':
@@ -52,6 +53,7 @@ function renderPanel(tab: TabId, panel: SplitPanel, comparison: ComparisonResult
           rankMap={comparison?.rankMap}
           comparisonInfo={comparisonInfo}
           heightOverride={heightOverride}
+          panelId={panelId}
         />
       );
     case 'heatmap':
@@ -82,14 +84,16 @@ const PanelWithComparison = memo(function PanelWithComparison({
   panel,
   comparisonRawData,
   heightOverride,
+  panelId,
 }: {
   tab: TabId;
   panel: SplitPanel;
   comparisonRawData: ReturnType<typeof useComparisonRawData>;
   heightOverride?: number;
+  panelId?: string;
 }) {
   const comparison = useComparisonRanks(panel.rows, panel.reactantTypes, comparisonRawData);
-  return renderPanel(tab, panel, comparison, heightOverride);
+  return renderPanel(tab, panel, comparison, heightOverride, panelId);
 });
 
 export function AnalysisTabs() {
@@ -97,6 +101,9 @@ export function AnalysisTabs() {
   const setActiveTab = useFilterStore((s) => s.setActiveTab);
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
   const splitSelector = useFilterStore((s) => s.splitSelector);
+  const crossFilterSelections = useFilterStore((s) => s.crossFilterSelections);
+  const crossFilterOrder = useFilterStore((s) => s.crossFilterOrder);
+  const clearCrossFilters = useFilterStore((s) => s.clearCrossFilters);
   const panels = useSplitFilteredData();
 
   // Defer panel data so tab buttons and UI stay responsive while charts recompute
@@ -125,6 +132,10 @@ export function AnalysisTabs() {
 
   const isDistributionTab = effectiveTab === 'violin' || effectiveTab === 'boxplot';
 
+  // Cross-filter is only active when split by reactant types on distribution tabs
+  const crossFilterEnabled = splitSelector === 'reactantTypes' && isDistributionTab;
+  const crossFilterActive = crossFilterEnabled && Object.keys(crossFilterSelections).length > 0;
+
   // Compute shared plot height so all split panels align
   const splitHeight = useMemo(() => {
     if (!isSplit || !isDistributionTab) return undefined;
@@ -142,6 +153,11 @@ export function AnalysisTabs() {
   return (
     <div className="analysis-view">
       <div className="view-toggle-row">
+        {crossFilterActive && (
+          <button className="clear-cross-filters-btn" onClick={clearCrossFilters}>
+            Clear cross-filters
+          </button>
+        )}
         {isDistributionTab && (
           <button
             className={`eln-legend-btn${showElnLegend ? ' active' : ''}`}
@@ -167,19 +183,39 @@ export function AnalysisTabs() {
 
       <div className="view-content">
         {isSplit ? (
-          <div className="split-grid">
-            {deferredPanels.map((panel) => (
-              <div key={panel.label} className="split-panel">
-                <div className="split-panel-label">{panel.label}</div>
-                <PanelWithComparison
-                  tab={effectiveTab}
-                  panel={panel}
-                  comparisonRawData={comparisonRawData}
-                  heightOverride={splitHeight}
-                />
-              </div>
-            ))}
-          </div>
+            <div className="split-grid">
+              {deferredPanels.map((panel) => {
+                // Badge shows panels whose selections filter this one (selected before it)
+                const myOrderIdx = crossFilterOrder.indexOf(panel.label);
+                const upstream = myOrderIdx < 0 ? crossFilterOrder : crossFilterOrder.slice(0, myOrderIdx);
+                const badgeParts: string[] = [];
+                if (crossFilterActive) {
+                  for (const p of upstream) {
+                    const vals = crossFilterSelections[p];
+                    if (vals && vals.length > 0) {
+                      badgeParts.push(`${p}: ${vals.join(', ')}`);
+                    }
+                  }
+                }
+                return (
+                  <div key={panel.label} className="split-panel">
+                    <div className="split-panel-label">
+                      {panel.label}
+                      {badgeParts.length > 0 && (
+                        <span className="cross-filter-badge">{badgeParts.join(' · ')}</span>
+                      )}
+                    </div>
+                    <PanelWithComparison
+                      tab={effectiveTab}
+                      panel={panel}
+                      comparisonRawData={comparisonRawData}
+                      heightOverride={splitHeight}
+                      panelId={crossFilterEnabled ? panel.label : undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
         ) : (
           <div>
             <div className="split-panel-label">{reactantTypes.join(' / ')}</div>

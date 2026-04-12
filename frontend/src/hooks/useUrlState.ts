@@ -46,6 +46,8 @@ export function useUrlState(): void {
   const maxComponents = useFilterStore((s) => s.maxComponents);
   const activeTab = useFilterStore((s) => s.activeTab);
   const splitSelector = useFilterStore((s) => s.splitSelector);
+  const crossFilterSelections = useFilterStore((s) => s.crossFilterSelections);
+  const crossFilterOrder = useFilterStore((s) => s.crossFilterOrder);
   const activeVersion = useFilterStore((s) => s.activeVersion);
   const comparisonMode = useFilterStore((s) => s.comparisonMode);
   const comparisonVersion = useFilterStore((s) => s.comparisonVersion);
@@ -69,6 +71,7 @@ export function useUrlState(): void {
     const ver = searchParams.get('ver');
     const cmp = searchParams.get('cmp');
     const cmpv = searchParams.get('cmpv');
+    const xf = searchParams.get('xf');
 
     // Only restore if URL has params
     if (!rt && !cat && !fga && !fgb && !me) return;
@@ -92,6 +95,18 @@ export function useUrlState(): void {
     partial.splitSelector = split ? (URL_TO_SPLIT[split] ?? null) : null;
     if (cmp !== null) partial.comparisonMode = cmp === '1';
     if (cmpv) partial.comparisonVersion = cmpv;
+    if (xf) {
+      const selections: Record<string, string[]> = {};
+      for (const part of xf.split(';')) {
+        const colonIdx = part.indexOf(':');
+        if (colonIdx < 1) continue;
+        const panel = part.slice(0, colonIdx);
+        const vals = part.slice(colonIdx + 1).split('|').filter(Boolean);
+        if (vals.length > 0) selections[panel] = vals;
+      }
+      partial.crossFilterSelections = selections;
+      partial.crossFilterOrder = Object.keys(selections);
+    }
 
     setFilters(partial);
 
@@ -132,6 +147,13 @@ export function useUrlState(): void {
         params.set('cmp', '1');
         if (comparisonVersion) params.set('cmpv', comparisonVersion);
       }
+      if (crossFilterOrder.length > 0) {
+        const xfStr = crossFilterOrder
+          .filter((p) => crossFilterSelections[p]?.length > 0)
+          .map((p) => `${p}:${crossFilterSelections[p].join('|')}`)
+          .join(';');
+        if (xfStr) params.set('xf', xfStr);
+      }
 
       setSearchParams(params, { replace: true });
     }, 250);
@@ -153,6 +175,8 @@ export function useUrlState(): void {
     maxComponents,
     activeTab,
     splitSelector,
+    crossFilterSelections,
+    crossFilterOrder,
     activeVersion,
     comparisonMode,
     comparisonVersion,

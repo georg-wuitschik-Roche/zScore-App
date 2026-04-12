@@ -50,6 +50,10 @@ export interface FilterState {
   // Split mode
   splitSelector: SplitSelector | null;
 
+  // Cross-filter (split-panel interactive filtering)
+  crossFilterSelections: Record<string, string[]>;
+  crossFilterOrder: string[];
+
   // Version comparison
   comparisonMode: boolean;
   comparisonVersion: string | null; // null = auto (previous version)
@@ -76,6 +80,8 @@ export interface FilterState {
   setTopnZscore: (val: number) => void;
   setMaxComponents: (val: number) => void;
   setSplitSelector: (selector: SplitSelector | null) => void;
+  toggleCrossFilterValue: (panel: string, value: string, multi: boolean) => void;
+  clearCrossFilters: () => void;
   setActiveTab: (tab: TabId) => void;
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
@@ -164,6 +170,8 @@ export const useFilterStore = create<FilterState>((set, get) => ({
 
   // Split mode
   splitSelector: null,
+  crossFilterSelections: {},
+  crossFilterOrder: [],
 
   // UI state
   activeTab: initialTab,
@@ -181,6 +189,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       reactionTypes: types,
       fgA: [],
       fgB: [],
+      crossFilterSelections: {}, crossFilterOrder: [],
       // Auto-clear split if it was on reactionTypes (now <2) or fgA/fgB (just emptied)
       splitSelector:
         (s.splitSelector === 'reactionTypes' && types.length < 2) ||
@@ -192,6 +201,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   setReactantTypes: (types) =>
     set((s) => ({
       reactantTypes: types,
+      crossFilterSelections: {}, crossFilterOrder: [],
       splitSelector:
         s.splitSelector === 'reactantTypes' && types.length < 2
           ? null
@@ -215,7 +225,28 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   setMinEln: (val) => set({ minEln: val }),
   setTopnZscore: (val) => set({ topnZscore: val }),
   setMaxComponents: (val) => set({ maxComponents: val }),
-  setSplitSelector: (selector) => set({ splitSelector: selector }),
+  setSplitSelector: (selector) => set({ splitSelector: selector, crossFilterSelections: {}, crossFilterOrder: [] }),
+  toggleCrossFilterValue: (panel, value, multi) =>
+    set((s) => {
+      const prev = s.crossFilterSelections[panel] ?? [];
+      let next: string[];
+      if (multi) {
+        next = prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value];
+      } else {
+        next = prev.length === 1 && prev[0] === value ? [] : [value];
+      }
+      const selections = { ...s.crossFilterSelections };
+      if (next.length === 0) {
+        delete selections[panel];
+      } else {
+        selections[panel] = next;
+      }
+      const order = next.length === 0
+        ? s.crossFilterOrder.filter((p) => p !== panel)
+        : s.crossFilterOrder.includes(panel) ? s.crossFilterOrder : [...s.crossFilterOrder, panel];
+      return { crossFilterSelections: selections, crossFilterOrder: order };
+    }),
+  clearCrossFilters: () => set({ crossFilterSelections: {}, crossFilterOrder: [] }),
   setActiveTab: (tab) => {
     if (tab === get().activeTab) return;
     try { localStorage.setItem('zscore-tab', tab); } catch { /* ignore */ }
@@ -242,6 +273,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     set({
       ...DEFAULTS,
       splitSelector: null,
+      crossFilterSelections: {}, crossFilterOrder: [],
       activeTab: initialTab,
       uploadedDataset: null,
       uploadFileName: null,

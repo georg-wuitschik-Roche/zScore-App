@@ -23,6 +23,8 @@ export function useSplitFilteredData(): SplitPanel[] {
   const topnZscore = useFilterStore((s) => s.topnZscore);
   const maxComponents = useFilterStore((s) => s.maxComponents);
   const splitSelector = useFilterStore((s) => s.splitSelector);
+  const crossFilterSelections = useFilterStore((s) => s.crossFilterSelections);
+  const crossFilterOrder = useFilterStore((s) => s.crossFilterOrder);
 
   const sourceData = useEffectiveDataset();
 
@@ -61,6 +63,10 @@ export function useSplitFilteredData(): SplitPanel[] {
     }
 
     // Run filter chain once per split value
+    const hasCrossFilter =
+      splitSelector === 'reactantTypes' &&
+      Object.keys(crossFilterSelections).length > 0;
+
     return splitValues.map((value) => {
       const params: FilterParams = { ...baseParams };
 
@@ -75,9 +81,32 @@ export function useSplitFilteredData(): SplitPanel[] {
       }
 
       const result = filterData(sourceData, params);
+      let { rows } = result;
+
+      // Cross-filter: a panel receives filters from panels selected BEFORE it
+      // (earlier in crossFilterOrder). The first-clicked panel is never filtered.
+      // Panels without a selection receive from ALL selected panels.
+      if (hasCrossFilter) {
+        const myOrderIdx = crossFilterOrder.indexOf(value);
+        const upstream = myOrderIdx < 0
+          ? crossFilterOrder                    // no selection → receive from all
+          : crossFilterOrder.slice(0, myOrderIdx); // receive only from earlier
+        if (upstream.length > 0) {
+          rows = rows.filter((row) => {
+            for (const panel of upstream) {
+              const sel = crossFilterSelections[panel];
+              if (!sel || sel.length === 0) continue;
+              if (!sel.includes(String(row[panel] ?? ''))) return false;
+            }
+            return true;
+          });
+        }
+      }
+
       return {
         label: value,
-        ...result,
+        rows,
+        stats: result.stats,
         reactantTypes:
           splitSelector === 'reactantTypes' ? [value] : reactantTypes,
       };
@@ -95,5 +124,7 @@ export function useSplitFilteredData(): SplitPanel[] {
     topnZscore,
     maxComponents,
     splitSelector,
+    crossFilterSelections,
+    crossFilterOrder,
   ]);
 }

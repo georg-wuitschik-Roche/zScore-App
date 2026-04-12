@@ -1381,6 +1381,50 @@ button:hover {
     margin-bottom: 8px;
     padding: 4px 0;
     border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: baseline;
+}
+
+.clear-cross-filters-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    transition: all 0.15s ease;
+    margin-right: auto;
+}
+
+.clear-cross-filters-btn:hover {
+    color: var(--color-text);
+}
+
+.cross-filter-enabled .ytick {
+    cursor: pointer !important;
+}
+
+.cross-filter-enabled .ytick text,
+.cross-filter-enabled .ytick tspan {
+    cursor: pointer !important;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: all;
+}
+
+.cross-filter-enabled .yaxisdrag {
+    pointer-events: none !important;
+}
+
+.cross-filter-badge {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    margin-left: 12px;
 }
 
 /* ================================================================== */
