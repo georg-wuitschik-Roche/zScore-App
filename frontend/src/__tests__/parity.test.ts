@@ -17,6 +17,7 @@ import { createColorMapping, interpolateHex } from '../plots/colors';
 import { createBoxplotConfig } from '../plots/boxplot';
 import { createHeatmapConfig } from '../plots/heatmap';
 import type { Row, FilterParams } from '../data/types';
+import { isCopperCatalyst } from '../data/filterSteps';
 
 // ---------------------------------------------------------------------------
 // Load dataset once
@@ -50,7 +51,7 @@ const FILTER_CASES: FilterCase[] = [
       reactantTypes: ['Catalyst'],
       fgA: [],
       fgB: [],
-      excludeCui: true,
+      copperFilter: 'exclude',
       excludeScaleup: true,
       includeNullCategories: false,
       topnZscore: 5,
@@ -66,7 +67,7 @@ const FILTER_CASES: FilterCase[] = [
       reactantTypes: ['Ligand'],
       fgA: [],
       fgB: [],
-      excludeCui: true,
+      copperFilter: 'exclude',
       excludeScaleup: true,
       includeNullCategories: false,
       topnZscore: 3,
@@ -82,7 +83,7 @@ const FILTER_CASES: FilterCase[] = [
       reactantTypes: ['Catalyst'],
       fgA: [],
       fgB: [],
-      excludeCui: false,
+      copperFilter: 'include',
       excludeScaleup: true,
       includeNullCategories: false,
       topnZscore: 5,
@@ -98,7 +99,7 @@ const FILTER_CASES: FilterCase[] = [
       reactantTypes: ['Solvent', 'Base'],
       fgA: [],
       fgB: [],
-      excludeCui: false,
+      copperFilter: 'include',
       excludeScaleup: true,
       includeNullCategories: false,
       topnZscore: 5,
@@ -114,7 +115,7 @@ const FILTER_CASES: FilterCase[] = [
       reactantTypes: ['Catalyst'],
       fgA: ['ArBr'],
       fgB: ['R2NH'],
-      excludeCui: true,
+      copperFilter: 'exclude',
       excludeScaleup: true,
       includeNullCategories: false,
       topnZscore: 5,
@@ -130,7 +131,7 @@ const FILTER_CASES: FilterCase[] = [
       reactantTypes: ['Base'],
       fgA: [],
       fgB: [],
-      excludeCui: false,
+      copperFilter: 'include',
       excludeScaleup: false,
       includeNullCategories: true,
       topnZscore: 5,
@@ -202,11 +203,11 @@ describe('Filter chain regression', () => {
         }
       });
 
-      it('CuI exclusion is applied when enabled', () => {
-        if (!params.excludeCui) return;
+      it('copper exclusion is applied when enabled', () => {
+        if (params.copperFilter !== 'exclude') return;
         const { rows } = filterData(dataset, params);
-        const hasCuI = rows.some((r) => r.Catalyst === 'CuI');
-        expect(hasCuI).toBe(false);
+        const hasCopper = rows.some((r) => isCopperCatalyst(r.Catalyst as string | null));
+        expect(hasCopper).toBe(false);
       });
 
       it('all z-Scores are valid numbers', () => {

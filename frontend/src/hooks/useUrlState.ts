@@ -9,8 +9,8 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import type { FilterState } from '../stores/filterStore'; // used for Partial<FilterState>
-import { SPLIT_URL_KEYS } from '../data/types';
-import type { SplitSelector } from '../data/types';
+import { SPLIT_URL_KEYS, COPPER_FILTER_OPTIONS } from '../data/types';
+import type { SplitSelector, CopperFilter } from '../data/types';
 
 const URL_TO_SPLIT = Object.fromEntries(
   Object.entries(SPLIT_URL_KEYS).map(([k, v]) => [v, k]),
@@ -38,7 +38,7 @@ export function useUrlState(): void {
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
   const fgA = useFilterStore((s) => s.fgA);
   const fgB = useFilterStore((s) => s.fgB);
-  const excludeCui = useFilterStore((s) => s.excludeCui);
+  const copperFilter = useFilterStore((s) => s.copperFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   const minEln = useFilterStore((s) => s.minEln);
@@ -62,7 +62,7 @@ export function useUrlState(): void {
     const tn = searchParams.get('tn');
     const mc = searchParams.get('mc');
     const tab = searchParams.get('tab');
-    const cui = searchParams.get('cui');
+    const cu = searchParams.get('cu');
     const su = searchParams.get('su');
     const nc = searchParams.get('nc');
     const split = searchParams.get('split');
@@ -84,7 +84,9 @@ export function useUrlState(): void {
     if (tn) partial.topnZscore = Number(tn);
     if (mc) partial.maxComponents = Number(mc);
     if (tab) partial.activeTab = tab as 'boxplot' | 'violin' | 'heatmap' | 'stats';
-    if (cui !== null) partial.excludeCui = cui === '1';
+    if (cu !== null) {
+      partial.copperFilter = COPPER_FILTER_OPTIONS.includes(cu as CopperFilter) ? (cu as CopperFilter) : 'exclude';
+    }
     if (su !== null) partial.excludeScaleup = su === '1';
     if (nc !== null) partial.includeNullCategories = nc === '1';
     partial.splitSelector = split ? (URL_TO_SPLIT[split] ?? null) : null;
@@ -120,7 +122,7 @@ export function useUrlState(): void {
       params.set('me', String(minEln));
       params.set('tn', String(topnZscore));
       params.set('mc', String(maxComponents));
-      params.set('cui', excludeCui ? '1' : '0');
+      params.set('cu', copperFilter);
       params.set('su', excludeScaleup ? '1' : '0');
       params.set('nc', includeNullCategories ? '1' : '0');
       if (activeTab !== 'violin') params.set('tab', activeTab);
@@ -143,7 +145,7 @@ export function useUrlState(): void {
     reactantTypes,
     fgA,
     fgB,
-    excludeCui,
+    copperFilter,
     excludeScaleup,
     includeNullCategories,
     minEln,

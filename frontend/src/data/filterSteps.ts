@@ -5,7 +5,7 @@
  * The 10-step chain is orchestrated by filterChain.ts.
  */
 
-import type { Row } from './types';
+import type { Row, CopperFilter } from './types';
 import { REAGENT_COLS } from './types';
 
 const NAN_SENTINEL = '__NAN__';
@@ -76,14 +76,21 @@ export function filterByReactantColumns(
 }
 
 // ---------------------------------------------------------------------------
-// Step 3: Exclude CuI Catalyst
+// Step 3: Copper catalyst filter
 // ---------------------------------------------------------------------------
 
-export function filterExcludeCui(rows: Row[], excludeCui: boolean): Row[] {
-  if (!excludeCui) return rows;
+const COPPER_RE = /cu|copper/i;
+
+export function isCopperCatalyst(catalyst: string | null): boolean {
+  return catalyst !== null && COPPER_RE.test(catalyst);
+}
+
+export function filterCopper(rows: Row[], mode: CopperFilter): Row[] {
+  if (mode === 'include') return rows;
   return rows.filter((row) => {
     const cat = getVal(row, 'Catalyst');
-    return cat === null || cat !== 'CuI';
+    const isCopper = isCopperCatalyst(cat);
+    return mode === 'exclude' ? !isCopper : isCopper;
   });
 }
 

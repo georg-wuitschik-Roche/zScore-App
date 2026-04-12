@@ -11,7 +11,7 @@ export type { FilterParams };
 import {
   filterByReactionTypes,
   filterByReactantColumns,
-  filterExcludeCui,
+  filterCopper,
   filterFgA,
   filterFgB,
   filterScaleupPlates,
@@ -71,8 +71,8 @@ export function filterData(
     stats.afterReactantFilters = { elns: countElns(rows) };
   }
 
-  // Step 3: CuI exclusion
-  rows = filterExcludeCui(rows, params.excludeCui);
+  // Step 3: Copper catalyst filter
+  rows = filterCopper(rows, params.copperFilter);
 
   // Step 4: Functional Group A
   const [afterFgA, fgAList] = filterFgA(rows, params.fgA);

@@ -22,7 +22,7 @@ const INITIAL_STATE: Partial<FilterState> = {
   reactantTypes: [],
   fgA: [],
   fgB: [],
-  excludeCui: true,
+  copperFilter: 'exclude',
   excludeScaleup: true,
   includeNullCategories: true,
   minEln: 5,
@@ -50,8 +50,8 @@ describe('initial state', () => {
     expect(state.reactionTypes).toEqual([]);
   });
 
-  it('has excludeCui=true by default', () => {
-    expect(useFilterStore.getState().excludeCui).toBe(true);
+  it('has copperFilter="exclude" by default', () => {
+    expect(useFilterStore.getState().copperFilter).toBe('exclude');
   });
 
   it('has excludeScaleup=true by default', () => {
@@ -153,10 +153,10 @@ describe('resetFilters', () => {
     expect(state.maxComponents).toBe(10);
   });
 
-  it('resets excludeCui to true', () => {
-    useFilterStore.setState({ excludeCui: false });
+  it('resets copperFilter to "exclude"', () => {
+    useFilterStore.setState({ copperFilter: 'include' });
     useFilterStore.getState().resetFilters();
-    expect(useFilterStore.getState().excludeCui).toBe(true);
+    expect(useFilterStore.getState().copperFilter).toBe('exclude');
   });
 
   it('resets excludeScaleup to true', () => {
@@ -343,14 +343,14 @@ describe('setFilters', () => {
       reactionTypes: ['Suzuki-Miyaura'],
       minEln: 10,
       maxComponents: 20,
-      excludeCui: false,
+      copperFilter: 'include',
     });
 
     const state = useFilterStore.getState();
     expect(state.reactionTypes).toEqual(['Suzuki-Miyaura']);
     expect(state.minEln).toBe(10);
     expect(state.maxComponents).toBe(20);
-    expect(state.excludeCui).toBe(false);
+    expect(state.copperFilter).toBe('include');
   });
 
   it('does not affect unspecified fields', () => {
@@ -360,7 +360,7 @@ describe('setFilters', () => {
     // These should remain at defaults
     expect(state.reactionTypes).toEqual([]);
     expect(state.topnZscore).toBe(5);
-    expect(state.excludeCui).toBe(true);
+    expect(state.copperFilter).toBe('exclude');
   });
 
   it('can set activeTab', () => {

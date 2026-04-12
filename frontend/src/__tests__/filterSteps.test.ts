@@ -12,7 +12,8 @@ import {
   median,
   filterByReactionTypes,
   filterByReactantColumns,
-  filterExcludeCui,
+  filterCopper,
+  isCopperCatalyst,
   filterFgA,
   filterFgB,
   filterScaleupPlates,
@@ -200,27 +201,52 @@ describe('filterByReactantColumns', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Step 3: filterExcludeCui
+// Step 3: filterCopper
 // ---------------------------------------------------------------------------
 
-describe('filterExcludeCui', () => {
-  it('false returns all rows', () => {
-    expect(filterExcludeCui(FIXTURE, false)).toHaveLength(FIXTURE.length);
+describe('filterCopper', () => {
+  it('include mode returns all rows', () => {
+    expect(filterCopper(FIXTURE, 'include')).toHaveLength(FIXTURE.length);
   });
 
-  it('true removes rows where Catalyst === "CuI"', () => {
-    const result = filterExcludeCui(FIXTURE, true);
-    const cuiRows = FIXTURE.filter((r) => r.Catalyst === 'CuI');
-    expect(cuiRows.length).toBeGreaterThan(0);
-    expect(result.every((r) => r.Catalyst !== 'CuI')).toBe(true);
-    expect(result).toHaveLength(FIXTURE.length - cuiRows.length);
+  it('exclude mode removes rows with copper catalysts', () => {
+    const result = filterCopper(FIXTURE, 'exclude');
+    const copperRows = FIXTURE.filter((r) => isCopperCatalyst(r.Catalyst as string | null));
+    expect(copperRows.length).toBeGreaterThan(0);
+    expect(result.every((r) => !isCopperCatalyst(r.Catalyst as string | null))).toBe(true);
+    expect(result).toHaveLength(FIXTURE.length - copperRows.length);
   });
 
-  it('preserves rows where Catalyst is null', () => {
-    const result = filterExcludeCui(FIXTURE, true);
+  it('exclude mode preserves rows where Catalyst is null', () => {
+    const result = filterCopper(FIXTURE, 'exclude');
     const nullCatRows = FIXTURE.filter((r) => r.Catalyst === null);
     expect(nullCatRows.length).toBeGreaterThan(0);
     expect(result.filter((r) => r.Catalyst === null)).toHaveLength(nullCatRows.length);
+  });
+
+  it('only mode keeps only rows with copper catalysts', () => {
+    const result = filterCopper(FIXTURE, 'only');
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((r) => isCopperCatalyst(r.Catalyst as string | null))).toBe(true);
+  });
+
+  it('only mode excludes rows with null Catalyst', () => {
+    const result = filterCopper(FIXTURE, 'only');
+    expect(result.every((r) => r.Catalyst !== null)).toBe(true);
+  });
+
+  it('matches various copper catalyst forms', () => {
+    const testRows = [
+      makeRow({ Catalyst: 'CuI' }),
+      makeRow({ Catalyst: 'CuBr' }),
+      makeRow({ Catalyst: 'Cu(OAc)2' }),
+      makeRow({ Catalyst: 'Cu(MeCN)4BF4' }),
+      makeRow({ Catalyst: 'Copper(I) thiophene-2-carboxylate' }),
+      makeRow({ Catalyst: 'Pd(OAc)2, CuI' }),
+      makeRow({ Catalyst: 'Pd(OAc)2' }),  // not copper
+    ];
+    const result = filterCopper(testRows, 'only');
+    expect(result).toHaveLength(6);
   });
 });
 

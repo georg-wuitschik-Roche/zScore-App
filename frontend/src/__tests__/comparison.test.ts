@@ -288,7 +288,7 @@ describe('comparison with parquet data', () => {
       reactionTypes: ['Buchwald-Hartwig'],
       reactantTypes: ['Catalyst'],
       fgA: [], fgB: [],
-      excludeCui: true, excludeScaleup: true, includeNullCategories: true,
+      copperFilter: 'include', excludeScaleup: true, includeNullCategories: true,
       minEln: 5, topnZscore: 5, maxComponents: 10,
     };
 
@@ -314,7 +314,7 @@ describe('comparison with parquet data', () => {
       reactionTypes: ['Buchwald-Hartwig'],
       reactantTypes: ['Catalyst', 'Ligand'],
       fgA: [], fgB: [],
-      excludeCui: true, excludeScaleup: true, includeNullCategories: true,
+      copperFilter: 'include', excludeScaleup: true, includeNullCategories: true,
       minEln: 5, topnZscore: 5, maxComponents: 10,
     };
 
@@ -345,7 +345,7 @@ describe('comparison with parquet data', () => {
       reactionTypes: ['Buchwald-Hartwig'],
       reactantTypes: ['Catalyst'],
       fgA: [], fgB: [],
-      excludeCui: true, excludeScaleup: true, includeNullCategories: true,
+      copperFilter: 'include', excludeScaleup: true, includeNullCategories: true,
       minEln: 5, topnZscore: 5, maxComponents: 10,
     };
 

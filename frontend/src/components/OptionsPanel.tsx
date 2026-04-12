@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { useFilteredData } from '../hooks/useFilteredData';
+import { COPPER_FILTER_OPTIONS } from '../data/types';
 
 const SLIDER_DEBOUNCE_MS = 120;
 
@@ -95,7 +96,7 @@ export function OptionsPanel() {
   const minEln = useFilterStore((s) => s.minEln);
   const topnZscore = useFilterStore((s) => s.topnZscore);
   const maxComponents = useFilterStore((s) => s.maxComponents);
-  const excludeCui = useFilterStore((s) => s.excludeCui);
+  const copperFilter = useFilterStore((s) => s.copperFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore(
     (s) => s.includeNullCategories,
@@ -103,7 +104,7 @@ export function OptionsPanel() {
   const setMinEln = useFilterStore((s) => s.setMinEln);
   const setTopnZscore = useFilterStore((s) => s.setTopnZscore);
   const setMaxComponents = useFilterStore((s) => s.setMaxComponents);
-  const setExcludeCui = useFilterStore((s) => s.setExcludeCui);
+  const setCopperFilter = useFilterStore((s) => s.setCopperFilter);
   const setExcludeScaleup = useFilterStore((s) => s.setExcludeScaleup);
   const setIncludeNullCategories = useFilterStore(
     (s) => s.setIncludeNullCategories,
@@ -242,14 +243,20 @@ export function OptionsPanel() {
 
         {/* Checkboxes row */}
         <div className="filter-options-row">
-          <label className="checklist-item" id="exclude-cui-checkbox">
-            <input
-              type="checkbox"
-              checked={excludeCui}
-              onChange={(e) => setExcludeCui(e.target.checked)}
-            />
-            {' '}Exclude CuI as Catalyst
-          </label>
+          <div className="copper-filter-group" id="copper-filter-control">
+            <span className="copper-filter-label">Copper Catalysts:</span>
+            <div className="copper-filter-toggle">
+              {COPPER_FILTER_OPTIONS.map((mode) => (
+                <button
+                  key={mode}
+                  className={`copper-filter-btn${copperFilter === mode ? ' active' : ''}`}
+                  onClick={() => setCopperFilter(mode)}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
           <label className="checklist-item" id="exclude-scaleup-checkbox">
             <input
               type="checkbox"

@@ -11,6 +11,7 @@ import { parseDataset } from '../data/loader';
 import { filterData } from '../data/filterChain';
 import type { Row } from '../data/types';
 import { DEFAULTS } from '../data/types';
+import { isCopperCatalyst } from '../data/filterSteps';
 
 // ---------------------------------------------------------------------------
 // Load dataset once (from Parquet)
@@ -52,15 +53,15 @@ describe('Filter chain basics', () => {
     expect(rows.length).toBe(0);
   });
 
-  it('CuI exclusion removes CuI rows', () => {
+  it('copper exclusion removes all copper catalyst rows', () => {
     const params = {
       ...DEFAULTS,
       reactionTypes: ['Buchwald-Hartwig'],
-      excludeCui: true,
+      copperFilter: 'exclude' as const,
     };
     const { rows } = filterData(dataset, params);
-    const cuiRows = rows.filter((r) => r.Catalyst === 'CuI');
-    expect(cuiRows.length).toBe(0);
+    const copperRows = rows.filter((r) => isCopperCatalyst(r.Catalyst as string | null));
+    expect(copperRows.length).toBe(0);
   });
 
   it('stats contain expected keys', () => {

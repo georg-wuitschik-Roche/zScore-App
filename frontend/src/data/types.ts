@@ -28,13 +28,17 @@ export interface Row {
   [key: string]: string | number | null | undefined;
 }
 
+/** Copper catalyst filter mode. */
+export type CopperFilter = 'include' | 'exclude' | 'only';
+export const COPPER_FILTER_OPTIONS: readonly CopperFilter[] = ['include', 'exclude', 'only'] as const;
+
 /** Parameters for the 10-step filter chain. */
 export interface FilterParams {
   reactionTypes: string[];
   reactantTypes: string[];
   fgA: string[];
   fgB: string[];
-  excludeCui: boolean;
+  copperFilter: CopperFilter;
   excludeScaleup: boolean;
   includeNullCategories: boolean;
   minEln: number;
@@ -59,7 +63,7 @@ export const DEFAULTS: FilterParams = {
   reactantTypes: [],
   fgA: [],
   fgB: [],
-  excludeCui: true,
+  copperFilter: 'exclude',
   excludeScaleup: true,
   includeNullCategories: true,
   minEln: 5,

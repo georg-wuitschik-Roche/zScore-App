@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode } from '../data/types';
+import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode, CopperFilter } from '../data/types';
 import { DEFAULTS, REQUIRED_COLUMNS, isTabId } from '../data/types';
 import {
   fetchDropdownIndex,
@@ -40,7 +40,7 @@ export interface FilterState {
   reactantTypes: string[];
   fgA: string[];
   fgB: string[];
-  excludeCui: boolean;
+  copperFilter: CopperFilter;
   excludeScaleup: boolean;
   includeNullCategories: boolean;
   minEln: number;
@@ -69,7 +69,7 @@ export interface FilterState {
   setReactantTypes: (types: string[]) => void;
   setFgA: (fgs: string[]) => void;
   setFgB: (fgs: string[]) => void;
-  setExcludeCui: (val: boolean) => void;
+  setCopperFilter: (val: CopperFilter) => void;
   setExcludeScaleup: (val: boolean) => void;
   setIncludeNullCategories: (val: boolean) => void;
   setMinEln: (val: number) => void;
@@ -151,7 +151,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   reactantTypes: DEFAULTS.reactantTypes,
   fgA: DEFAULTS.fgA,
   fgB: DEFAULTS.fgB,
-  excludeCui: DEFAULTS.excludeCui,
+  copperFilter: DEFAULTS.copperFilter,
   excludeScaleup: DEFAULTS.excludeScaleup,
   includeNullCategories: DEFAULTS.includeNullCategories,
   minEln: DEFAULTS.minEln,
@@ -209,7 +209,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       splitSelector:
         s.splitSelector === 'fgB' && fgs.length < 2 ? null : s.splitSelector,
     })),
-  setExcludeCui: (val) => set({ excludeCui: val }),
+  setCopperFilter: (val) => set({ copperFilter: val }),
   setExcludeScaleup: (val) => set({ excludeScaleup: val }),
   setIncludeNullCategories: (val) => set({ includeNullCategories: val }),
   setMinEln: (val) => set({ minEln: val }),
@@ -394,7 +394,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       minEln: DEFAULTS.minEln,
       topnZscore: DEFAULTS.topnZscore,
       maxComponents: DEFAULTS.maxComponents,
-      excludeCui: DEFAULTS.excludeCui,
+      copperFilter: DEFAULTS.copperFilter,
       excludeScaleup: DEFAULTS.excludeScaleup,
       includeNullCategories: DEFAULTS.includeNullCategories,
     }),

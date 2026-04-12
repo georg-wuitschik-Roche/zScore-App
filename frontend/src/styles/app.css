@@ -1654,6 +1654,51 @@ button:hover {
     cursor: pointer;
 }
 
+/* Copper catalyst three-state toggle */
+.copper-filter-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 32px;
+}
+
+.copper-filter-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.copper-filter-toggle {
+    display: inline-flex;
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    padding: 2px;
+}
+
+.copper-filter-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    color: var(--color-text-muted);
+    transition: all 0.15s ease;
+}
+
+.copper-filter-btn:hover {
+    color: var(--color-text);
+}
+
+.copper-filter-btn.active {
+    background: var(--color-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+}
+
 /* ================================================================== */
 /* 10. PLOTS & STATS                                                  */
 /* ================================================================== */
@@ -2282,6 +2327,16 @@ label.tutorial-highlight {
 }
 
 .app-container.presentation-mode .checklist-item label {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+.app-container.presentation-mode .copper-filter-btn {
+    font-size: 16px !important;
+    padding: 6px 16px !important;
+}
+
+.app-container.presentation-mode .copper-filter-label {
     font-size: 18px !important;
     font-weight: 600 !important;
 }

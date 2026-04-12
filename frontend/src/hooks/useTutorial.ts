@@ -56,9 +56,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     body: 'Cap how many components are displayed in plots.',
   },
   {
-    targetId: 'exclude-cui-checkbox',
-    title: 'Exclude CuI as Catalyst',
-    body: 'Toggle to include/exclude CuI catalyst entries.',
+    targetId: 'copper-filter-control',
+    title: 'Copper Catalyst Filter',
+    body: 'Choose how to handle copper-based catalysts: Include all, Exclude copper, or show Only copper entries.',
   },
   {
     targetId: 'exclude-scaleup-checkbox',
@@ -167,7 +167,7 @@ export function useIsStepSatisfied(): boolean {
   const minEln = useFilterStore((s) => s.minEln);
   const topnZscore = useFilterStore((s) => s.topnZscore);
   const maxComponents = useFilterStore((s) => s.maxComponents);
-  const excludeCui = useFilterStore((s) => s.excludeCui);
+  const copperFilter = useFilterStore((s) => s.copperFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   switch (step) {
@@ -188,7 +188,7 @@ export function useIsStepSatisfied(): boolean {
     case 7:
       return maxComponents !== 10;
     case 8:
-      return !excludeCui;
+      return copperFilter !== 'exclude';
     case 9:
       return !excludeScaleup;
     case 10:
