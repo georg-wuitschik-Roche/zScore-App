@@ -134,12 +134,16 @@ export async function fetchParquetBuffer(
  * Parquet advantages: 30x smaller than CSV, types preserved, dictionary-encoded strings.
  */
 export async function parseDataset(buffer: ArrayBuffer): Promise<Row[]> {
-  const { parquetRead } = await import('hyparquet');
+  const [{ parquetRead }, { compressors }] = await Promise.all([
+    import('hyparquet'),
+    import('hyparquet-compressors'),
+  ]);
   return new Promise<Row[]>((resolve, reject) => {
     try {
       parquetRead({
         file: buffer,
         rowFormat: 'object',
+        compressors,
         onComplete: (data: Record<string, unknown>[]) => {
           const rows = data.map(cleanRow);
           resolve(rows);

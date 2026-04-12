@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { parquetRead } from 'hyparquet';
+import { compressors } from 'hyparquet-compressors';
 import { filterData } from '../data/filterChain';
 import { resolveComparisonVersion, computeRankDeltas } from '../data/comparison';
 import type { Row, FilterParams, VersionInfo } from '../data/types';
@@ -19,6 +20,7 @@ function parseBuffer(buffer: ArrayBuffer): Promise<Record<string, unknown>[]> {
     parquetRead({
       file: buffer,
       rowFormat: 'object',
+      compressors,
       onComplete: (data: Record<string, unknown>[]) => resolve(data),
     });
   });
