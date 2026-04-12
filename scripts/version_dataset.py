@@ -12,10 +12,20 @@ For each CSV found:
   4. Updates frontend/public/data/versions.json
   5. Removes the source CSV from add-dataset/
   6. Stages all generated files
+
+Manual usage for minor/patch versions:
+
+    python3 scripts/version_dataset.py --version v2.1 --replace v2
+
+Versioning convention:
+  - New integer (v3, v4, …)    = substantially more data
+  - Dotted minor (v2.1, v2.2)  = data quality improvement, replaces parent
 """
 from __future__ import annotations
 
+import argparse
 import json
+import re
 import subprocess
 import sys
 from collections import defaultdict
@@ -58,6 +68,8 @@ CATEGORY_OPTIONS = [
     'Secondary Solvent',
 ]
 
+VERSION_RE = re.compile(r'^v(\d+(?:\.\d+)?)$')
+
 
 def _load_versions() -> dict:
     """Load existing versions.json or return empty structure."""
@@ -68,12 +80,12 @@ def _load_versions() -> dict:
 
 
 def _next_version_number(manifest: dict) -> int:
-    """Determine the next version number from existing manifest."""
+    """Determine the next major version number from existing manifest."""
     max_num = 0
     for v in manifest.get('versions', []):
-        vid = v.get('id', '')
-        if vid.startswith('v') and vid[1:].isdigit():
-            max_num = max(max_num, int(vid[1:]))
+        m = VERSION_RE.match(v.get('id', ''))
+        if m:
+            max_num = max(max_num, int(m.group(1).split('.')[0]))
     return max_num + 1
 
 
@@ -158,15 +170,32 @@ def _is_git_repo() -> bool:
     return result.returncode == 0 and result.stdout.strip() == 'true'
 
 
-def process_csv(csv_path: Path, manifest: dict) -> int:
+def _remove_version(manifest: dict, version_id: str) -> bool:
+    """Remove a version entry from the manifest. Returns True if found."""
+    before = len(manifest['versions'])
+    manifest['versions'] = [v for v in manifest['versions'] if v['id'] != version_id]
+    return len(manifest['versions']) < before
+
+
+def _delete_version_files(version_id: str) -> None:
+    """Delete parquet and dropdown index files for a version."""
+    parquet = DATA_DIR / f'{version_id}.parquet'
+    index = DATA_DIR / f'{version_id}-dropdown-index.json'
+    for f in (parquet, index):
+        f.unlink(missing_ok=True)
+        print(f'    Deleted {f.relative_to(ROOT)}')
+
+
+def process_csv(csv_path: Path, manifest: dict, version_override: str | None = None) -> str:
     """Process a single CSV file into a versioned dataset.
 
-    Returns the version number assigned.
+    Returns the version ID assigned.
     """
-    import pandas as pd
-
-    version_num = _next_version_number(manifest)
-    version_id = f'v{version_num}'
+    if version_override:
+        version_id = version_override
+    else:
+        version_num = _next_version_number(manifest)
+        version_id = f'v{version_num}'
 
     print(f'  Processing {csv_path.name} → {version_id}')
 
@@ -188,41 +217,80 @@ def process_csv(csv_path: Path, manifest: dict) -> int:
     print(f'    Dropdown index: {len(index)} reaction types → {index_path.relative_to(ROOT)}')
 
     # 4. Update manifest
-    # Use CSV filename (without extension) as label
-    label = csv_path.stem.replace('_', ' ').replace('-', ' ')
     manifest['versions'].append({
         'id': version_id,
         'parquet': f'/data/{version_id}.parquet',
         'index': f'/data/{version_id}-dropdown-index.json',
-        'label': f'v{version_num}',
+        'label': version_id,
         'date': date.today().isoformat(),
     })
     manifest['latest'] = version_id
 
-    return version_num
+    return version_id
 
 
 def main() -> int:
     """Scan add-dataset/ for CSVs and version them."""
-    if not DATASETS_DIR.exists():
-        print('No add-dataset/ directory found, nothing to do.')
-        return 0
+    parser = argparse.ArgumentParser(description='Version dataset CSVs')
+    parser.add_argument(
+        '--version',
+        help='Override version ID (e.g. v2.1) instead of auto-incrementing',
+    )
+    parser.add_argument(
+        '--replace',
+        help='Remove this version from the manifest and delete its files (e.g. v2)',
+    )
+    parser.add_argument(
+        'csv_file',
+        nargs='?',
+        help='Path to a specific CSV file (bypasses add-dataset/ scan)',
+    )
+    args = parser.parse_args()
 
-    csv_files = sorted(DATASETS_DIR.glob('*.csv'))
-    if not csv_files:
-        print('No CSV files in add-dataset/, nothing to do.')
-        return 0
+    # Validate --version format
+    if args.version and not VERSION_RE.match(args.version):
+        print(f'ERROR: --version must match vN or vN.M (got "{args.version}")', file=sys.stderr)
+        return 1
+
+    # Determine CSV source(s)
+    if args.csv_file:
+        csv_files = [Path(args.csv_file).resolve()]
+        for f in csv_files:
+            if not f.exists():
+                print(f'ERROR: {f} not found', file=sys.stderr)
+                return 1
+    else:
+        if not DATASETS_DIR.exists():
+            print('No add-dataset/ directory found, nothing to do.')
+            return 0
+        csv_files = sorted(DATASETS_DIR.glob('*.csv'))
+        if not csv_files:
+            print('No CSV files in add-dataset/, nothing to do.')
+            return 0
+
+    if args.version and len(csv_files) > 1:
+        print('ERROR: --version can only be used with a single CSV file', file=sys.stderr)
+        return 1
 
     print(f'Found {len(csv_files)} CSV file(s) to version...')
 
     manifest = _load_versions()
-    files_to_stage: list[str] = []
     files_to_remove: list[str] = []
+
+    # Remove replaced version first
+    if args.replace:
+        if _remove_version(manifest, args.replace):
+            print(f'  Removed {args.replace} from manifest')
+            _delete_version_files(args.replace)
+        else:
+            print(f'  WARNING: {args.replace} not found in manifest')
 
     for csv_path in csv_files:
         try:
-            process_csv(csv_path, manifest)
-            files_to_remove.append(str(csv_path.relative_to(ROOT)))
+            process_csv(csv_path, manifest, version_override=args.version)
+            # Only auto-remove CSVs from add-dataset/
+            if DATASETS_DIR in csv_path.parents:
+                files_to_remove.append(str(csv_path.relative_to(ROOT)))
         except Exception as e:
             print(f'  ERROR processing {csv_path.name}: {e}', file=sys.stderr)
             return 1
@@ -235,14 +303,21 @@ def main() -> int:
     # Stage generated files and remove source CSVs
     if _is_git_repo():
         # Stage all generated data files
-        files_to_stage = [str(DATA_DIR.relative_to(ROOT))]
-        subprocess.run(['git', 'add'] + files_to_stage, cwd=str(ROOT), check=True)
+        subprocess.run(
+            ['git', 'add', str(DATA_DIR.relative_to(ROOT))],
+            cwd=str(ROOT),
+            check=True,
+        )
 
-        # Remove source CSVs
+        # Remove source CSVs (only from add-dataset/)
         for csv_rel in files_to_remove:
             csv_abs = ROOT / csv_rel
             csv_abs.unlink(missing_ok=True)
-            subprocess.run(['git', 'rm', '--cached', '-f', csv_rel], cwd=str(ROOT), capture_output=True)
+            subprocess.run(
+                ['git', 'rm', '--cached', '-f', csv_rel],
+                cwd=str(ROOT),
+                capture_output=True,
+            )
         print('  Staged generated files and removed source CSVs')
 
     print('\nDone — dataset(s) versioned successfully.')

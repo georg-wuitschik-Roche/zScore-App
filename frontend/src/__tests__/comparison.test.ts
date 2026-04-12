@@ -89,7 +89,7 @@ function makeRow(overrides: Partial<Row>): Row {
 
 const VERSIONS: VersionInfo[] = [
   { id: 'v1', parquet: '/data/v1.parquet', index: '/data/v1-dropdown-index.json', label: 'v1', date: '2025-09-25' },
-  { id: 'v2', parquet: '/data/v2.parquet', index: '/data/v2-dropdown-index.json', label: 'v2', date: '2026-03-29' },
+  { id: 'v2.1', parquet: '/data/v2.1.parquet', index: '/data/v2.1-dropdown-index.json', label: 'v2.1', date: '2026-04-12' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -97,29 +97,29 @@ const VERSIONS: VersionInfo[] = [
 // ---------------------------------------------------------------------------
 
 describe('resolveComparisonVersion', () => {
-  it('auto-resolves to the other version (v2 active → v1)', () => {
-    expect(resolveComparisonVersion(VERSIONS, 'v2', null)).toBe('v1');
+  it('auto-resolves to the other version (v2.1 active → v1)', () => {
+    expect(resolveComparisonVersion(VERSIONS, 'v2.1', null)).toBe('v1');
   });
 
-  it('auto-resolves to the other version (v1 active → v2)', () => {
-    expect(resolveComparisonVersion(VERSIONS, 'v1', null)).toBe('v2');
+  it('auto-resolves to the other version (v1 active → v2.1)', () => {
+    expect(resolveComparisonVersion(VERSIONS, 'v1', null)).toBe('v2.1');
   });
 
   it('uses explicit version when different from active', () => {
-    expect(resolveComparisonVersion(VERSIONS, 'v2', 'v1')).toBe('v1');
+    expect(resolveComparisonVersion(VERSIONS, 'v2.1', 'v1')).toBe('v1');
   });
 
   it('ignores explicit version when same as active (self-comparison guard)', () => {
-    // Should fall through to auto-resolve instead of comparing v2 against itself
-    expect(resolveComparisonVersion(VERSIONS, 'v2', 'v2')).toBe('v1');
+    // Should fall through to auto-resolve instead of comparing v2.1 against itself
+    expect(resolveComparisonVersion(VERSIONS, 'v2.1', 'v2.1')).toBe('v1');
   });
 
   it('allows explicit == active when upload is present (compare upload against built-in)', () => {
-    expect(resolveComparisonVersion(VERSIONS, 'v2', 'v2', true)).toBe('v2');
+    expect(resolveComparisonVersion(VERSIONS, 'v2.1', 'v2.1', true)).toBe('v2.1');
   });
 
   it('defaults to active version for uploads without explicit selection', () => {
-    expect(resolveComparisonVersion(VERSIONS, 'v2', null, true)).toBe('v2');
+    expect(resolveComparisonVersion(VERSIONS, 'v2.1', null, true)).toBe('v2.1');
   });
 
   it('returns null when only one version and no upload', () => {
@@ -284,7 +284,7 @@ describe('computeRankDeltas', () => {
 describe('comparison with parquet data', () => {
   it('Cu(MeCN)4BF4 is not NEW in either direction', async () => {
     const v1Rows = await loadParquet('v1.parquet');
-    const v2Rows = await loadParquet('v2.parquet');
+    const v2Rows = await loadParquet('v2.1.parquet');
 
     const params: FilterParams = {
       reactionTypes: ['Buchwald-Hartwig'],
@@ -310,7 +310,7 @@ describe('comparison with parquet data', () => {
 
   it('split by reactantTypes: per-panel filtering keeps top catalysts', async () => {
     const v1Rows = await loadParquet('v1.parquet');
-    const v2Rows = await loadParquet('v2.parquet');
+    const v2Rows = await loadParquet('v2.1.parquet');
 
     const baseParams: FilterParams = {
       reactionTypes: ['Buchwald-Hartwig'],
@@ -341,7 +341,7 @@ describe('comparison with parquet data', () => {
 
   it('rank ordering is deterministic for tied medians', async () => {
     const v1Rows = await loadParquet('v1.parquet');
-    const v2Rows = await loadParquet('v2.parquet');
+    const v2Rows = await loadParquet('v2.1.parquet');
 
     const params: FilterParams = {
       reactionTypes: ['Buchwald-Hartwig'],

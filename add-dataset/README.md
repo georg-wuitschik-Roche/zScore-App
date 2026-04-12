@@ -9,7 +9,12 @@ Drop a CSV file into this folder and commit it. A pre-commit hook will automatic
 5. Remove the source CSV from this folder (it's now stored as Parquet)
 6. Stage all generated files for the commit
 
-## Steps
+## Versioning convention
+
+- **New integer** (v3, v4, ...) — substantially more data (e.g. 70k → 90k rows, new reaction types). Use the standard flow below.
+- **Dotted minor** (v2.1, v2.2, ...) — data quality improvements (filtering, cleaning, corrections) without substantially increasing row count. Replaces its parent. Use the manual flow.
+
+## Standard flow (new major version)
 
 ```bash
 # 1. Copy your CSV into this folder
@@ -18,6 +23,13 @@ cp /path/to/my-new-data.csv add-dataset/
 # 2. Stage and commit — the hook does the rest
 git add add-dataset/my-new-data.csv
 git commit -m "Add new dataset version"
+```
+
+## Manual flow (minor version / replace parent)
+
+```bash
+# Generate v2.1 from a CSV, removing v2 from the manifest
+python3 scripts/version_dataset.py --version v2.1 --replace v2 path/to/data.csv
 ```
 
 ## Requirements
@@ -54,5 +66,7 @@ Optional columns: `Additive`, `Coupling Reagent`, `Secondary Solvent`, `Tertiary
 You can also run the versioning script manually without committing:
 
 ```bash
-python3 scripts/version_dataset.py
+python3 scripts/version_dataset.py                                     # scan add-dataset/
+python3 scripts/version_dataset.py path/to/data.csv                    # specific file
+python3 scripts/version_dataset.py --version v3.1 --replace v3 data.csv  # minor version
 ```

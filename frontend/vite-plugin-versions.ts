@@ -37,30 +37,30 @@ function scanVersions(dataDir: string): VersionsManifest {
 
   const existing = loadExistingManifest(dataDir);
   const files = readdirSync(dataDir);
-  const parquetPattern = /^v(\d+)\.parquet$/;
+  const parquetPattern = /^v(\d+(?:\.\d+)?)\.parquet$/;
   const versions: VersionInfo[] = [];
 
   for (const file of files) {
     const match = file.match(parquetPattern);
     if (!match) continue;
-    const num = parseInt(match[1], 10);
-    const indexFile = `v${num}-dropdown-index.json`;
+    const ver = match[1];
+    const id = `v${ver}`;
+    const indexFile = `${id}-dropdown-index.json`;
     if (!files.includes(indexFile)) continue;
-    const id = `v${num}`;
     const prev = existing.get(id);
     versions.push({
       id,
-      parquet: `/data/v${num}.parquet`,
-      index: `/data/v${num}-dropdown-index.json`,
-      label: prev?.label ?? `Version ${num}`,
+      parquet: `/data/${id}.parquet`,
+      index: `/data/${id}-dropdown-index.json`,
+      label: prev?.label ?? id,
       ...(prev?.date ? { date: prev.date } : {}),
     });
   }
 
-  // Sort by version number ascending
+  // Sort by version number ascending (supports dotted versions like v2.1)
   versions.sort((a, b) => {
-    const numA = parseInt(a.id.slice(1), 10);
-    const numB = parseInt(b.id.slice(1), 10);
+    const numA = parseFloat(a.id.slice(1));
+    const numB = parseFloat(b.id.slice(1));
     return numA - numB;
   });
 
