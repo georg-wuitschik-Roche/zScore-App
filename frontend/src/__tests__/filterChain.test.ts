@@ -11,7 +11,7 @@ import { parseDataset } from '../data/loader';
 import { filterData } from '../data/filterChain';
 import type { Row } from '../data/types';
 import { DEFAULTS } from '../data/types';
-import { isCopperCatalyst } from '../data/filterSteps';
+import { isCopperCatalyst, isPrecomplexedCatalyst } from '../data/filterSteps';
 
 // ---------------------------------------------------------------------------
 // Load dataset once (from Parquet)
@@ -62,6 +62,19 @@ describe('Filter chain basics', () => {
     const { rows } = filterData(dataset, params);
     const copperRows = rows.filter((r) => isCopperCatalyst(r.Catalyst as string | null));
     expect(copperRows.length).toBe(0);
+  });
+
+  it('precomplexed exclusion removes rows where Ligand is substring of Catalyst', () => {
+    const params = {
+      ...DEFAULTS,
+      reactionTypes: ['Buchwald-Hartwig'],
+      precomplexedFilter: 'exclude' as const,
+    };
+    const { rows } = filterData(dataset, params);
+    const precomplexedRows = rows.filter((r) =>
+      isPrecomplexedCatalyst(r.Catalyst as string | null, r.Ligand as string | null),
+    );
+    expect(precomplexedRows.length).toBe(0);
   });
 
   it('stats contain expected keys', () => {

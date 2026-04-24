@@ -1,5 +1,5 @@
 /**
- * 10-step filter chain — port of data_utils.filter_data().
+ * 11-step filter chain — port of data_utils.filter_data().
  *
  * Orchestrates the individual filter steps from filterSteps.ts.
  * Returns filtered rows and optional statistics.
@@ -12,6 +12,7 @@ import {
   filterByReactionTypes,
   filterByReactantColumns,
   filterCopper,
+  filterPrecomplexed,
   filterFgA,
   filterFgB,
   filterScaleupPlates,
@@ -73,6 +74,9 @@ export function filterData(
 
   // Step 3: Copper catalyst filter
   rows = filterCopper(rows, params.copperFilter);
+
+  // Step 3b: Precomplexed catalyst filter
+  rows = filterPrecomplexed(rows, params.precomplexedFilter);
 
   // Step 4: Functional Group A
   const [afterFgA, fgAList] = filterFgA(rows, params.fgA);

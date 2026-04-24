@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { useFilteredData } from '../hooks/useFilteredData';
-import { COPPER_FILTER_OPTIONS } from '../data/types';
+import { CATALYST_FILTER_OPTIONS } from '../data/types';
+import type { CatalystFilterMode } from '../data/types';
 
 const SLIDER_DEBOUNCE_MS = 120;
 
@@ -42,15 +43,9 @@ function EditableSliderValue({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing) {
-      setDraft(String(value));
-      // Wait a tick so the input is rendered before focusing
-      requestAnimationFrame(() => inputRef.current?.select());
-    }
-  }, [editing, value]);
+  const inputRef = useCallback((el: HTMLInputElement | null) => {
+    if (el) requestAnimationFrame(() => el.select());
+  }, []);
 
   function commit() {
     setEditing(false);
@@ -83,10 +78,34 @@ function EditableSliderValue({
     <span
       className="slider-value slider-value-clickable"
       title="Click to type a value"
-      onClick={() => setEditing(true)}
+      onClick={() => { setDraft(String(value)); setEditing(true); }}
     >
       {value}
     </span>
+  );
+}
+
+function CatalystFilterToggle({ id, label, value, onChange }: {
+  id: string;
+  label: string;
+  value: CatalystFilterMode;
+  onChange: (val: CatalystFilterMode) => void;
+}) {
+  return (
+    <div className="catalyst-filter-group" id={id}>
+      <span className="catalyst-filter-label">{label}</span>
+      <div className="catalyst-filter-toggle">
+        {CATALYST_FILTER_OPTIONS.map((mode) => (
+          <button
+            key={mode}
+            className={`catalyst-filter-btn${value === mode ? ' active' : ''}`}
+            onClick={() => onChange(mode)}
+          >
+            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -97,6 +116,7 @@ export function OptionsPanel() {
   const topnZscore = useFilterStore((s) => s.topnZscore);
   const maxComponents = useFilterStore((s) => s.maxComponents);
   const copperFilter = useFilterStore((s) => s.copperFilter);
+  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore(
     (s) => s.includeNullCategories,
@@ -105,6 +125,7 @@ export function OptionsPanel() {
   const setTopnZscore = useFilterStore((s) => s.setTopnZscore);
   const setMaxComponents = useFilterStore((s) => s.setMaxComponents);
   const setCopperFilter = useFilterStore((s) => s.setCopperFilter);
+  const setPrecomplexedFilter = useFilterStore((s) => s.setPrecomplexedFilter);
   const setExcludeScaleup = useFilterStore((s) => s.setExcludeScaleup);
   const setIncludeNullCategories = useFilterStore(
     (s) => s.setIncludeNullCategories,
@@ -243,20 +264,18 @@ export function OptionsPanel() {
 
         {/* Checkboxes row */}
         <div className="filter-options-row">
-          <div className="copper-filter-group" id="copper-filter-control">
-            <span className="copper-filter-label">Copper Catalysts:</span>
-            <div className="copper-filter-toggle">
-              {COPPER_FILTER_OPTIONS.map((mode) => (
-                <button
-                  key={mode}
-                  className={`copper-filter-btn${copperFilter === mode ? ' active' : ''}`}
-                  onClick={() => setCopperFilter(mode)}
-                >
-                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
+          <CatalystFilterToggle
+            id="copper-filter-control"
+            label="Copper Catalysts:"
+            value={copperFilter}
+            onChange={setCopperFilter}
+          />
+          <CatalystFilterToggle
+            id="precomplexed-filter-control"
+            label="Pre-Complexed Catalysts:"
+            value={precomplexedFilter}
+            onChange={setPrecomplexedFilter}
+          />
           <label className="checklist-item" id="exclude-scaleup-checkbox">
             <input
               type="checkbox"

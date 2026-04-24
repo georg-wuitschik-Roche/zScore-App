@@ -9,8 +9,8 @@ import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import type { FilterState } from '../stores/filterStore'; // used for Partial<FilterState>
-import { SPLIT_URL_KEYS, COPPER_FILTER_OPTIONS } from '../data/types';
-import type { SplitSelector, CopperFilter } from '../data/types';
+import { SPLIT_URL_KEYS, CATALYST_FILTER_OPTIONS } from '../data/types';
+import type { SplitSelector, CatalystFilterMode } from '../data/types';
 
 const URL_TO_SPLIT = Object.fromEntries(
   Object.entries(SPLIT_URL_KEYS).map(([k, v]) => [v, k]),
@@ -39,6 +39,7 @@ export function useUrlState(): void {
   const fgA = useFilterStore((s) => s.fgA);
   const fgB = useFilterStore((s) => s.fgB);
   const copperFilter = useFilterStore((s) => s.copperFilter);
+  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   const minEln = useFilterStore((s) => s.minEln);
@@ -65,6 +66,7 @@ export function useUrlState(): void {
     const mc = searchParams.get('mc');
     const tab = searchParams.get('tab');
     const cu = searchParams.get('cu');
+    const pc = searchParams.get('pc');
     const su = searchParams.get('su');
     const nc = searchParams.get('nc');
     const split = searchParams.get('split');
@@ -88,7 +90,10 @@ export function useUrlState(): void {
     if (mc) partial.maxComponents = Number(mc);
     if (tab) partial.activeTab = tab as 'boxplot' | 'violin' | 'heatmap' | 'stats';
     if (cu !== null) {
-      partial.copperFilter = COPPER_FILTER_OPTIONS.includes(cu as CopperFilter) ? (cu as CopperFilter) : 'exclude';
+      partial.copperFilter = CATALYST_FILTER_OPTIONS.includes(cu as CatalystFilterMode) ? (cu as CatalystFilterMode) : 'exclude';
+    }
+    if (pc !== null) {
+      partial.precomplexedFilter = CATALYST_FILTER_OPTIONS.includes(pc as CatalystFilterMode) ? (pc as CatalystFilterMode) : 'include';
     }
     if (su !== null) partial.excludeScaleup = su === '1';
     if (nc !== null) partial.includeNullCategories = nc === '1';
@@ -138,6 +143,7 @@ export function useUrlState(): void {
       params.set('tn', String(topnZscore));
       params.set('mc', String(maxComponents));
       params.set('cu', copperFilter);
+      params.set('pc', precomplexedFilter);
       params.set('su', excludeScaleup ? '1' : '0');
       params.set('nc', includeNullCategories ? '1' : '0');
       if (activeTab !== 'violin') params.set('tab', activeTab);
@@ -168,6 +174,7 @@ export function useUrlState(): void {
     fgA,
     fgB,
     copperFilter,
+    precomplexedFilter,
     excludeScaleup,
     includeNullCategories,
     minEln,

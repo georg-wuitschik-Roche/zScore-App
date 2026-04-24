@@ -23,6 +23,7 @@ const INITIAL_STATE: Partial<FilterState> = {
   fgA: [],
   fgB: [],
   copperFilter: 'exclude',
+  precomplexedFilter: 'include',
   excludeScaleup: true,
   includeNullCategories: true,
   minEln: 5,
@@ -157,6 +158,12 @@ describe('resetFilters', () => {
     useFilterStore.setState({ copperFilter: 'include' });
     useFilterStore.getState().resetFilters();
     expect(useFilterStore.getState().copperFilter).toBe('exclude');
+  });
+
+  it('resets precomplexedFilter to "include"', () => {
+    useFilterStore.setState({ precomplexedFilter: 'exclude' });
+    useFilterStore.getState().resetFilters();
+    expect(useFilterStore.getState().precomplexedFilter).toBe('include');
   });
 
   it('resets excludeScaleup to true', () => {

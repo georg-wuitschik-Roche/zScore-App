@@ -58,6 +58,7 @@ export function useComparisonRawData(): ComparisonRawData | null {
   const fgA = useFilterStore((s) => s.fgA);
   const fgB = useFilterStore((s) => s.fgB);
   const copperFilter = useFilterStore((s) => s.copperFilter);
+  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   const minEln = useFilterStore((s) => s.minEln);
@@ -90,6 +91,7 @@ export function useComparisonRawData(): ComparisonRawData | null {
     fgA,
     fgB,
     copperFilter,
+    precomplexedFilter,
     excludeScaleup,
     includeNullCategories,
     minEln,
@@ -97,7 +99,7 @@ export function useComparisonRawData(): ComparisonRawData | null {
     maxComponents,
   }), [
     reactionTypes, reactantTypes, fgA, fgB,
-    copperFilter, excludeScaleup, includeNullCategories,
+    copperFilter, precomplexedFilter, excludeScaleup, includeNullCategories,
     minEln, topnZscore, maxComponents,
   ]);
 

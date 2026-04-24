@@ -14,6 +14,8 @@ import {
   filterByReactantColumns,
   filterCopper,
   isCopperCatalyst,
+  isPrecomplexedCatalyst,
+  filterPrecomplexed,
   filterFgA,
   filterFgB,
   filterScaleupPlates,
@@ -77,6 +79,9 @@ const FIXTURE: Row[] = [
   makeRow({ ELN_ID: 'ELN011', PLATENUMBER: '11', Catalyst: 'Pd2(dba)3', Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': null }),
   // Row with Additive populated
   makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', Additive: 'LiCl', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 1.8 }),
+  // Precomplexed catalyst rows (Ligand appears in Catalyst)
+  makeRow({ ELN_ID: 'ELN012', PLATENUMBER: '12', Catalyst: 'Pd-DPPF', Ligand: 'DPPF', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 2.0 }),
+  makeRow({ ELN_ID: 'ELN013', PLATENUMBER: '13', Catalyst: 'Pd(dppf)Cl2', Ligand: 'dppf', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 3.0 }),
 ];
 
 // ---------------------------------------------------------------------------
@@ -247,6 +252,97 @@ describe('filterCopper', () => {
     ];
     const result = filterCopper(testRows, 'only');
     expect(result).toHaveLength(6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Step 3b: filterPrecomplexed
+// ---------------------------------------------------------------------------
+
+describe('isPrecomplexedCatalyst', () => {
+  it('returns true when Ligand is substring of Catalyst', () => {
+    expect(isPrecomplexedCatalyst('Pd-DPPF', 'DPPF')).toBe(true);
+  });
+
+  it('is case-insensitive', () => {
+    expect(isPrecomplexedCatalyst('Pd(dppf)Cl2', 'DPPF')).toBe(true);
+    expect(isPrecomplexedCatalyst('Pd-DPPF', 'dppf')).toBe(true);
+  });
+
+  it('returns false when Ligand is not in Catalyst', () => {
+    expect(isPrecomplexedCatalyst('Pd(OAc)2', 'XPhos')).toBe(false);
+  });
+
+  it('returns false when Catalyst is null', () => {
+    expect(isPrecomplexedCatalyst(null, 'XPhos')).toBe(false);
+  });
+
+  it('returns false when Ligand is null', () => {
+    expect(isPrecomplexedCatalyst('Pd-DPPF', null)).toBe(false);
+  });
+
+  it('returns false when both are null', () => {
+    expect(isPrecomplexedCatalyst(null, null)).toBe(false);
+  });
+
+  it('returns false when Ligand is empty string', () => {
+    expect(isPrecomplexedCatalyst('Pd(OAc)2', '')).toBe(false);
+  });
+
+  it('returns false when Catalyst is empty string', () => {
+    expect(isPrecomplexedCatalyst('', 'XPhos')).toBe(false);
+  });
+});
+
+describe('filterPrecomplexed', () => {
+  const precomplexedRows: Row[] = [
+    makeRow({ Catalyst: 'Pd-DPPF', Ligand: 'DPPF', 'z-Score': 1.0 }),
+    makeRow({ Catalyst: 'Pd(dppf)Cl2', Ligand: 'dppf', 'z-Score': 2.0 }),
+    makeRow({ Catalyst: 'Pd(OAc)2', Ligand: 'XPhos', 'z-Score': 3.0 }),
+    makeRow({ Catalyst: 'Pd(OAc)2', Ligand: null, 'z-Score': 4.0 }),
+    makeRow({ Catalyst: null, Ligand: 'XPhos', 'z-Score': 5.0 }),
+  ];
+
+  it('include mode returns all rows', () => {
+    expect(filterPrecomplexed(precomplexedRows, 'include')).toHaveLength(5);
+  });
+
+  it('exclude mode removes precomplexed rows', () => {
+    const result = filterPrecomplexed(precomplexedRows, 'exclude');
+    expect(result).toHaveLength(3);
+    expect(result.every((r) => !isPrecomplexedCatalyst(r.Catalyst as string | null, r.Ligand as string | null))).toBe(true);
+  });
+
+  it('exclude mode keeps rows with null Ligand', () => {
+    const result = filterPrecomplexed(precomplexedRows, 'exclude');
+    expect(result.filter((r) => r.Ligand === null)).toHaveLength(1);
+  });
+
+  it('exclude mode keeps rows with null Catalyst', () => {
+    const result = filterPrecomplexed(precomplexedRows, 'exclude');
+    expect(result.filter((r) => r.Catalyst === null)).toHaveLength(1);
+  });
+
+  it('only mode keeps only precomplexed rows', () => {
+    const result = filterPrecomplexed(precomplexedRows, 'only');
+    expect(result).toHaveLength(2);
+    expect(result.every((r) => isPrecomplexedCatalyst(r.Catalyst as string | null, r.Ligand as string | null))).toBe(true);
+  });
+
+  it('only mode excludes rows with null Ligand', () => {
+    const result = filterPrecomplexed(precomplexedRows, 'only');
+    expect(result.every((r) => r.Ligand !== null)).toBe(true);
+  });
+
+  it('handles real-world precomplexed catalysts', () => {
+    const testRows: Row[] = [
+      makeRow({ Catalyst: 'Pd-BINAP', Ligand: 'BINAP' }),
+      makeRow({ Catalyst: 'Pd(PPh3)4', Ligand: 'PPh3' }),
+      makeRow({ Catalyst: 'PdCl2(AmPhos)2', Ligand: 'AmPhos' }),
+      makeRow({ Catalyst: 'Pd(OAc)2', Ligand: 'SPhos' }),  // not precomplexed
+    ];
+    const result = filterPrecomplexed(testRows, 'only');
+    expect(result).toHaveLength(3);
   });
 });
 

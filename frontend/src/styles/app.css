@@ -1699,21 +1699,21 @@ button:hover {
     cursor: pointer;
 }
 
-/* Copper catalyst three-state toggle */
-.copper-filter-group {
+/* Catalyst three-state toggle (copper, pre-complexed) */
+.catalyst-filter-group {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     margin-right: 32px;
 }
 
-.copper-filter-label {
+.catalyst-filter-label {
     font-size: 14px;
     font-weight: 500;
     color: var(--color-text-secondary);
 }
 
-.copper-filter-toggle {
+.catalyst-filter-toggle {
     display: inline-flex;
     background: var(--color-bg-panel);
     border: 1px solid var(--color-border);
@@ -1721,7 +1721,7 @@ button:hover {
     padding: 2px;
 }
 
-.copper-filter-btn {
+.catalyst-filter-btn {
     padding: 4px 12px;
     border: none;
     border-radius: var(--radius-pill);
@@ -1734,11 +1734,11 @@ button:hover {
     transition: all 0.15s ease;
 }
 
-.copper-filter-btn:hover {
+.catalyst-filter-btn:hover {
     color: var(--color-text);
 }
 
-.copper-filter-btn.active {
+.catalyst-filter-btn.active {
     background: var(--color-primary);
     color: #fff;
     box-shadow: var(--shadow-sm);
@@ -2376,12 +2376,12 @@ label.tutorial-highlight {
     font-weight: 600 !important;
 }
 
-.app-container.presentation-mode .copper-filter-btn {
+.app-container.presentation-mode .catalyst-filter-btn {
     font-size: 16px !important;
     padding: 6px 16px !important;
 }
 
-.app-container.presentation-mode .copper-filter-label {
+.app-container.presentation-mode .catalyst-filter-label {
     font-size: 18px !important;
     font-weight: 600 !important;
 }

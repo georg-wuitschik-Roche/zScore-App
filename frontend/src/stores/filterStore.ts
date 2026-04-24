@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode, CopperFilter } from '../data/types';
+import type { Row, DropdownIndex, SplitSelector, TabId, VersionInfo, UploadMode, CatalystFilterMode } from '../data/types';
 import { DEFAULTS, REQUIRED_COLUMNS, isTabId } from '../data/types';
 import {
   fetchDropdownIndex,
@@ -40,7 +40,8 @@ export interface FilterState {
   reactantTypes: string[];
   fgA: string[];
   fgB: string[];
-  copperFilter: CopperFilter;
+  copperFilter: CatalystFilterMode;
+  precomplexedFilter: CatalystFilterMode;
   excludeScaleup: boolean;
   includeNullCategories: boolean;
   minEln: number;
@@ -73,7 +74,8 @@ export interface FilterState {
   setReactantTypes: (types: string[]) => void;
   setFgA: (fgs: string[]) => void;
   setFgB: (fgs: string[]) => void;
-  setCopperFilter: (val: CopperFilter) => void;
+  setCopperFilter: (val: CatalystFilterMode) => void;
+  setPrecomplexedFilter: (val: CatalystFilterMode) => void;
   setExcludeScaleup: (val: boolean) => void;
   setIncludeNullCategories: (val: boolean) => void;
   setMinEln: (val: number) => void;
@@ -158,6 +160,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   fgA: DEFAULTS.fgA,
   fgB: DEFAULTS.fgB,
   copperFilter: DEFAULTS.copperFilter,
+  precomplexedFilter: DEFAULTS.precomplexedFilter,
   excludeScaleup: DEFAULTS.excludeScaleup,
   includeNullCategories: DEFAULTS.includeNullCategories,
   minEln: DEFAULTS.minEln,
@@ -220,6 +223,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
         s.splitSelector === 'fgB' && fgs.length < 2 ? null : s.splitSelector,
     })),
   setCopperFilter: (val) => set({ copperFilter: val }),
+  setPrecomplexedFilter: (val) => set({ precomplexedFilter: val }),
   setExcludeScaleup: (val) => set({ excludeScaleup: val }),
   setIncludeNullCategories: (val) => set({ includeNullCategories: val }),
   setMinEln: (val) => set({ minEln: val }),
@@ -427,6 +431,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
       topnZscore: DEFAULTS.topnZscore,
       maxComponents: DEFAULTS.maxComponents,
       copperFilter: DEFAULTS.copperFilter,
+      precomplexedFilter: DEFAULTS.precomplexedFilter,
       excludeScaleup: DEFAULTS.excludeScaleup,
       includeNullCategories: DEFAULTS.includeNullCategories,
     }),

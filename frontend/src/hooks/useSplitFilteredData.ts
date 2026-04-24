@@ -17,6 +17,7 @@ export function useSplitFilteredData(): SplitPanel[] {
   const fgA = useFilterStore((s) => s.fgA);
   const fgB = useFilterStore((s) => s.fgB);
   const copperFilter = useFilterStore((s) => s.copperFilter);
+  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   const minEln = useFilterStore((s) => s.minEln);
@@ -39,6 +40,7 @@ export function useSplitFilteredData(): SplitPanel[] {
       fgA,
       fgB,
       copperFilter,
+      precomplexedFilter,
       excludeScaleup,
       includeNullCategories,
       minEln,
@@ -118,6 +120,7 @@ export function useSplitFilteredData(): SplitPanel[] {
     fgA,
     fgB,
     copperFilter,
+    precomplexedFilter,
     excludeScaleup,
     includeNullCategories,
     minEln,

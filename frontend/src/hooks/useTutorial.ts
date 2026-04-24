@@ -1,5 +1,5 @@
 /**
- * Tutorial state machine — 22-step walkthrough.
+ * Tutorial state machine — 23-step walkthrough.
  *
  * Each step has a target element ID, title, body text, and a gating
  * condition that determines whether the user has completed the step.
@@ -59,6 +59,11 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     targetId: 'copper-filter-control',
     title: 'Copper Catalyst Filter',
     body: 'Choose how to handle copper-based catalysts: Include all, Exclude copper, or show Only copper entries.',
+  },
+  {
+    targetId: 'precomplexed-filter-control',
+    title: 'Pre-Complexed Catalyst Filter',
+    body: 'Choose how to handle Pre-Complexed catalysts (where the ligand is part of the catalyst name): Include all, Exclude Pre-Complexed, or show Only Pre-Complexed entries.',
   },
   {
     targetId: 'exclude-scaleup-checkbox',
@@ -173,6 +178,7 @@ export function useIsStepSatisfied(): boolean {
   const topnZscore = useFilterStore((s) => s.topnZscore);
   const maxComponents = useFilterStore((s) => s.maxComponents);
   const copperFilter = useFilterStore((s) => s.copperFilter);
+  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
   const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
   const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
   switch (step) {
@@ -195,28 +201,30 @@ export function useIsStepSatisfied(): boolean {
     case 8:
       return copperFilter !== 'exclude';
     case 9:
-      return !excludeScaleup;
+      return precomplexedFilter !== 'include';
     case 10:
-      return includeNullCategories;
+      return !excludeScaleup;
     case 11:
-      return true; // downloads — informational, click Next to proceed
+      return includeNullCategories;
     case 12:
-      return true; // reset options — informational, click Next to proceed
+      return true; // downloads — informational, click Next to proceed
     case 13:
-      return true; // tabs — auto-cycled, click Next to proceed
+      return true; // reset options — informational, click Next to proceed
     case 14:
-      return true; // zoom into plots — informational, click Next to proceed
+      return true; // tabs — auto-cycled, click Next to proceed
     case 15:
-      return true; // split — auto-enabled, click Next to proceed
+      return true; // zoom into plots — informational, click Next to proceed
     case 16:
-      return true; // cross-filter — informational, click Next to proceed
+      return true; // split — auto-enabled, click Next to proceed
     case 17:
-      return true; // settings: data
+      return true; // cross-filter — informational, click Next to proceed
     case 18:
-      return true; // settings: comparison
+      return true; // settings: data
     case 19:
-      return true; // settings: appearance
+      return true; // settings: comparison
     case 20:
+      return true; // settings: appearance
+    case 21:
       return true; // reset
     default:
       return true;

@@ -2,10 +2,10 @@
  * Individual filter step functions — port of data_utils.py filter chain.
  *
  * Each function is a pure transformation: Row[] → Row[].
- * The 10-step chain is orchestrated by filterChain.ts.
+ * The 11-step chain is orchestrated by filterChain.ts.
  */
 
-import type { Row, CopperFilter } from './types';
+import type { Row, CatalystFilterMode } from './types';
 import { REAGENT_COLS } from './types';
 
 const NAN_SENTINEL = '__NAN__';
@@ -76,6 +76,22 @@ export function filterByReactantColumns(
 }
 
 // ---------------------------------------------------------------------------
+// Three-way catalyst filter helper
+// ---------------------------------------------------------------------------
+
+function filter3Way(
+  rows: Row[],
+  mode: CatalystFilterMode,
+  predicate: (row: Row) => boolean,
+): Row[] {
+  if (mode === 'include') return rows;
+  return rows.filter((row) => {
+    const match = predicate(row);
+    return mode === 'exclude' ? !match : match;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Step 3: Copper catalyst filter
 // ---------------------------------------------------------------------------
 
@@ -85,13 +101,26 @@ export function isCopperCatalyst(catalyst: string | null): boolean {
   return catalyst !== null && COPPER_RE.test(catalyst);
 }
 
-export function filterCopper(rows: Row[], mode: CopperFilter): Row[] {
-  if (mode === 'include') return rows;
-  return rows.filter((row) => {
-    const cat = getVal(row, 'Catalyst');
-    const isCopper = isCopperCatalyst(cat);
-    return mode === 'exclude' ? !isCopper : isCopper;
-  });
+export function filterCopper(rows: Row[], mode: CatalystFilterMode): Row[] {
+  return filter3Way(rows, mode, (row) => isCopperCatalyst(getVal(row, 'Catalyst')));
+}
+
+// ---------------------------------------------------------------------------
+// Step 3b: Precomplexed catalyst filter
+// ---------------------------------------------------------------------------
+
+export function isPrecomplexedCatalyst(
+  catalyst: string | null,
+  ligand: string | null,
+): boolean {
+  if (!catalyst || !ligand) return false;
+  return catalyst.toLowerCase().includes(ligand.toLowerCase());
+}
+
+export function filterPrecomplexed(rows: Row[], mode: CatalystFilterMode): Row[] {
+  return filter3Way(rows, mode, (row) =>
+    isPrecomplexedCatalyst(getVal(row, 'Catalyst'), getVal(row, 'Ligand')),
+  );
 }
 
 // ---------------------------------------------------------------------------

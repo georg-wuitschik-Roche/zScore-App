@@ -64,7 +64,7 @@ beforeAll(async () => {
  * Convert Python golden fixture params to TypeScript FilterParams.
  *
  * Python param format:
- *   exclude_cui: ["exclude_cui"] | null/absent  -> copperFilter: CopperFilter
+ *   exclude_cui: ["exclude_cui"] | null/absent  -> copperFilter: CatalystFilterMode
  *   exclude_scaleup: [true] | null/absent       -> excludeScaleup: boolean
  *   include_null_categories: [true] | null/absent -> includeNullCategories: boolean
  *   reaction_types: string[] | absent            -> reactionTypes: string[]
@@ -84,6 +84,7 @@ function convertParams(pyParams: Record<string, unknown>): FilterParams {
     copperFilter: Array.isArray(pyParams.exclude_cui) && pyParams.exclude_cui.includes('exclude_cui')
       ? 'exclude' as const
       : 'include' as const,
+    precomplexedFilter: 'include' as const,
     excludeScaleup: Array.isArray(pyParams.exclude_scaleup)
       ? pyParams.exclude_scaleup.length > 0
       : false,
