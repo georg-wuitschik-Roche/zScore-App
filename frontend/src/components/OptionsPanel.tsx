@@ -167,17 +167,79 @@ export function OptionsPanel() {
   }
 
   function handleDownloadPNG() {
-    const plotEl = document.querySelector('.js-plotly-plot') as HTMLElement;
-    if (!plotEl) return;
+    const plotEls = document.querySelectorAll('.js-plotly-plot') as NodeListOf<HTMLElement>;
+    if (plotEls.length === 0) return;
     // @ts-expect-error — plotly.js-dist-min has no type declarations
-    import('plotly.js-dist-min').then((Plotly) => {
-      Plotly.downloadImage(plotEl, {
-        format: 'png',
-        width: 1600,
-        height: 800,
-        scale: 4,
-        filename: 'zscore_plot',
+    import('plotly.js-dist-min').then(async (Plotly) => {
+      if (plotEls.length === 1) {
+        Plotly.downloadImage(plotEls[0], {
+          format: 'png',
+          width: 1600,
+          height: 800,
+          scale: 4,
+          filename: 'zscore_plot',
+        });
+        return;
+      }
+
+      const scale = 4;
+      const totalWidth = 1600;
+      const gap = 8;
+      const labelHeight = 32;
+      const cols = Math.min(plotEls.length, 3);
+      const rows = Math.ceil(plotEls.length / cols);
+      const panelWidth = Math.round((totalWidth - gap * (cols - 1)) / cols);
+      const panelHeight = Math.round(panelWidth * (plotEls[0].clientHeight / plotEls[0].clientWidth));
+      const cellHeight = panelHeight + labelHeight;
+
+      const labels = Array.from(plotEls).map((el) => {
+        const panel = el.closest('.split-panel');
+        const labelEl = panel?.querySelector('.split-panel-label');
+        return labelEl?.textContent?.trim() ?? '';
       });
+
+      const images = await Promise.all(
+        Array.from(plotEls).map((el) =>
+          Plotly.toImage(el, { format: 'png', width: panelWidth, height: panelHeight, scale }) as Promise<string>,
+        ),
+      );
+
+      const canvasW = totalWidth * scale;
+      const canvasH = (rows * cellHeight + (rows - 1) * gap) * scale;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasW;
+      canvas.height = canvasH;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasW, canvasH);
+
+      ctx.fillStyle = '#6b7280';
+      ctx.font = `500 ${14 * scale}px "JetBrains Mono", monospace`;
+
+      await Promise.all(
+        images.map(
+          (src, i) =>
+            new Promise<void>((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                const x = (col * (panelWidth + gap)) * scale;
+                const y = (row * (cellHeight + gap)) * scale;
+                ctx.fillStyle = '#6b7280';
+                ctx.fillText(labels[i], x, y + 20 * scale);
+                ctx.drawImage(img, x, y + labelHeight * scale);
+                resolve();
+              };
+              img.src = src;
+            }),
+        ),
+      );
+
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'zscore_plot.png';
+      a.click();
     });
   }
 
