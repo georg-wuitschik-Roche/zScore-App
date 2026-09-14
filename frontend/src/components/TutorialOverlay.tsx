@@ -193,17 +193,17 @@ export function TutorialOverlay() {
         <p className="tutorial-body">{currentStep.body}</p>
         <div className="tutorial-btn-row">
           <button
+            className="tutorial-btn tutorial-btn-skip"
+            onClick={finish}
+          >
+            Skip Tour
+          </button>
+          <button
             className="tutorial-btn tutorial-btn-back"
             onClick={back}
             disabled={step === 0}
           >
             Back
-          </button>
-          <button
-            className="tutorial-btn tutorial-btn-skip"
-            onClick={finish}
-          >
-            Skip Tour
           </button>
           <button
             className="tutorial-btn tutorial-btn-next"

@@ -2098,7 +2098,7 @@ button:hover {
     background: var(--color-primary-hover) !important;
 }
 
-.tutorial-btn-skip {
+.tutorial-btn-back {
     margin-left: auto;
 }
 
