@@ -23,6 +23,8 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   const setComparisonMode = useFilterStore((s) => s.setComparisonMode);
   const comparisonVersion = useFilterStore((s) => s.comparisonVersion);
   const setComparisonVersion = useFilterStore((s) => s.setComparisonVersion);
+  const uploadError = useFilterStore((s) => s.uploadError);
+  const clearUploadError = useFilterStore((s) => s.clearUploadError);
 
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -268,6 +270,30 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
       )}
 
       {/* Upload mode selection modal */}
+      {/* Lives here rather than in Navbar so uploads started from the landing
+          page surface their error too — Navbar only mounts on the dashboard. */}
+      {uploadError && (
+        <div className="upload-error-modal">
+          <div className="upload-error-panel">
+            <div className="upload-error-header">
+              <h3>Upload Error</h3>
+              <button className="upload-error-close-btn" onClick={clearUploadError}>
+                &times;
+              </button>
+            </div>
+            <div className="upload-error-body">
+              <p>{uploadError}</p>
+            </div>
+            <div className="upload-error-footer">
+              <CsvFormatHelp />
+              <button className="close-btn-full" onClick={clearUploadError}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {pendingUpload && (
         <div className="upload-mode-modal" onClick={() => setPendingUpload(null)}>
           <div className="upload-mode-panel" onClick={(e) => e.stopPropagation()}>
