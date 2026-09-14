@@ -202,14 +202,19 @@ export const useFilterStore = create<FilterState>((set, get) => ({
           : s.splitSelector,
     })),
   setReactantTypes: (types) =>
-    set((s) => ({
-      reactantTypes: types,
-      crossFilterSelections: {}, crossFilterOrder: [],
-      splitSelector:
-        s.splitSelector === 'reactantTypes' && types.length < 2
-          ? null
-          : s.splitSelector,
-    })),
+    set((s) => {
+      // Auto-enable split on the <2 → 2+ transition. Once the user picks Combined
+      // (split null with 2+ already selected), adding more types stays combined.
+      // Reactant types only — the other selectors keep their explicit toggle.
+      const autoSplit =
+        s.splitSelector === null && s.reactantTypes.length < 2 && types.length >= 2;
+      const clearSplit = s.splitSelector === 'reactantTypes' && types.length < 2;
+      return {
+        reactantTypes: types,
+        crossFilterSelections: {}, crossFilterOrder: [],
+        splitSelector: autoSplit ? 'reactantTypes' : clearSplit ? null : s.splitSelector,
+      };
+    }),
   setFgA: (fgs) =>
     set((s) => ({
       fgA: fgs,
@@ -441,5 +446,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
 
   clearUploadError: () => set({ uploadError: null }),
 
+  // Bulk update — bypasses the setters, so callers that change reactantTypes must
+  // pass splitSelector too rather than relying on the auto-split policy above.
   setFilters: (partial) => set(partial),
 }));

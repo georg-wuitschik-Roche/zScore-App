@@ -121,6 +121,50 @@ describe('setReactionTypes', () => {
 });
 
 // ---------------------------------------------------------------------------
+// setReactantTypes
+// ---------------------------------------------------------------------------
+
+describe('setReactantTypes', () => {
+  it('auto-enables split once a second reactant type is selected', () => {
+    useFilterStore.getState().setReactantTypes(['Catalyst']);
+    expect(useFilterStore.getState().splitSelector).toBeNull();
+    useFilterStore.getState().setReactantTypes(['Catalyst', 'Base']);
+    expect(useFilterStore.getState().splitSelector).toBe('reactantTypes');
+  });
+
+  it('stays combined when the user explicitly chose combined', () => {
+    useFilterStore.getState().setReactantTypes(['Catalyst', 'Base']);
+    useFilterStore.getState().setSplitSelector(null);
+    useFilterStore.getState().setReactantTypes(['Catalyst', 'Base', 'Solvent']);
+    expect(useFilterStore.getState().splitSelector).toBeNull();
+  });
+
+  it('does not steal a split active on another dimension', () => {
+    useFilterStore.setState({ reactionTypes: ['Suzuki-Miyaura', 'Buchwald-Hartwig'] });
+    useFilterStore.getState().setSplitSelector('reactionTypes');
+    useFilterStore.getState().setReactantTypes(['Catalyst', 'Base']);
+    expect(useFilterStore.getState().splitSelector).toBe('reactionTypes');
+  });
+
+  it('clears split when dropping below 2 reactant types', () => {
+    useFilterStore.getState().setReactantTypes(['Catalyst', 'Base']);
+    useFilterStore.getState().setReactantTypes(['Catalyst']);
+    expect(useFilterStore.getState().splitSelector).toBeNull();
+  });
+
+  it('clears cross-filter state on every change', () => {
+    useFilterStore.setState({
+      crossFilterSelections: { Catalyst: ['Pd(OAc)2'] },
+      crossFilterOrder: ['Catalyst'],
+    });
+    useFilterStore.getState().setReactantTypes(['Catalyst', 'Base']);
+    const state = useFilterStore.getState();
+    expect(state.crossFilterSelections).toEqual({});
+    expect(state.crossFilterOrder).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // resetFilters
 // ---------------------------------------------------------------------------
 

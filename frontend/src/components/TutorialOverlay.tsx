@@ -51,6 +51,7 @@ export function TutorialOverlay() {
   const reactantTypes = useFilterStore((s) => s.reactantTypes);
   const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
   const setActiveTab = useFilterStore((s) => s.setActiveTab);
+  const splitSelector = useFilterStore((s) => s.splitSelector);
   const setSplitSelector = useFilterStore((s) => s.setSplitSelector);
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
 
@@ -80,19 +81,23 @@ export function TutorialOverlay() {
     };
   }, [active, step]);
 
-  // Step 14a — ensure 2+ reactant types so heatmap tab is visible
+  // Step 14a — ensure 2+ reactant types so heatmap tab is visible, and pin combined
+  // (the heatmap tab is hidden in split mode). Writes both fields in one update via
+  // setFilters — setReactantTypes auto-enables split at 2+, which we'd only undo.
   useEffect(() => {
     if (!active || step !== 14) return;
-    if (reactantTypes.length < 2) {
-      const preferred = ['Base', 'Solvent'].filter((r) => availableReactants.includes(r));
-      if (preferred.length >= 2) {
-        setReactantTypes(preferred);
-      } else {
-        const second = availableReactants.find((r) => !reactantTypes.includes(r));
-        if (second) setReactantTypes([...reactantTypes, second]);
-      }
+    if (reactantTypes.length >= 2) {
+      if (splitSelector !== null) setSplitSelector(null);
+      return;
     }
-  }, [active, step, reactantTypes, availableReactants, setReactantTypes]);
+    const preferred = ['Base', 'Solvent'].filter((r) => availableReactants.includes(r));
+    if (preferred.length >= 2) {
+      setFilters({ reactantTypes: preferred, splitSelector: null });
+    } else {
+      const second = availableReactants.find((r) => !reactantTypes.includes(r));
+      if (second) setFilters({ reactantTypes: [...reactantTypes, second], splitSelector: null });
+    }
+  }, [active, step, reactantTypes, availableReactants, setFilters, splitSelector, setSplitSelector]);
 
   // Step 14b — cycle through tabs (separate effect to avoid restart on reactantTypes change)
   useEffect(() => {
