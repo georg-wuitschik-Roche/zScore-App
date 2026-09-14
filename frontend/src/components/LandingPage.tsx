@@ -16,7 +16,7 @@ import {
 import { MultiSelect } from './MultiSelect';
 import { SettingsMenu } from './SettingsMenu';
 import { Footer } from './Footer';
-import { DEFAULTS, SPLIT_URL_KEYS } from '../data/types';
+import { DEFAULTS, REPO_URL, SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
 
 export function LandingPage() {
@@ -210,7 +210,7 @@ export function LandingPage() {
           About the Data
         </button>
         <a
-          href="https://github.com/georg-wuitschik-Roche/zScore-App"
+          href={REPO_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="landing-github-link"

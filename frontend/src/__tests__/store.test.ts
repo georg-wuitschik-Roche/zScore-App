@@ -7,6 +7,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useFilterStore } from '../stores/filterStore';
 import type { FilterState } from '../stores/filterStore';
+import { buildCSVTemplate, TEMPLATE_COLUMNS } from '../data/csvTemplate';
+import { REQUIRED_COLUMNS } from '../data/types';
 
 // ---------------------------------------------------------------------------
 // Reset store before each test to avoid cross-contamination
@@ -284,11 +286,7 @@ describe('toggleOptionsPanel', () => {
 
 describe('uploadCSV', () => {
   // Build a complete valid CSV string with all required columns
-  const REQUIRED_HEADERS = [
-    'ELN_ID', 'PLATENUMBER', 'Coordinate', 'AREA_TOTAL_REDUCED',
-    'Base', 'Catalyst', 'Solvent', 'Ligand',
-    'Reaction Type', 'FG A', 'FG B', 'FG_sorted', 'z-Score',
-  ];
+  const REQUIRED_HEADERS: string[] = [...REQUIRED_COLUMNS];
 
   /** Quote a CSV field if it contains a comma. */
   function csvField(val: string): string {
@@ -350,6 +348,27 @@ describe('uploadCSV', () => {
     const state = useFilterStore.getState();
     expect(state.uploadError).not.toBeNull();
     expect(state.uploadError).toContain('no data rows');
+  });
+
+  // The template we hand users must satisfy the validator they hand it back to.
+  it('accepts the downloadable template CSV', async () => {
+    const [header, row, ...rest] = buildCSVTemplate().split('\n');
+    expect(header.split(',')).toEqual(TEMPLATE_COLUMNS);
+    expect(rest).toHaveLength(0);
+
+    // The template is emitted unquoted, so no example value may contain a comma.
+    expect(row.split(',')).toHaveLength(TEMPLATE_COLUMNS.length);
+
+    await useFilterStore.getState().uploadCSV(buildCSVTemplate(), 'zscore_template.csv');
+    const state = useFilterStore.getState();
+    expect(state.uploadError).toBeNull();
+    expect(state.uploadedDataset).toHaveLength(1);
+    expect(state.uploadedDataset?.[0]['Reaction Type']).toBe('Buchwald-Hartwig amination');
+  });
+
+  // OPTIONAL_COLUMNS is hand-maintained; overlap would emit a duplicate header.
+  it('has no column listed as both required and optional', () => {
+    expect(new Set(TEMPLATE_COLUMNS).size).toBe(TEMPLATE_COLUMNS.length);
   });
 
   it('handles multiple rows correctly', async () => {

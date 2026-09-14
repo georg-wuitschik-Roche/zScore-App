@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { useFilteredData } from '../hooks/useFilteredData';
 import { CATALYST_FILTER_OPTIONS } from '../data/types';
+import { downloadDataUrl, downloadTextFile } from '../data/download';
 import type { CatalystFilterMode } from '../data/types';
 
 const SLIDER_DEBOUNCE_MS = 120;
@@ -157,13 +158,7 @@ export function OptionsPanel() {
       ),
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'zscore_filtered_data.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile('zscore_filtered_data.csv', csvContent);
   }
 
   function handleDownloadPNG() {
@@ -236,10 +231,7 @@ export function OptionsPanel() {
         ),
       );
 
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = 'zscore_plot.png';
-      a.click();
+      downloadDataUrl('zscore_plot.png', canvas.toDataURL('image/png'));
     });
   }
 

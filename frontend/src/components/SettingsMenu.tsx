@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { resolveComparisonVersion } from '../data/comparison';
+import { CsvFormatHelp } from './CsvFormatHelp';
+import { MAX_UPLOAD_MB } from '../data/types';
 import type { UploadMode } from '../data/types';
 
 export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
@@ -23,14 +25,15 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
   const setComparisonVersion = useFilterStore((s) => s.setComparisonVersion);
 
   const [open, setOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [pendingUpload, setPendingUpload] = useState<{ text: string; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      alert('File too large (max 50 MB)');
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      alert(`File too large (max ${MAX_UPLOAD_MB} MB)`);
       return;
     }
     const reader = new FileReader();
@@ -100,9 +103,24 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
 
                 <div className="settings-row">
                   <span className="settings-row-label">Upload</span>
-                  <button className="settings-action-btn" onClick={() => fileInputRef.current?.click()}>
-                    {uploadedDataset ? 'Replace Dataset' : 'Upload Dataset'}
-                  </button>
+                  <div className="settings-upload-actions">
+                    <button className="settings-action-btn" onClick={() => fileInputRef.current?.click()}>
+                      {uploadedDataset ? 'Replace Dataset' : 'Upload Dataset'}
+                    </button>
+                    <button
+                      className="settings-info-btn"
+                      onClick={() => setHelpOpen((v) => !v)}
+                      aria-expanded={helpOpen}
+                      title="Required columns, delimiters and a template CSV"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                      What does my CSV need to look like?
+                    </button>
+                  </div>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -111,6 +129,12 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
                     onChange={handleFileChange}
                   />
                 </div>
+
+                {helpOpen && (
+                  <div className="settings-row settings-row-full">
+                    <CsvFormatHelp />
+                  </div>
+                )}
 
                 {uploadedDataset && (
                   <>

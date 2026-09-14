@@ -26,6 +26,56 @@ npm run dev        # → http://localhost:5173
 - **Interactive tutorial** — 11-step guided walkthrough
 - **Presentation mode** — Scaled-up fonts for projectors
 
+## CSV Upload Format
+
+Settings → Data → **Upload Dataset** accepts your own screening data. The ⓘ button next
+to it shows this reference in the app and offers a downloadable template CSV.
+
+### Required columns
+
+| Column | Contents |
+|---|---|
+| `ELN_ID` | Experiment notebook identifier |
+| `PLATENUMBER` | Plate number within the experiment |
+| `Coordinate` | Well coordinate, e.g. `A1` |
+| `AREA_TOTAL_REDUCED` | Total reduced peak area (numeric) |
+| `Base` | Base used in the reaction |
+| `Catalyst` | Catalyst used in the reaction |
+| `Solvent` | Primary solvent |
+| `Ligand` | Ligand used in the reaction |
+| `Reaction Type` | Reaction class, e.g. `Buchwald-Hartwig amination` |
+| `FG A` | Functional group on the first coupling partner |
+| `FG B` | Functional group on the second coupling partner |
+| `FG_sorted` | Alphabetically sorted `FG A` / `FG B` pair |
+| `z-Score` | Normalised performance score (numeric) |
+
+Upload is rejected with a list of the missing names if any of these are absent.
+
+### Optional columns
+
+`Additive`, `Coupling Reagent` and `Secondary Solvent` are used for grouping and
+deduplication when present. Leave them empty or omit the columns entirely.
+`FG_PAIR_SORTED` is derived from `FG A` and `FG B` at load time — don't supply it.
+Any further columns are carried through untouched and ignored by the filter chain.
+
+### Format rules
+
+- Comma, semicolon and tab delimiters are auto-detected (PapaParse).
+- `z-Score` must contain numeric values in at least some rows, otherwise the upload
+  is rejected. A decimal comma (`1,42`) is normalised to a period.
+- Empty strings and `NaN` become `null` for categorical columns.
+- Maximum file size is 50 MB.
+
+### Replace vs. combine
+
+After a valid upload you choose how the data is used:
+
+- **My data** (`replace`) — the dashboard shows only your rows.
+- **Combined** (`combine`) — your rows are appended to the built-in dataset, with
+  `upload_` prefixed onto each `ELN_ID` to avoid collisions.
+
+The upload is kept in `localStorage`, so it survives a page reload until you remove it.
+
 ## Tech Stack
 
 React 19, TypeScript, Vite, Plotly.js, Zustand, React Router, hyparquet

@@ -1032,10 +1032,124 @@ button:hover {
     border-color: #ef5350 !important;
 }
 
+/* Upload button with the CSV format link stacked beneath it. */
+.settings-upload-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* Reads as a link, not a bordered icon — the label has to say what it opens. */
+.settings-info-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    box-shadow: none;
+    transition: color 0.15s;
+}
+
+.settings-info-btn:hover,
+.settings-info-btn[aria-expanded="true"] {
+    color: var(--color-text);
+    background: none;
+}
+
+/* The help panel spans the full modal width instead of sitting next to a label. */
+.settings-row-full {
+    display: block;
+    min-height: 0;
+}
+
 .settings-divider {
     height: 1px;
     background: var(--color-border);
     margin: 8px 0;
+}
+
+/* ---- CSV format help (settings upload row + upload error modal) ---- */
+
+.csv-help {
+    padding: 14px 16px;
+    background: var(--color-bg-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    text-align: left;
+}
+
+.csv-help-label {
+    margin: 0 0 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+}
+
+.csv-help-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 14px;
+    padding: 0;
+    list-style: none;
+}
+
+.csv-help-columns code {
+    display: inline-block;
+    padding: 3px 7px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--color-text);
+    white-space: nowrap;
+}
+
+.csv-help-rules {
+    margin: 0 0 14px;
+    padding-left: 18px;
+    line-height: 1.6;
+}
+
+.csv-help-rules code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+}
+
+.csv-help-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.csv-help-link {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.csv-help-link:hover {
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .csv-help {
+    background: var(--color-bg-hover);
 }
 
 
@@ -2007,43 +2121,17 @@ button:hover {
     border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
-.upload-error-footer h4 {
-    color: #333;
-    font-size: 14px;
-    margin: 0 0 8px 16px;
-}
-
-.upload-error-footer ul {
-    margin: 0;
-    padding-left: 20px;
-    font-size: 13px;
-    color: var(--color-text-secondary);
-}
-
-.upload-error-footer li { margin: 4px 0; }
-
-.upload-error-footer button {
-    background: var(--color-primary) !important;
-    color: white !important;
-    border: none !important;
+/* Footer already sits on --color-bg-panel, so lift the help block off it. */
+.upload-error-footer .csv-help {
+    background: var(--color-bg);
 }
 
 .upload-error-footer .close-btn-full {
     margin-top: 16px;
     width: 100%;
-}
-
-.required-columns-code {
-    display: block;
-    padding: 12px;
-    background: var(--color-primary);
-    color: #e0e0e0;
-    border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
+    background: var(--color-primary) !important;
+    color: white !important;
+    border: none !important;
 }
 
 /* ================================================================== */
@@ -2328,7 +2416,7 @@ label.tutorial-highlight {
     color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.app-container.presentation-mode button:not(.settings-toggle):not(.settings-pill):not(.settings-action-btn):not(.settings-remove-btn):not(.settings-modal-close):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn) {
+.app-container.presentation-mode button:not(.settings-toggle):not(.settings-pill):not(.settings-action-btn):not(.settings-remove-btn):not(.settings-modal-close):not(.settings-info-btn):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn) {
     font-size: 20px !important;
     padding: 16px 32px !important;
     font-weight: 600 !important;

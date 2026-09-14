@@ -90,6 +90,19 @@ export const REQUIRED_COLUMNS = [
   'z-Score',
 ] as const;
 
+/** Reactant columns that are honoured when present but not required in uploads. */
+export const OPTIONAL_COLUMNS = [
+  'Additive',
+  'Coupling Reagent',
+  'Secondary Solvent',
+] as const;
+
+/** Upload size cap — enforced in SettingsMenu, advertised in the CSV format help. */
+export const MAX_UPLOAD_MB = 50;
+
+/** Public repository — linked from the landing page and the CSV format help. */
+export const REPO_URL = 'https://github.com/georg-wuitschik-Roche/zScore-App';
+
 /** Reactant category columns (excluding FG A/FG B). */
 export const CATEGORY_OPTIONS = [
   'Additive',

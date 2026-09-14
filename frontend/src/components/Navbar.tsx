@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import { SettingsMenu } from './SettingsMenu';
-import { REQUIRED_COLUMNS } from '../data/types';
+import { CsvFormatHelp } from './CsvFormatHelp';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -75,12 +75,7 @@ export function Navbar() {
               <p>{uploadError}</p>
             </div>
             <div className="upload-error-footer">
-              <h4>Required Columns:</h4>
-              <ul>
-                {REQUIRED_COLUMNS.map((col) => (
-                  <li key={col}><code>{col}</code></li>
-                ))}
-              </ul>
+              <CsvFormatHelp />
               <button className="close-btn-full" onClick={clearUploadError}>
                 Close
               </button>
