@@ -3,6 +3,7 @@ import { useFilterStore } from '../stores/filterStore';
 import { useFilteredData } from '../hooks/useFilteredData';
 import { CATALYST_FILTER_OPTIONS } from '../data/types';
 import { downloadDataUrl, downloadTextFile } from '../data/download';
+import { toCSV } from '../data/csvSerialize';
 import type { CatalystFilterMode } from '../data/types';
 
 const SLIDER_DEBOUNCE_MS = 120;
@@ -143,22 +144,7 @@ export function OptionsPanel() {
 
   function handleDownloadCSV() {
     if (rows.length === 0) return;
-    const headers = Object.keys(rows[0]);
-    const csvContent = [
-      headers.join(','),
-      ...rows.map((row) =>
-        headers
-          .map((h) => {
-            const val = row[h];
-            if (val === null || val === undefined) return '';
-            const str = String(val);
-            return str.includes(',') ? `"${str}"` : str;
-          })
-          .join(','),
-      ),
-    ].join('\n');
-
-    downloadTextFile('zscore_filtered_data.csv', csvContent);
+    downloadTextFile('zscore_filtered_data.csv', toCSV(Object.keys(rows[0]), rows));
   }
 
   function handleDownloadPNG() {

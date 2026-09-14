@@ -7,6 +7,7 @@
  */
 
 import { OPTIONAL_COLUMNS, REQUIRED_COLUMNS } from './types';
+import { toCSV } from './csvSerialize';
 
 type RequiredColumn = (typeof REQUIRED_COLUMNS)[number];
 type OptionalColumn = (typeof OPTIONAL_COLUMNS)[number];
@@ -35,8 +36,5 @@ export const TEMPLATE_COLUMNS = [...REQUIRED_COLUMNS, ...OPTIONAL_COLUMNS];
 
 /** Header line plus one example row, ready to download. */
 export function buildCSVTemplate(): string {
-  return [
-    TEMPLATE_COLUMNS.join(','),
-    TEMPLATE_COLUMNS.map((col) => TEMPLATE_ROW[col]).join(','),
-  ].join('\n');
+  return toCSV(TEMPLATE_COLUMNS, [TEMPLATE_ROW]);
 }

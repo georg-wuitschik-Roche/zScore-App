@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseCSVText } from '../data/loader';
+import { escapeCsvCell } from '../data/csvSerialize';
 
 // ---------------------------------------------------------------------------
 // Helper: build a complete CSV row string with all required columns
@@ -20,11 +21,6 @@ const REQUIRED_HEADERS = [
 ];
 
 const HEADER_LINE = REQUIRED_HEADERS.join(',');
-
-/** Quote a CSV field if it contains a comma. */
-function csvField(val: string): string {
-  return val.includes(',') ? `"${val}"` : val;
-}
 
 function makeRow(overrides: Record<string, string> = {}): string {
   const defaults: Record<string, string> = {
@@ -48,7 +44,7 @@ function makeRow(overrides: Record<string, string> = {}): string {
     output_column: 'Catalyst',
   };
   const merged = { ...defaults, ...overrides };
-  return REQUIRED_HEADERS.map((h) => csvField(merged[h] ?? '')).join(',');
+  return REQUIRED_HEADERS.map((h) => escapeCsvCell(merged[h] ?? '')).join(',');
 }
 
 // ---------------------------------------------------------------------------

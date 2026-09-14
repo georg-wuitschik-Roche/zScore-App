@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useFilterStore } from '../stores/filterStore';
 import type { FilterState } from '../stores/filterStore';
 import { buildCSVTemplate, TEMPLATE_COLUMNS } from '../data/csvTemplate';
+import { escapeCsvCell } from '../data/csvSerialize';
 import { REQUIRED_COLUMNS } from '../data/types';
 
 // ---------------------------------------------------------------------------
@@ -288,11 +289,6 @@ describe('uploadCSV', () => {
   // Build a complete valid CSV string with all required columns
   const REQUIRED_HEADERS: string[] = [...REQUIRED_COLUMNS];
 
-  /** Quote a CSV field if it contains a comma. */
-  function csvField(val: string): string {
-    return val.includes(',') ? `"${val}"` : val;
-  }
-
   function validCsvRow(overrides: Record<string, string> = {}): string {
     const defaults: Record<string, string> = {
       ELN_ID: 'ELN001', PLATENUMBER: '1', Coordinate: 'A1',
@@ -302,7 +298,7 @@ describe('uploadCSV', () => {
       'z-Score': '1.23',
     };
     const merged = { ...defaults, ...overrides };
-    return REQUIRED_HEADERS.map((h) => csvField(merged[h] ?? '')).join(',');
+    return REQUIRED_HEADERS.map((h) => escapeCsvCell(merged[h] ?? '')).join(',');
   }
 
   const VALID_CSV = [REQUIRED_HEADERS.join(','), validCsvRow()].join('\n');
@@ -352,18 +348,15 @@ describe('uploadCSV', () => {
 
   // The template we hand users must satisfy the validator they hand it back to.
   it('accepts the downloadable template CSV', async () => {
-    const [header, row, ...rest] = buildCSVTemplate().split('\n');
-    expect(header.split(',')).toEqual(TEMPLATE_COLUMNS);
-    expect(rest).toHaveLength(0);
+    const template = buildCSVTemplate();
+    expect(template.split('\n')[0]).toBe(TEMPLATE_COLUMNS.join(','));
 
-    // The template is emitted unquoted, so no example value may contain a comma.
-    expect(row.split(',')).toHaveLength(TEMPLATE_COLUMNS.length);
-
-    await useFilterStore.getState().uploadCSV(buildCSVTemplate(), 'zscore_template.csv');
+    await useFilterStore.getState().uploadCSV(template, 'zscore_template.csv');
     const state = useFilterStore.getState();
     expect(state.uploadError).toBeNull();
     expect(state.uploadedDataset).toHaveLength(1);
     expect(state.uploadedDataset?.[0]['Reaction Type']).toBe('Buchwald-Hartwig amination');
+    expect(state.uploadedDataset?.[0]['z-Score']).toBe(1.42);
   });
 
   // OPTIONAL_COLUMNS is hand-maintained; overlap would emit a duplicate header.
