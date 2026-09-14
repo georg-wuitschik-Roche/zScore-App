@@ -56,12 +56,12 @@ export function FilterControls() {
   );
 
   const fgAOptions = useMemo(
-    () => ['All', ...getFgOptions(sourceData, reactionTypes)],
+    () => getFgOptions(sourceData, reactionTypes),
     [sourceData, reactionTypes],
   );
 
   const fgBOptions = useMemo(
-    () => ['All', ...getFgBOptionsConditioned(sourceData, reactionTypes, fgA)],
+    () => getFgBOptionsConditioned(sourceData, reactionTypes, fgA),
     [sourceData, reactionTypes, fgA],
   );
 
@@ -101,14 +101,8 @@ export function FilterControls() {
         <MultiSelect
           options={fgAOptions}
           value={fgA}
-          onChange={(vals) => {
-            // "All" means no filtering — clear specific selections
-            if (vals.includes('All') && !fgA.includes('All')) {
-              setFgA([]);
-            } else {
-              setFgA(vals.filter((v) => v !== 'All'));
-            }
-          }}
+          onChange={setFgA}
+          clearOption="All"
           placeholder="All (no filter)"
           className="fg-dropdown"
         />
@@ -128,13 +122,8 @@ export function FilterControls() {
         <MultiSelect
           options={fgBOptions}
           value={fgB}
-          onChange={(vals) => {
-            if (vals.includes('All') && !fgB.includes('All')) {
-              setFgB([]);
-            } else {
-              setFgB(vals.filter((v) => v !== 'All'));
-            }
-          }}
+          onChange={setFgB}
+          clearOption="All"
           placeholder="All (no filter)"
           className="fg-dropdown"
         />

@@ -8,6 +8,11 @@ interface MultiSelectProps {
   className?: string;
   /** Close dropdown after each selection (useful for single-purpose selectors). */
   autoClose?: boolean;
+  /**
+   * Label for an option that clears the selection (e.g. "All"). Only offered
+   * while something is selected — with an empty selection it would be a no-op.
+   */
+  clearOption?: string;
 }
 
 export function MultiSelect({
@@ -17,6 +22,7 @@ export function MultiSelect({
   placeholder = 'Select...',
   className = '',
   autoClose = false,
+  clearOption,
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -40,7 +46,10 @@ export function MultiSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [handleClickOutside]);
 
-  const filtered = options.filter(
+  const selectable =
+    clearOption && value.length > 0 ? [clearOption, ...options] : options;
+
+  const filtered = selectable.filter(
     (opt) =>
       !value.includes(opt) &&
       opt.toLowerCase().includes(search.toLowerCase()),
@@ -56,6 +65,12 @@ export function MultiSelect({
   }
 
   function handleAdd(item: string) {
+    if (item === clearOption) {
+      onChange([]);
+      setSearch('');
+      setIsOpen(false);
+      return;
+    }
     onChange([...value, item]);
     setSearch('');
     if (autoClose) {

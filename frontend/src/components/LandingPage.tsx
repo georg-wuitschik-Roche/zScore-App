@@ -45,16 +45,16 @@ export function LandingPage() {
   );
 
   const fgAOptions = useMemo(
-    () => ['All', ...(useIndex
+    () => useIndex
       ? getFgOptionsFromIndex(dropdownIndex, reactionTypes)
-      : getFgOptions(rowData, reactionTypes))],
+      : getFgOptions(rowData, reactionTypes),
     [useIndex, dropdownIndex, rowData, reactionTypes],
   );
 
   const fgBOptions = useMemo(
-    () => ['All', ...(useIndex
+    () => useIndex
       ? getFgBOptionsFromIndex(dropdownIndex, reactionTypes, fgA)
-      : getFgBOptionsConditioned(rowData, reactionTypes, fgA))],
+      : getFgBOptionsConditioned(rowData, reactionTypes, fgA),
     [useIndex, dropdownIndex, rowData, reactionTypes, fgA],
   );
 
@@ -151,13 +151,8 @@ export function LandingPage() {
                 <MultiSelect
                   options={fgAOptions}
                   value={fgA}
-                  onChange={(vals) => {
-                    if (vals.includes('All') && !fgA.includes('All')) {
-                      setFgA([]);
-                    } else {
-                      setFgA(vals.filter((v) => v !== 'All'));
-                    }
-                  }}
+                  onChange={setFgA}
+                  clearOption="All"
                   placeholder="All (no filter)"
                 />
               </div>
@@ -166,13 +161,8 @@ export function LandingPage() {
                 <MultiSelect
                   options={fgBOptions}
                   value={fgB}
-                  onChange={(vals) => {
-                    if (vals.includes('All') && !fgB.includes('All')) {
-                      setFgB([]);
-                    } else {
-                      setFgB(vals.filter((v) => v !== 'All'));
-                    }
-                  }}
+                  onChange={setFgB}
+                  clearOption="All"
                   placeholder="All (no filter)"
                 />
               </div>
