@@ -160,6 +160,11 @@
     color: var(--color-text) !important;
 }
 
+/* Muted grey is too low-contrast on the dark background at 11px */
+[data-theme="dark"] .multi-select-option-count {
+    color: var(--color-text-secondary);
+}
+
 [data-theme="dark"] .landing-search .multi-select-control {
     border-color: var(--color-border) !important;
 }
@@ -1332,6 +1337,12 @@ button:hover {
 }
 
 .multi-select-option {
+    display: flex;
+    /* baseline, not center — keeps the count on the first line when a long
+       FG name wraps */
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
     padding: 8px 12px;
     cursor: pointer;
     font-size: 13px;
@@ -1342,6 +1353,13 @@ button:hover {
 .multi-select-option:hover,
 .multi-select-option.highlighted { background: var(--color-bg-hover); }
 .multi-select-option.selected { background: var(--color-primary-light); }
+
+.multi-select-option-count {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+}
 
 /* ================================================================== */
 /* 7. VIEW TOGGLE (segmented control)                                  */
@@ -2386,6 +2404,10 @@ label.tutorial-highlight {
     font-size: 20px !important;
     padding: 12px 16px !important;
     line-height: 1.4 !important;
+}
+
+.app-container.presentation-mode .multi-select-option-count {
+    font-size: 16px !important;
 }
 
 .app-container.presentation-mode .controls-row {

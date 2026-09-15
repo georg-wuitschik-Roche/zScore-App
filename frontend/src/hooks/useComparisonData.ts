@@ -13,6 +13,7 @@ import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
 import { computeRankDeltas, resolveComparisonVersion } from '../data/comparison';
+import { useFilterParams } from './useFilterParams';
 import type { Row, RankDelta, FilterParams, ComparisonInfo } from '../data/types';
 
 export interface ComparisonResult {
@@ -53,17 +54,7 @@ export function useComparisonRawData(): ComparisonRawData | null {
   const datasetCache = useFilterStore((s) => s.datasetCache);
   const uploadedDataset = useFilterStore((s) => s.uploadedDataset);
 
-  const reactionTypes = useFilterStore((s) => s.reactionTypes);
-  const reactantTypes = useFilterStore((s) => s.reactantTypes);
-  const fgA = useFilterStore((s) => s.fgA);
-  const fgB = useFilterStore((s) => s.fgB);
-  const copperFilter = useFilterStore((s) => s.copperFilter);
-  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
-  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
-  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
-  const minEln = useFilterStore((s) => s.minEln);
-  const topnZscore = useFilterStore((s) => s.topnZscore);
-  const maxComponents = useFilterStore((s) => s.maxComponents);
+  const baseParams = useFilterParams();
 
   const comparisonVersionId = useMemo(() => {
     if (!comparisonMode) return null;
@@ -84,24 +75,6 @@ export function useComparisonRawData(): ComparisonRawData | null {
     if (!comparisonVersionId) return null;
     return datasetCache[comparisonVersionId]?.rows ?? null;
   }, [comparisonVersionId, datasetCache]);
-
-  const baseParams = useMemo((): FilterParams => ({
-    reactionTypes,
-    reactantTypes,
-    fgA,
-    fgB,
-    copperFilter,
-    precomplexedFilter,
-    excludeScaleup,
-    includeNullCategories,
-    minEln,
-    topnZscore,
-    maxComponents,
-  }), [
-    reactionTypes, reactantTypes, fgA, fgB,
-    copperFilter, precomplexedFilter, excludeScaleup, includeNullCategories,
-    minEln, topnZscore, maxComponents,
-  ]);
 
   return useMemo(() => {
     if (!comparisonMode || !rawComparisonRows || !info) return null;

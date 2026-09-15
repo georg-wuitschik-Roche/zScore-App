@@ -13,6 +13,13 @@ interface MultiSelectProps {
    * while something is selected — with an empty selection it would be a no-op.
    */
   clearOption?: string;
+  /**
+   * Per-option counts, shown dimmed at the right of each row. Options absent
+   * from the map count as 0. The clearOption row never shows a count.
+   */
+  counts?: Record<string, number>;
+  /** Unit for the count tooltip, e.g. "ELNs". */
+  countLabel?: string;
 }
 
 export function MultiSelect({
@@ -23,6 +30,8 @@ export function MultiSelect({
   className = '',
   autoClose = false,
   clearOption,
+  counts,
+  countLabel,
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -154,19 +163,32 @@ export function MultiSelect({
 
       {isOpen && filtered.length > 0 && (
         <div className="multi-select-dropdown" ref={dropdownRef}>
-          {filtered.map((opt, i) => (
-            <div
-              key={opt}
-              className={`multi-select-option${i === highlightIndex ? ' highlighted' : ''}`}
-              onMouseDown={(e) => { e.preventDefault(); handleAdd(opt); }}
-              onMouseEnter={() => setHighlightIndex(i)}
-              role="option"
-              aria-selected={i === highlightIndex}
-              ref={i === highlightIndex ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}
-            >
-              {opt}
-            </div>
-          ))}
+          {filtered.map((opt, i) => {
+            // Match on the label, not index — search can filter out clearOption
+            const count =
+              !counts || opt === clearOption ? undefined : (counts[opt] ?? 0);
+            return (
+              <div
+                key={opt}
+                className={`multi-select-option${i === highlightIndex ? ' highlighted' : ''}`}
+                onMouseDown={(e) => { e.preventDefault(); handleAdd(opt); }}
+                onMouseEnter={() => setHighlightIndex(i)}
+                role="option"
+                aria-selected={i === highlightIndex}
+                ref={i === highlightIndex ? (el) => el?.scrollIntoView({ block: 'nearest' }) : undefined}
+              >
+                <span className="multi-select-option-label">{opt}</span>
+                {count !== undefined && (
+                  <span
+                    className="multi-select-option-count"
+                    title={countLabel ? `${count} ${countLabel}` : undefined}
+                  >
+                    {count}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

@@ -3,10 +3,68 @@
  *
  * Computes available options for FG A, FG B (conditioned on FG A),
  * reactant types, and reaction types from a dataset.
+ *
+ * The `get*ElnCounts` functions annotate each option with the number of
+ * distinct ELNs behind it. Each one applies every other active filter and
+ * leaves out only the dimension its own dropdown controls, so the number
+ * answers "how many ELNs do I get if I pick this, on top of everything I have
+ * already selected". Picking an option therefore lands on its stated count,
+ * up to the late chain steps (dedup, top-N, min-ELN) which the `ELNs:` badges
+ * also exclude.
  */
 
-import type { Row, DropdownIndex } from './types';
+import type { Row, DropdownIndex, FilterParams } from './types';
 import { CATEGORY_OPTIONS } from './types';
+import { filterByReactionTypes } from './filterSteps';
+import { baseFilter } from './filterChain';
+
+/** The filter dimension a dropdown owns, and therefore must not apply itself. */
+type CountDimension = 'reactionTypes' | 'reactantTypes' | 'fgA' | 'fgB';
+
+/**
+ * Apply the base filters with the dropdown's own dimension left out.
+ *
+ * Every base filter no-ops on an empty selection, so "exclude a dimension" is
+ * just blanking it. Leaving it out is what makes the counts useful: applying
+ * it would collapse every option to the already-selected values.
+ */
+function scopeForDimension(
+  rows: Row[],
+  params: FilterParams,
+  exclude: CountDimension,
+): Row[] {
+  return baseFilter(rows, { ...params, [exclude]: [] }).rows;
+}
+
+/** True when a reactant column is populated on this row. */
+function hasValue(row: Row, col: string): boolean {
+  const value = row[col];
+  return value !== null && value !== undefined && value !== '';
+}
+
+/** Record an ELN against an option, skipping null/empty on either side. */
+function addEln(
+  counter: Map<string, Set<string>>,
+  option: string | null | undefined,
+  elnId: string | null | undefined,
+): void {
+  if (!option || !elnId) return;
+  let elns = counter.get(option);
+  if (!elns) {
+    elns = new Set();
+    counter.set(option, elns);
+  }
+  elns.add(elnId);
+}
+
+/** Collapse an option -> ELN set map into option -> distinct ELN count. */
+function collapse(counter: Map<string, Set<string>>): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const [option, elns] of counter) {
+    counts[option] = elns.size;
+  }
+  return counts;
+}
 
 /** Get unique reaction types from dataset. */
 export function getReactionTypes(rows: Row[]): string[] {
@@ -22,15 +80,11 @@ export function getReactantOptions(
   rows: Row[],
   reactionTypes: string[],
 ): string[] {
-  let filtered = rows;
-  if (reactionTypes.length > 0) {
-    const typeSet = new Set(reactionTypes);
-    filtered = rows.filter((row) => typeSet.has(row['Reaction Type']));
-  }
+  const filtered = filterByReactionTypes(rows, reactionTypes);
 
   const available: string[] = [];
   for (const cat of CATEGORY_OPTIONS) {
-    if (filtered.some((row) => row[cat] !== null && row[cat] !== undefined && row[cat] !== '')) {
+    if (filtered.some((row) => hasValue(row, cat))) {
       available.push(cat);
     }
   }
@@ -42,11 +96,7 @@ export function getFgOptions(
   rows: Row[],
   reactionTypes: string[],
 ): string[] {
-  let filtered = rows;
-  if (reactionTypes.length > 0) {
-    const typeSet = new Set(reactionTypes);
-    filtered = rows.filter((row) => typeSet.has(row['Reaction Type']));
-  }
+  const filtered = filterByReactionTypes(rows, reactionTypes);
 
   const fgs = new Set<string>();
   for (const row of filtered) {
@@ -68,11 +118,7 @@ export function getFgBOptionsConditioned(
   reactionTypes: string[],
   fgASelection: string[],
 ): string[] {
-  let filtered = rows;
-  if (reactionTypes.length > 0) {
-    const typeSet = new Set(reactionTypes);
-    filtered = rows.filter((row) => typeSet.has(row['Reaction Type']));
-  }
+  const filtered = filterByReactionTypes(rows, reactionTypes);
 
   // If no specific FG A selection, return all FGs
   if (!fgASelection || fgASelection.length === 0) {
@@ -93,6 +139,95 @@ export function getFgBOptionsConditioned(
   }
 
   return Array.from(otherFgs).sort();
+}
+
+// --- Per-option ELN counts (mirror the option functions above) ---
+
+/**
+ * Count distinct ELNs per FG value within already-scoped rows.
+ *
+ * With a partner selection active, only ELNs that pair a candidate with one of
+ * the partner values count — the same unordered-pair rule `filterFgB` applies.
+ * With no partner selected, a candidate counts in either column, matching
+ * `filterFgA`.
+ */
+function countFgValues(
+  rows: Row[],
+  partnerSelection: string[],
+): Record<string, number> {
+  const counter = new Map<string, Set<string>>();
+
+  if (partnerSelection.length === 0) {
+    for (const row of rows) {
+      // A homo-pair row lands in the same bucket twice; the Set absorbs it.
+      addEln(counter, row['FG A'], row.ELN_ID);
+      addEln(counter, row['FG B'], row.ELN_ID);
+    }
+    return collapse(counter);
+  }
+
+  const partnerSet = new Set(partnerSelection);
+  for (const row of rows) {
+    const fgA = row['FG A'];
+    const fgB = row['FG B'];
+    if (!fgA || !fgB) continue;
+    if (partnerSet.has(fgA)) addEln(counter, fgB, row.ELN_ID);
+    if (partnerSet.has(fgB)) addEln(counter, fgA, row.ELN_ID);
+  }
+  return collapse(counter);
+}
+
+/** Count distinct ELNs per reaction type, honouring the other active filters. */
+export function getReactionTypeElnCounts(
+  rows: Row[],
+  params: FilterParams,
+): Record<string, number> {
+  const scoped = scopeForDimension(rows, params, 'reactionTypes');
+
+  const counter = new Map<string, Set<string>>();
+  for (const row of scoped) {
+    addEln(counter, row['Reaction Type'], row.ELN_ID);
+  }
+  return collapse(counter);
+}
+
+/** Count distinct ELNs per FG A option, honouring the other active filters. */
+export function getFgAElnCounts(
+  rows: Row[],
+  params: FilterParams,
+): Record<string, number> {
+  return countFgValues(scopeForDimension(rows, params, 'fgA'), params.fgB);
+}
+
+/** Count distinct ELNs per FG B option, honouring the other active filters. */
+export function getFgBElnCounts(
+  rows: Row[],
+  params: FilterParams,
+): Record<string, number> {
+  return countFgValues(scopeForDimension(rows, params, 'fgB'), params.fgA);
+}
+
+/**
+ * Count distinct ELNs per reactant column that have that column populated,
+ * honouring the other active filters.
+ *
+ * This is an availability count — with the default `includeNullCategories` the
+ * reactant filter itself is a no-op, so the number answers whether a column
+ * has enough data under the current filters to be worth grouping by.
+ */
+export function getReactantElnCounts(
+  rows: Row[],
+  params: FilterParams,
+): Record<string, number> {
+  const scoped = scopeForDimension(rows, params, 'reactantTypes');
+
+  const counter = new Map<string, Set<string>>();
+  for (const row of scoped) {
+    for (const cat of CATEGORY_OPTIONS) {
+      if (hasValue(row, cat)) addEln(counter, cat, row.ELN_ID);
+    }
+  }
+  return collapse(counter);
 }
 
 // --- Index-based functions (instant, no row scanning) ---

@@ -23,7 +23,7 @@ import {
 } from './filterSteps';
 
 /** Count unique ELN_IDs in a row array. */
-function countElns(rows: Row[]): number {
+export function countElns(rows: Row[]): number {
   const elns = new Set<string>();
   for (const row of rows) {
     if (row.ELN_ID) elns.add(row.ELN_ID);
@@ -46,6 +46,62 @@ export interface FilterResult {
   stats: FilterStats;
 }
 
+/** Rows surviving each of the base filters, for callers that report on them. */
+export interface BaseFilterResult {
+  rows: Row[];
+  afterReactionTypes: Row[];
+  afterReactants: Row[];
+  afterFgA: Row[];
+  fgAList: string[];
+  fgBList: string[];
+}
+
+/**
+ * Run the base filters — chain steps 1-5, everything that narrows by what the
+ * user selected rather than by z-Score ranking.
+ *
+ * Split out so the dropdown ELN counts scope themselves through the same
+ * definition the chain uses; a step added here reaches both.
+ */
+export function baseFilter(
+  sourceRows: Row[],
+  params: FilterParams,
+): BaseFilterResult {
+  // Step 1: Reaction types
+  const afterReactionTypes = filterByReactionTypes(
+    sourceRows,
+    params.reactionTypes,
+  );
+
+  // Step 2: Reactant columns populated
+  const afterReactants = filterByReactantColumns(
+    afterReactionTypes,
+    params.reactantTypes,
+    params.includeNullCategories,
+  );
+
+  // Step 3: Copper catalyst filter
+  let rows = filterCopper(afterReactants, params.copperFilter);
+
+  // Step 3b: Precomplexed catalyst filter
+  rows = filterPrecomplexed(rows, params.precomplexedFilter);
+
+  // Step 4: Functional Group A
+  const [afterFgA, fgAList] = filterFgA(rows, params.fgA);
+
+  // Step 5: Functional Group B
+  const [afterFgB, fgBList] = filterFgB(afterFgA, params.fgB, fgAList);
+
+  return {
+    rows: afterFgB,
+    afterReactionTypes,
+    afterReactants,
+    afterFgA,
+    fgAList,
+    fgBList,
+  };
+}
+
 /**
  * Run the 10-step filter chain.
  *
@@ -58,37 +114,17 @@ export function filterData(
 ): FilterResult {
   const stats: FilterStats = {};
 
-  // Step 1: Reaction types
-  let rows = filterByReactionTypes(sourceRows, params.reactionTypes);
-  stats.wholeDataset = { elns: countElns(rows) };
+  const base = baseFilter(sourceRows, params);
+  let rows = base.rows;
 
-  // Step 2: Reactant columns populated
-  rows = filterByReactantColumns(
-    rows,
-    params.reactantTypes,
-    params.includeNullCategories,
-  );
+  stats.wholeDataset = { elns: countElns(base.afterReactionTypes) };
   if (params.reactantTypes.length > 0) {
-    stats.afterReactantFilters = { elns: countElns(rows) };
+    stats.afterReactantFilters = { elns: countElns(base.afterReactants) };
   }
-
-  // Step 3: Copper catalyst filter
-  rows = filterCopper(rows, params.copperFilter);
-
-  // Step 3b: Precomplexed catalyst filter
-  rows = filterPrecomplexed(rows, params.precomplexedFilter);
-
-  // Step 4: Functional Group A
-  const [afterFgA, fgAList] = filterFgA(rows, params.fgA);
-  rows = afterFgA;
-  if (fgAList.length > 0) {
-    stats.afterFgA = { elns: countElns(rows) };
+  if (base.fgAList.length > 0) {
+    stats.afterFgA = { elns: countElns(base.afterFgA) };
   }
-
-  // Step 5: Functional Group B
-  const [afterFgB, fgBList] = filterFgB(rows, params.fgB, fgAList);
-  rows = afterFgB;
-  if (fgBList.length > 0) {
+  if (base.fgBList.length > 0) {
     stats.afterFgB = { elns: countElns(rows) };
   }
 

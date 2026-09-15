@@ -6,10 +6,10 @@
  */
 
 import { useMemo } from 'react';
-import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
 import { useEffectiveDataset } from './useEffectiveDataset';
-import type { FilterParams, FilterStats, Row } from '../data/types';
+import { useFilterParams } from './useFilterParams';
+import type { FilterStats, Row } from '../data/types';
 
 export interface FilteredResult {
   rows: Row[];
@@ -17,52 +17,13 @@ export interface FilteredResult {
 }
 
 export function useFilteredData(): FilteredResult {
-  const reactionTypes = useFilterStore((s) => s.reactionTypes);
-  const reactantTypes = useFilterStore((s) => s.reactantTypes);
-  const fgA = useFilterStore((s) => s.fgA);
-  const fgB = useFilterStore((s) => s.fgB);
-  const copperFilter = useFilterStore((s) => s.copperFilter);
-  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
-  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
-  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
-  const minEln = useFilterStore((s) => s.minEln);
-  const topnZscore = useFilterStore((s) => s.topnZscore);
-  const maxComponents = useFilterStore((s) => s.maxComponents);
-
+  const params = useFilterParams();
   const sourceData = useEffectiveDataset();
 
   return useMemo(() => {
     if (sourceData.length === 0) {
       return { rows: [], stats: {} };
     }
-
-    const params: FilterParams = {
-      reactionTypes,
-      reactantTypes,
-      fgA,
-      fgB,
-      copperFilter,
-      precomplexedFilter,
-      excludeScaleup,
-      includeNullCategories,
-      minEln,
-      topnZscore,
-      maxComponents,
-    };
-
     return filterData(sourceData, params);
-  }, [
-    sourceData,
-    reactionTypes,
-    reactantTypes,
-    fgA,
-    fgB,
-    copperFilter,
-    precomplexedFilter,
-    excludeScaleup,
-    includeNullCategories,
-    minEln,
-    topnZscore,
-    maxComponents,
-  ]);
+  }, [sourceData, params]);
 }

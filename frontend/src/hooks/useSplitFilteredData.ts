@@ -9,20 +9,11 @@ import { useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { filterData } from '../data/filterChain';
 import { useEffectiveDataset } from './useEffectiveDataset';
+import { useFilterParams } from './useFilterParams';
 import type { FilterParams, SplitPanel } from '../data/types';
 
 export function useSplitFilteredData(): SplitPanel[] {
-  const reactionTypes = useFilterStore((s) => s.reactionTypes);
-  const reactantTypes = useFilterStore((s) => s.reactantTypes);
-  const fgA = useFilterStore((s) => s.fgA);
-  const fgB = useFilterStore((s) => s.fgB);
-  const copperFilter = useFilterStore((s) => s.copperFilter);
-  const precomplexedFilter = useFilterStore((s) => s.precomplexedFilter);
-  const excludeScaleup = useFilterStore((s) => s.excludeScaleup);
-  const includeNullCategories = useFilterStore((s) => s.includeNullCategories);
-  const minEln = useFilterStore((s) => s.minEln);
-  const topnZscore = useFilterStore((s) => s.topnZscore);
-  const maxComponents = useFilterStore((s) => s.maxComponents);
+  const baseParams = useFilterParams();
   const splitSelector = useFilterStore((s) => s.splitSelector);
   const crossFilterSelections = useFilterStore((s) => s.crossFilterSelections);
   const crossFilterOrder = useFilterStore((s) => s.crossFilterOrder);
@@ -30,23 +21,11 @@ export function useSplitFilteredData(): SplitPanel[] {
   const sourceData = useEffectiveDataset();
 
   return useMemo(() => {
+    const { reactionTypes, reactantTypes, fgA, fgB } = baseParams;
+
     if (sourceData.length === 0) {
       return [{ label: 'Combined', rows: [], stats: {}, reactantTypes }];
     }
-
-    const baseParams: FilterParams = {
-      reactionTypes,
-      reactantTypes,
-      fgA,
-      fgB,
-      copperFilter,
-      precomplexedFilter,
-      excludeScaleup,
-      includeNullCategories,
-      minEln,
-      topnZscore,
-      maxComponents,
-    };
 
     // Determine which values to split on
     const splitValues = splitSelector
@@ -115,17 +94,7 @@ export function useSplitFilteredData(): SplitPanel[] {
     });
   }, [
     sourceData,
-    reactionTypes,
-    reactantTypes,
-    fgA,
-    fgB,
-    copperFilter,
-    precomplexedFilter,
-    excludeScaleup,
-    includeNullCategories,
-    minEln,
-    topnZscore,
-    maxComponents,
+    baseParams,
     splitSelector,
     crossFilterSelections,
     crossFilterOrder,

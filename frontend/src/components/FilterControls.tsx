@@ -8,6 +8,7 @@ import {
   getFgBOptionsConditioned,
   getReactantOptions,
 } from '../data/dropdownOptions';
+import { useDropdownCounts } from '../hooks/useDropdownCounts';
 import { MultiSelect } from './MultiSelect';
 import type { SplitSelector } from '../data/types';
 
@@ -48,6 +49,7 @@ export function FilterControls() {
   const setReactantTypes = useFilterStore((s) => s.setReactantTypes);
 
   const sourceData = useEffectiveDataset();
+  const counts = useDropdownCounts();
   const { stats } = useFilteredData();
 
   const reactionTypeOptions = useMemo(
@@ -82,6 +84,8 @@ export function FilterControls() {
           options={reactionTypeOptions}
           value={reactionTypes}
           onChange={setReactionTypes}
+          counts={counts.reactionTypes}
+          countLabel="ELNs"
           placeholder="Select reaction types..."
           autoClose
         />
@@ -102,6 +106,8 @@ export function FilterControls() {
           options={fgAOptions}
           value={fgA}
           onChange={setFgA}
+          counts={counts.fgA}
+          countLabel="ELNs"
           clearOption="All"
           placeholder="All (no filter)"
           className="fg-dropdown"
@@ -123,6 +129,8 @@ export function FilterControls() {
           options={fgBOptions}
           value={fgB}
           onChange={setFgB}
+          counts={counts.fgB}
+          countLabel="ELNs"
           clearOption="All"
           placeholder="All (no filter)"
           className="fg-dropdown"
@@ -144,6 +152,8 @@ export function FilterControls() {
           options={reactantTypeOptions}
           value={reactantTypes}
           onChange={setReactantTypes}
+          counts={counts.reactantTypes}
+          countLabel="ELNs"
           placeholder="Select reactant types..."
           autoClose
         />
