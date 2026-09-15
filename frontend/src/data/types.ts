@@ -21,8 +21,6 @@ export interface Row {
   'Reaction Type': string;
   'FG A': string | null;
   'FG B': string | null;
-  FG_sorted: string | null;
-  FG_PAIR_SORTED: string | null;
   'z-Score': number | null;
   // Additional columns present in CSV but not used in filtering:
   [key: string]: string | number | null | undefined;
@@ -73,7 +71,7 @@ export const DEFAULTS: FilterParams = {
   maxComponents: 10,
 };
 
-/** The 13 columns required in uploaded datasets. */
+/** The 12 columns required in uploaded datasets. */
 export const REQUIRED_COLUMNS = [
   'ELN_ID',
   'PLATENUMBER',
@@ -86,7 +84,6 @@ export const REQUIRED_COLUMNS = [
   'Reaction Type',
   'FG A',
   'FG B',
-  'FG_sorted',
   'z-Score',
 ] as const;
 

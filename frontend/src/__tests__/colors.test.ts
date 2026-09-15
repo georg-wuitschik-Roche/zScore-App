@@ -29,8 +29,6 @@ function makeRow(overrides: Partial<Row>): Row {
     'Reaction Type': 'Buchwald-Hartwig',
     'FG A': null,
     'FG B': null,
-    FG_sorted: null,
-    FG_PAIR_SORTED: null,
     'z-Score': 1.0,
     ...overrides,
   };

@@ -154,10 +154,10 @@ export function filterFgB(
   if (fgBList.length === 0) return [rows, fgBList];
 
   if (fgAList.length > 0) {
-    // Both specified: match the unordered {FG A, FG B} pair directly rather
-    // than via FG_PAIR_SORTED. That column is sorted case-insensitively
-    // upstream ("alkene, ArBr"), so a code-point sort here would never match
-    // it for mixed-case pairs — silently hiding 12 pairs of the dataset.
+    // Both specified: compare the unordered {FG A, FG B} pair directly. Doing
+    // it via a sorted "a, b" key is how this went wrong before — the two sides
+    // disagreed on case ordering and 12 mixed-case pairs silently matched
+    // nothing.
     const fgASet = new Set(fgAList);
     const fgBSet = new Set(fgBList);
     const filtered = rows.filter((row) => {

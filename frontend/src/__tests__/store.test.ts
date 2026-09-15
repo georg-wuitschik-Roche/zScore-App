@@ -234,7 +234,7 @@ describe('resetFilters', () => {
           Catalyst: null, 'Coupling Reagent': null, Solvent: null,
           Ligand: null, 'Secondary Solvent': null,
           'Reaction Type': 'BH', 'FG A': null, 'FG B': null,
-          FG_sorted: null, FG_PAIR_SORTED: null, 'z-Score': 1,
+          'z-Score': 1,
         },
       ],
     });
@@ -294,7 +294,7 @@ describe('uploadCSV', () => {
       ELN_ID: 'ELN001', PLATENUMBER: '1', Coordinate: 'A1',
       AREA_TOTAL_REDUCED: '50', Base: 'K3PO4', Catalyst: 'Pd(OAc)2',
       Solvent: 'DMF', Ligand: 'XPhos', 'Reaction Type': 'Buchwald-Hartwig',
-      'FG A': 'ArBr', 'FG B': 'RNH2', FG_sorted: 'ArBr, RNH2',
+      'FG A': 'ArBr', 'FG B': 'RNH2',
       'z-Score': '1.23',
     };
     const merged = { ...defaults, ...overrides };
@@ -362,6 +362,21 @@ describe('uploadCSV', () => {
   // OPTIONAL_COLUMNS is hand-maintained; overlap would emit a duplicate header.
   it('has no column listed as both required and optional', () => {
     expect(new Set(TEMPLATE_COLUMNS).size).toBe(TEMPLATE_COLUMNS.length);
+  });
+
+  // FG_sorted used to be required. Files chemists already have still carry it,
+  // and dropping the requirement must not start rejecting them.
+  it('accepts a CSV that still carries the retired FG_sorted column', async () => {
+    const headers = [...REQUIRED_HEADERS, 'FG_sorted'];
+    const csv = [
+      headers.join(','),
+      [validCsvRow(), escapeCsvCell('ArBr, RNH2')].join(','),
+    ].join('\n');
+
+    await useFilterStore.getState().uploadCSV(csv, 'legacy.csv');
+    const state = useFilterStore.getState();
+    expect(state.uploadError).toBeNull();
+    expect(state.uploadedDataset).toHaveLength(1);
   });
 
   it('handles multiple rows correctly', async () => {

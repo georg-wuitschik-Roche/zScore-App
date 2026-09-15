@@ -46,7 +46,6 @@ to it shows this reference in the app and offers a downloadable template CSV.
 | `Reaction Type` | Reaction class, e.g. `Buchwald-Hartwig amination` |
 | `FG A` | Functional group on the first coupling partner |
 | `FG B` | Functional group on the second coupling partner |
-| `FG_sorted` | Alphabetically sorted `FG A` / `FG B` pair |
 | `z-Score` | Normalised performance score (numeric) |
 
 Upload is rejected with a list of the missing names if any of these are absent.
@@ -55,7 +54,6 @@ Upload is rejected with a list of the missing names if any of these are absent.
 
 `Additive`, `Coupling Reagent` and `Secondary Solvent` are used for grouping and
 deduplication when present. Leave them empty or omit the columns entirely.
-`FG_PAIR_SORTED` is derived from `FG A` and `FG B` at load time — don't supply it.
 Any further columns are carried through untouched and ignored by the filter chain.
 
 ### Format rules

@@ -31,8 +31,6 @@ function makeRow(overrides: Partial<Row>): Row {
     'Reaction Type': 'Buchwald-Hartwig',
     'FG A': 'ArBr',
     'FG B': 'RNH2',
-    FG_sorted: 'ArBr, RNH2',
-    FG_PAIR_SORTED: 'ArBr, RNH2',
     'z-Score': 1.0,
     output_column: 'Catalyst',
     ...overrides,

@@ -43,12 +43,6 @@ function cleanRow(raw: Record<string, unknown>): Row {
       row[col] = s;
     }
   }
-  if (!row.FG_PAIR_SORTED) {
-    const fgSorted = row['FG_sorted'];
-    if (fgSorted && typeof fgSorted === 'string') {
-      row.FG_PAIR_SORTED = fgSorted;
-    }
-  }
   return row as Row;
 }
 
@@ -80,8 +74,6 @@ function makeRow(overrides: Partial<Row>): Row {
     'Reaction Type': 'TestRx',
     'FG A': null,
     'FG B': null,
-    FG_sorted: null,
-    FG_PAIR_SORTED: null,
     'z-Score': 0,
     ...overrides,
   };

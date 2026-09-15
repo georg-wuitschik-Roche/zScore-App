@@ -53,7 +53,6 @@ USED_COLUMNS = [
     'Reaction Type',
     'FG A',
     'FG B',
-    'FG_sorted',
     'z-Score',
     'output_column',
 ]

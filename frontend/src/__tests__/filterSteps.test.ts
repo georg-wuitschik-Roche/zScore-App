@@ -46,8 +46,6 @@ function makeRow(overrides: Partial<Row>): Row {
     'Reaction Type': 'Buchwald-Hartwig',
     'FG A': 'ArBr',
     'FG B': 'RNH2',
-    FG_sorted: 'ArBr, RNH2',
-    FG_PAIR_SORTED: 'ArBr, RNH2',
     'z-Score': 1.0,
     output_column: 'Catalyst',
     ...overrides,
@@ -56,32 +54,32 @@ function makeRow(overrides: Partial<Row>): Row {
 
 const FIXTURE: Row[] = [
   // Buchwald-Hartwig rows (ELN001-ELN004)
-  makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 2.5 }),
-  makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'CuI', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 1.5 }),
-  makeRow({ ELN_ID: 'ELN002', PLATENUMBER: '2', Catalyst: 'Pd(OAc)2', Base: 'Cs2CO3', Solvent: 'DMF', Ligand: 'SPhos', 'FG A': 'ArCl', 'FG B': 'ArNH2', FG_PAIR_SORTED: 'ArCl, ArNH2', 'z-Score': 3.0 }),
-  makeRow({ ELN_ID: 'ELN002', PLATENUMBER: '2', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'THF', Ligand: 'SPhos', 'FG A': 'ArCl', 'FG B': 'ArNH2', FG_PAIR_SORTED: 'ArCl, ArNH2', 'z-Score': 2.0 }),
-  makeRow({ ELN_ID: 'ELN003', PLATENUMBER: '3', Catalyst: 'Pd2(dba)3', Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 4.0 }),
-  makeRow({ ELN_ID: 'ELN003', PLATENUMBER: '3', Catalyst: null, Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArNH2', FG_PAIR_SORTED: 'ArBr, ArNH2', 'z-Score': 0.5 }),
-  makeRow({ ELN_ID: 'ELN004', PLATENUMBER: '4', Catalyst: 'CuI', Base: 'Cs2CO3', Solvent: 'DMSO', Ligand: null, 'FG A': 'RNH2', 'FG B': 'ArBr', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': -1.0 }),
+  makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 2.5 }),
+  makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'CuI', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 1.5 }),
+  makeRow({ ELN_ID: 'ELN002', PLATENUMBER: '2', Catalyst: 'Pd(OAc)2', Base: 'Cs2CO3', Solvent: 'DMF', Ligand: 'SPhos', 'FG A': 'ArCl', 'FG B': 'ArNH2', 'z-Score': 3.0 }),
+  makeRow({ ELN_ID: 'ELN002', PLATENUMBER: '2', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'THF', Ligand: 'SPhos', 'FG A': 'ArCl', 'FG B': 'ArNH2', 'z-Score': 2.0 }),
+  makeRow({ ELN_ID: 'ELN003', PLATENUMBER: '3', Catalyst: 'Pd2(dba)3', Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 4.0 }),
+  makeRow({ ELN_ID: 'ELN003', PLATENUMBER: '3', Catalyst: null, Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArNH2', 'z-Score': 0.5 }),
+  makeRow({ ELN_ID: 'ELN004', PLATENUMBER: '4', Catalyst: 'CuI', Base: 'Cs2CO3', Solvent: 'DMSO', Ligand: null, 'FG A': 'RNH2', 'FG B': 'ArBr', 'z-Score': -1.0 }),
   // Suzuki-Miyaura rows (ELN005-ELN008)
-  makeRow({ ELN_ID: 'ELN005', PLATENUMBER: '5', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(PPh3)4', Base: 'K2CO3', Solvent: 'Dioxane', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', FG_PAIR_SORTED: 'ArB(OH)2, ArBr', 'z-Score': 5.0 }),
-  makeRow({ ELN_ID: 'ELN005', PLATENUMBER: '5', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'CuI', Base: 'K2CO3', Solvent: 'Dioxane', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', FG_PAIR_SORTED: 'ArB(OH)2, ArBr', 'z-Score': 0.1 }),
-  makeRow({ ELN_ID: 'ELN006', PLATENUMBER: '6', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(PPh3)4', Base: 'Na2CO3', Solvent: 'THF', Ligand: 'PPh3', 'FG A': 'ArCl', 'FG B': 'ArB(OH)2', FG_PAIR_SORTED: 'ArB(OH)2, ArCl', 'z-Score': 3.5 }),
-  makeRow({ ELN_ID: 'ELN007', PLATENUMBER: '7', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(OAc)2', Base: 'K2CO3', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', FG_PAIR_SORTED: 'ArB(OH)2, ArBr', 'z-Score': 2.0 }),
-  makeRow({ ELN_ID: 'ELN008', PLATENUMBER: '8', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(PPh3)4', Base: 'K2CO3', Solvent: 'Dioxane', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', FG_PAIR_SORTED: 'ArB(OH)2, ArBr', 'z-Score': 1.0 }),
+  makeRow({ ELN_ID: 'ELN005', PLATENUMBER: '5', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(PPh3)4', Base: 'K2CO3', Solvent: 'Dioxane', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', 'z-Score': 5.0 }),
+  makeRow({ ELN_ID: 'ELN005', PLATENUMBER: '5', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'CuI', Base: 'K2CO3', Solvent: 'Dioxane', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', 'z-Score': 0.1 }),
+  makeRow({ ELN_ID: 'ELN006', PLATENUMBER: '6', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(PPh3)4', Base: 'Na2CO3', Solvent: 'THF', Ligand: 'PPh3', 'FG A': 'ArCl', 'FG B': 'ArB(OH)2', 'z-Score': 3.5 }),
+  makeRow({ ELN_ID: 'ELN007', PLATENUMBER: '7', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(OAc)2', Base: 'K2CO3', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', 'z-Score': 2.0 }),
+  makeRow({ ELN_ID: 'ELN008', PLATENUMBER: '8', 'Reaction Type': 'Suzuki-Miyaura', Catalyst: 'Pd(PPh3)4', Base: 'K2CO3', Solvent: 'Dioxane', Ligand: null, 'FG A': 'ArBr', 'FG B': 'ArB(OH)2', 'z-Score': 1.0 }),
   // Scale-up plate: all same reagents (plate 9 under ELN009)
-  makeRow({ ELN_ID: 'ELN009', PLATENUMBER: '9', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 6.0 }),
-  makeRow({ ELN_ID: 'ELN009', PLATENUMBER: '9', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 5.5 }),
+  makeRow({ ELN_ID: 'ELN009', PLATENUMBER: '9', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 6.0 }),
+  makeRow({ ELN_ID: 'ELN009', PLATENUMBER: '9', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 5.5 }),
   // Duplicate reagent combos with different z-Scores (for dedup testing)
-  makeRow({ ELN_ID: 'ELN010', PLATENUMBER: '10', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 1.0 }),
-  makeRow({ ELN_ID: 'ELN010', PLATENUMBER: '10', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 3.0 }),
+  makeRow({ ELN_ID: 'ELN010', PLATENUMBER: '10', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 1.0 }),
+  makeRow({ ELN_ID: 'ELN010', PLATENUMBER: '10', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 3.0 }),
   // Row with null z-Score
-  makeRow({ ELN_ID: 'ELN011', PLATENUMBER: '11', Catalyst: 'Pd2(dba)3', Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': null }),
+  makeRow({ ELN_ID: 'ELN011', PLATENUMBER: '11', Catalyst: 'Pd2(dba)3', Base: 'K3PO4', Solvent: 'DMF', Ligand: null, 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': null }),
   // Row with Additive populated
-  makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', Additive: 'LiCl', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 1.8 }),
+  makeRow({ ELN_ID: 'ELN001', PLATENUMBER: '1', Catalyst: 'Pd(OAc)2', Base: 'K3PO4', Solvent: 'DMF', Ligand: 'XPhos', Additive: 'LiCl', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 1.8 }),
   // Precomplexed catalyst rows (Ligand appears in Catalyst)
-  makeRow({ ELN_ID: 'ELN012', PLATENUMBER: '12', Catalyst: 'Pd-DPPF', Ligand: 'DPPF', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 2.0 }),
-  makeRow({ ELN_ID: 'ELN013', PLATENUMBER: '13', Catalyst: 'Pd(dppf)Cl2', Ligand: 'dppf', 'FG A': 'ArBr', 'FG B': 'RNH2', FG_PAIR_SORTED: 'ArBr, RNH2', 'z-Score': 3.0 }),
+  makeRow({ ELN_ID: 'ELN012', PLATENUMBER: '12', Catalyst: 'Pd-DPPF', Ligand: 'DPPF', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 2.0 }),
+  makeRow({ ELN_ID: 'ELN013', PLATENUMBER: '13', Catalyst: 'Pd(dppf)Cl2', Ligand: 'dppf', 'FG A': 'ArBr', 'FG B': 'RNH2', 'z-Score': 3.0 }),
 ];
 
 // ---------------------------------------------------------------------------
@@ -394,27 +392,29 @@ describe('filterFgB', () => {
     expect(fgBList).toEqual([]);
   });
 
+  /** The unordered pair on a row, for asserting which pairs survived. */
+  function pairOf(row: Row): string {
+    return [row['FG A'], row['FG B']].sort().join(', ');
+  }
+
   it('with fgAList matches the unordered FG pair', () => {
     const fgAList = ['ArBr'];
     const [result] = filterFgB(FIXTURE, ['RNH2'], fgAList);
     expect(result.length).toBeGreaterThan(0);
     // Matches in either column order — ELN004 has the pair reversed
-    expect(result.every((r) => r.FG_PAIR_SORTED === 'ArBr, RNH2')).toBe(true);
+    expect(result.every((r) => pairOf(r) === 'ArBr, RNH2')).toBe(true);
+    expect(result.some((r) => r['FG A'] === 'RNH2')).toBe(true);
   });
 
-  it('matches mixed-case pairs regardless of FG_PAIR_SORTED ordering', () => {
-    // FG_PAIR_SORTED is sorted case-insensitively upstream, so a code-point
-    // sort here would build "ArBr, alkene" and never match "alkene, ArBr".
+  it('matches mixed-case pairs whichever column each value sits in', () => {
+    // Case-insensitive vs code-point ordering used to disagree here, so a
+    // sorted-string key would build "ArBr, alkene" and miss "alkene, ArBr".
     const rows = [
-      makeRow({
-        ELN_ID: 'ELN100',
-        'FG A': 'ArBr',
-        'FG B': 'alkene',
-        FG_PAIR_SORTED: 'alkene, ArBr',
-      }),
+      makeRow({ ELN_ID: 'ELN100', 'FG A': 'ArBr', 'FG B': 'alkene' }),
+      makeRow({ ELN_ID: 'ELN101', 'FG A': 'alkene', 'FG B': 'ArBr' }),
     ];
     const [result] = filterFgB(rows, ['alkene'], ['ArBr']);
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(2);
   });
 
   it('without fgAList matches FG A or FG B directly', () => {
@@ -430,7 +430,7 @@ describe('filterFgB', () => {
     const [result] = filterFgB(FIXTURE, ['RNH2', 'ArNH2'], fgAList);
     expect(result.length).toBeGreaterThan(0);
     const validPairs = new Set(['ArBr, RNH2', 'ArBr, ArNH2']);
-    expect(result.every((r) => validPairs.has(r.FG_PAIR_SORTED ?? ''))).toBe(true);
+    expect(result.every((r) => validPairs.has(pairOf(r)))).toBe(true);
   });
 });
 

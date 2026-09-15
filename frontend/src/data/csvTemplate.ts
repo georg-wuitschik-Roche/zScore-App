@@ -24,7 +24,6 @@ const TEMPLATE_ROW: Record<RequiredColumn | OptionalColumn, string> = {
   'Reaction Type': 'Buchwald-Hartwig amination',
   'FG A': 'Aryl bromide',
   'FG B': 'Primary amine',
-  FG_sorted: 'Aryl bromide + Primary amine',
   'z-Score': '1.42',
   Additive: '',
   'Coupling Reagent': '',

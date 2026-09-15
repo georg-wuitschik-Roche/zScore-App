@@ -49,7 +49,6 @@ The CSV must contain these columns:
 | `Reaction Type` | Type of reaction |
 | `FG A` | Functional group A |
 | `FG B` | Functional group B |
-| `FG_sorted` | Sorted functional group pair |
 | `z-Score` | z-Score value (numeric) |
 
 Optional columns: `Additive`, `Coupling Reagent`, `Secondary Solvent`, `Tertiary Solvent`, `output_column`.

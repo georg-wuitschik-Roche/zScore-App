@@ -34,15 +34,6 @@ export async function fetchVersionsManifest(): Promise<VersionsManifest> {
 }
 
 /**
- * Compute sorted FG pair string: "ArBr, RNH2" format.
- */
-function computeFgPairSorted(fgA: string | null, fgB: string | null): string | null {
-  if (!fgA || !fgB) return null;
-  const pair = [fgA, fgB].sort();
-  return `${pair[0]}, ${pair[1]}`;
-}
-
-/**
  * Normalize a raw value from Parquet/CSV to null if it's empty/NaN.
  */
 function normalizeNull(val: unknown): string | null {
@@ -82,19 +73,6 @@ function cleanRow(raw: Record<string, unknown>): Row {
   }
   if (typeof row['AREA_TOTAL_REDUCED'] !== 'number') {
     row['AREA_TOTAL_REDUCED'] = parseNumeric(row['AREA_TOTAL_REDUCED']);
-  }
-
-  // Compute FG_PAIR_SORTED if not present
-  if (!row.FG_PAIR_SORTED) {
-    const fgSorted = row['FG_sorted'];
-    if (fgSorted && typeof fgSorted === 'string') {
-      row.FG_PAIR_SORTED = fgSorted;
-    } else {
-      row.FG_PAIR_SORTED = computeFgPairSorted(
-        row['FG A'] as string | null,
-        row['FG B'] as string | null,
-      );
-    }
   }
 
   return row as Row;

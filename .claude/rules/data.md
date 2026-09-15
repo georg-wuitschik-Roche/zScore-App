@@ -58,5 +58,4 @@ When a filter has 2+ selected values, it can be "split" into side-by-side panels
 
 ## Data Loader (`loader.ts`)
 - `cleanRow()` normalizes each raw row: BigInt → number, empty/NaN → null, decimal comma → period
-- `FG_PAIR_SORTED` is computed at load time if missing (sorted pair of FG A + FG B)
 - Parquet is ~30x smaller than CSV — chosen for load performance

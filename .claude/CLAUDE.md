@@ -133,16 +133,15 @@ All filtering runs client-side in TypeScript (<50ms for 67K rows).
 - **Pipe separator** in URLs — avoids comma conflicts in reaction type names
 
 ## Data Model
-**Row interface (17 typed columns + index signature):**
+**Row interface (15 typed columns + index signature):**
 `ELN_ID`, `PLATENUMBER`, `Coordinate`, `AREA_TOTAL_REDUCED`, `Base`, `Catalyst`,
 `Solvent`, `Ligand`, `Additive`, `Coupling Reagent`, `Secondary Solvent`,
-`Reaction Type`, `FG A`, `FG B`, `FG_sorted`, `FG_PAIR_SORTED` (computed),
-`z-Score`
+`Reaction Type`, `FG A`, `FG B`, `z-Score`
 
 **Key constants in `types.ts`:**
 - `DEFAULTS` — single source of truth for filter defaults
 - `CATEGORY_OPTIONS` — 7 reactant columns available for grouping
-- `REQUIRED_COLUMNS` — 13 columns required in uploaded CSVs
+- `REQUIRED_COLUMNS` — 12 columns required in uploaded CSVs
 - `REAGENT_COLS` — 8 columns used in deduplication + scale-up detection
 
 ## Testing
