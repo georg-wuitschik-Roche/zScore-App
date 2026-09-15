@@ -154,16 +154,19 @@ export function filterFgB(
   if (fgBList.length === 0) return [rows, fgBList];
 
   if (fgAList.length > 0) {
-    // Both specified: match sorted pairs
-    const pairSet = new Set<string>();
-    for (const fa of fgAList) {
-      for (const fb of fgBList) {
-        pairSet.add([fa, fb].sort().join(', '));
-      }
-    }
-    const filtered = rows.filter((row) =>
-      pairSet.has(row['FG_PAIR_SORTED'] ?? ''),
-    );
+    // Both specified: match the unordered {FG A, FG B} pair directly rather
+    // than via FG_PAIR_SORTED. That column is sorted case-insensitively
+    // upstream ("alkene, ArBr"), so a code-point sort here would never match
+    // it for mixed-case pairs — silently hiding 12 pairs of the dataset.
+    const fgASet = new Set(fgAList);
+    const fgBSet = new Set(fgBList);
+    const filtered = rows.filter((row) => {
+      const a = row['FG A'] ?? '';
+      const b = row['FG B'] ?? '';
+      return (
+        (fgASet.has(a) && fgBSet.has(b)) || (fgASet.has(b) && fgBSet.has(a))
+      );
+    });
     return [filtered, fgBList];
   } else {
     // Only FG B specified: match in either column

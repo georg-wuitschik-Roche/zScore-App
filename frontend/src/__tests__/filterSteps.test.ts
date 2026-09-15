@@ -394,12 +394,27 @@ describe('filterFgB', () => {
     expect(fgBList).toEqual([]);
   });
 
-  it('with fgAList matches FG_PAIR_SORTED pairs', () => {
+  it('with fgAList matches the unordered FG pair', () => {
     const fgAList = ['ArBr'];
     const [result] = filterFgB(FIXTURE, ['RNH2'], fgAList);
     expect(result.length).toBeGreaterThan(0);
-    // All rows should match the pair ArBr,RNH2 (sorted)
+    // Matches in either column order — ELN004 has the pair reversed
     expect(result.every((r) => r.FG_PAIR_SORTED === 'ArBr, RNH2')).toBe(true);
+  });
+
+  it('matches mixed-case pairs regardless of FG_PAIR_SORTED ordering', () => {
+    // FG_PAIR_SORTED is sorted case-insensitively upstream, so a code-point
+    // sort here would build "ArBr, alkene" and never match "alkene, ArBr".
+    const rows = [
+      makeRow({
+        ELN_ID: 'ELN100',
+        'FG A': 'ArBr',
+        'FG B': 'alkene',
+        FG_PAIR_SORTED: 'alkene, ArBr',
+      }),
+    ];
+    const [result] = filterFgB(rows, ['alkene'], ['ArBr']);
+    expect(result).toHaveLength(1);
   });
 
   it('without fgAList matches FG A or FG B directly', () => {
