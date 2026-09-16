@@ -57,6 +57,7 @@ zScore-App/
 │   │   │   ├── violin.ts        # Plotly violin plot config
 │   │   │   ├── helpers.ts       # Data grouping, median traces, rank annotations
 │   │   │   ├── colors.ts        # ELN density color mapping
+│   │   │   ├── tooltip.ts       # Hover tooltip payload + display model
 │   │   │   └── types.ts         # PlotConfig interface
 │   │   ├── components/
 │   │   │   ├── LandingPage.tsx  # Reaction type search + filter setup
@@ -72,6 +73,7 @@ zScore-App/
 │   │   │   ├── MultiSelect.tsx  # Reusable dropdown component
 │   │   │   ├── TutorialOverlay.tsx  # Guided tour overlay
 │   │   │   ├── Plot.tsx         # Plotly wrapper (dist-min bundle)
+│   │   │   ├── PlotTooltip.tsx  # Custom hover tooltip (selectable + click-to-copy)
 │   │   │   └── Footer.tsx       # Paper citation
 │   │   ├── hooks/
 │   │   │   ├── useFilteredData.ts     # useMemo wrapper for filter chain

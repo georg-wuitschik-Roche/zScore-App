@@ -1,37 +1,13 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Plot, { Plotly } from './Plot';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import type { PlotConfig } from '../plots/types';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import { wrapTickLabel, RANK_BADGE_TICK_PAD } from '../plots/helpers';
+import { usePlotChrome } from '../hooks/usePlotChrome';
 
 const PLOT_CONFIG = { responsive: true, displayModeBar: false } as const;
 const PLOT_STYLE = { width: '100%' } as const;
-
-export function useZoomReset() {
-  const [isZoomed, setIsZoomed] = useState(false);
-  const plotDivRef = useRef<ReturnType<typeof Plotly.newPlot> extends Promise<infer R> ? R : unknown>(null);
-
-  const handleInit = useCallback((_figure: unknown, graphDiv: HTMLElement) => {
-    plotDivRef.current = graphDiv;
-    (graphDiv as unknown as { on: (e: string, h: (d: Record<string, unknown>) => void) => void }).on(
-      'plotly_relayout',
-      (data: Record<string, unknown>) => {
-        const keys = Object.keys(data);
-        if (keys.some(k => /[xy]axis\d*\.range/.test(k))) setIsZoomed(true);
-        else if (keys.some(k => /[xy]axis\d*\.autorange/.test(k))) setIsZoomed(false);
-      },
-    );
-  }, []);
-
-  const resetZoom = useCallback(() => {
-    if (plotDivRef.current) {
-      Plotly.relayout(plotDivRef.current, { 'xaxis.autorange': true, 'yaxis.autorange': true });
-    }
-  }, []);
-
-  return { isZoomed, setIsZoomed, handleInit, resetZoom };
-}
 
 type ConfigBuilder = (
   rows: Row[],
@@ -104,8 +80,6 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     panelId ? s.crossFilterSelections[panelId] ?? null : null,
   );
 
-  const { isZoomed, setIsZoomed, handleInit, resetZoom } = useZoomReset();
-
   const config = useMemo(() => {
     if (rows.length === 0) return null;
     const c = buildConfig(rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend);
@@ -114,6 +88,10 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     }
     return c;
   }, [buildConfig, rows, reactantTypes, presentationMode, rankMap, isDark, comparisonInfo, showElnLegend, heightOverride]);
+
+  // Container ref is owned by usePlotChrome — it is both the tooltip's coordinate
+  // space and, here, the delegation root for ytick clicks.
+  const { containerRef, isZoomed, resetZoom, onInitialized, tooltipNode } = usePlotChrome(config);
 
   // Build lookup for reverse-mapping SVG tick text → category name
   const tickLabelLookup = useMemo(() => {
@@ -124,8 +102,6 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     return buildTickLabelLookup(cats, hasRankBadges);
   }, [panelId, config, rankMap]);
 
-  // Ref to the container div wrapping the Plot — used for ytick click delegation
-  const containerRef = useRef<HTMLDivElement>(null);
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -153,7 +129,7 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
         textEl.style.fontWeight = cat && selected.includes(cat) ? 'bold' : '';
       }
     });
-  }, []);
+  }, [containerRef]);
 
   // Boolean gate: set up once when lookup becomes available, never tear down on value changes.
   // The effect body reads the latest lookup from tickLabelLookupRef.
@@ -169,6 +145,12 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     const pid = panelId; // narrowed to string after guard
     function handleTickClick(e: MouseEvent) {
       const target = e.target as Element;
+      // Only clicks on the Plotly widget are plot clicks. This listener is in the
+      // capture phase, so an overlay's own onClick cannot stop it — anything
+      // rendered beside the plot (the tooltip, the reset-zoom button, any future
+      // overlay) is excluded here instead. Note the axis margin is an HTML
+      // svg-container div, not SVG, so this can't test for an SVG target.
+      if (!target.closest('.js-plotly-plot')) return;
       const tickGroup = target.closest('.ytick');
       if (tickGroup) {
         const textEl = tickGroup.querySelector('text');
@@ -202,14 +184,12 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     return () => {
       container.removeEventListener('click', handleTickClick, true);
     };
-  }, [panelId, hasTickLookup, toggleCrossFilterValue]);
+  }, [panelId, hasTickLookup, toggleCrossFilterValue, containerRef]);
 
   // Lightweight effect: re-apply bold styling when selection changes (no observer churn)
   useEffect(() => {
     if (panelId) applyStyles();
   }, [panelId, panelSelection, applyStyles]);
-
-  useEffect(() => { setIsZoomed(false); }, [config, setIsZoomed]);
 
   if (reactionTypes.length === 0 || reactantTypes.length === 0) {
     const missing: string[] = [];
@@ -249,9 +229,10 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
         config={PLOT_CONFIG}
         style={PLOT_STYLE}
         useResizeHandler
-        onInitialized={handleInit}
+        onInitialized={onInitialized}
         onUpdate={applyStyles}
       />
+      {tooltipNode}
     </div>
   );
 });

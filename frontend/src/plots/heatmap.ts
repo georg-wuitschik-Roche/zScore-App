@@ -11,7 +11,8 @@
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { Data, Layout } from 'plotly.js';
 import type { PlotConfig } from './types';
-import { buildRankAnnotation, getHoverLabelStyle, median, RANK_BADGE_TICK_PAD } from './helpers';
+import { buildRankAnnotation, median, RANK_BADGE_TICK_PAD } from './helpers';
+import { asCustomdata, type TooltipSource } from './tooltip';
 
 function percentile(arr: number[], p: number): number {
   const s = [...arr].sort((a, b) => a - b);
@@ -127,36 +128,48 @@ export function createHeatmapConfig(
   const yArr = ySorted;
   const xArr = xSorted;
 
-  // Build z matrix (median per cell) and ELN count matrix
+  // Build z matrix (median per cell), display text, and per-cell hover payloads.
+  // Plotly indexes heatmap customdata as customdata[rowIndex][colIndex], matching zMatrix.
   // Use original sorted keys for cell lookups, annotated labels for display
   const zMatrix: (number | null)[][] = [];
   const textMatrix: string[][] = [];
-  const elnMatrix: number[][] = [];
+  const customdata: TooltipSource[][] = [];
 
   for (const y of ySorted) {
     const zRow: (number | null)[] = [];
     const textRow: string[] = [];
-    const elnRow: number[] = [];
+    const hoverRow: TooltipSource[] = [];
 
     for (const x of xSorted) {
       const scores = cellScores.get(`${x}|||${y}`);
       const elns = cellElns.get(`${x}|||${y}`);
+      const hasData = scores !== undefined && scores.length > 0;
+      const med = hasData ? median(scores) : 0;
 
-      if (scores && scores.length > 0) {
-        const med = median(scores);
+      if (hasData) {
         zRow.push(med);
         textRow.push(med.toFixed(2));
-        elnRow.push(elns?.size ?? 0);
       } else {
         zRow.push(null);
         textRow.push('');
-        elnRow.push(0);
       }
+
+      // Built for every cell to keep the matrix rectangular; gaps never fire a
+      // hover event because hoverongaps is false.
+      hoverRow.push({
+        kind: 'cell',
+        yCol,
+        yLabel: y,
+        xCol,
+        xLabel: x,
+        medianVal: med,
+        elnCount: elns?.size ?? 0,
+      });
     }
 
     zMatrix.push(zRow);
     textMatrix.push(textRow);
-    elnMatrix.push(elnRow);
+    customdata.push(hoverRow);
   }
 
   // Color scale: 5th percentile (blue) → median (white) → 95th percentile (red)
@@ -189,9 +202,6 @@ export function createHeatmapConfig(
   const fontSize = presentationMode ? 18 : 14;
   const height = Math.max(800, yArr.length * 80);
 
-  // Format customdata as [[elnCount]] per cell for hovertemplate
-  const customdata = elnMatrix.map((row) => row.map((n) => [n]));
-
   const monoFont = '"JetBrains Mono", "Fira Code", monospace';
 
   const data: Data[] = [
@@ -217,16 +227,10 @@ export function createHeatmapConfig(
         tickfont: { family: monoFont },
       },
       hoverongaps: false,
-      customdata: customdata as unknown as number[][],
-      hovertemplate:
-        `<span style="font-size:11px;color:${isDark ? '#aaa' : '#888'};text-transform:uppercase;letter-spacing:1px">REAGENTS</span><br>` +
-        '<b>%{y}</b><br>' +
-        '<b>%{x}</b><br><br>' +
-        `<span style="font-size:11px;color:${isDark ? '#aaa' : '#888'};text-transform:uppercase;letter-spacing:1px">RESULTS</span><br>` +
-        'Median z-Score: <b>%{z:.3f}</b><br>' +
-        'ELNs: <b>%{customdata[0]}</b>' +
-        '<extra></extra>',
-      hoverlabel: getHoverLabelStyle(isDark),
+      customdata: asCustomdata(customdata),
+      // 'none' keeps plotly_hover firing for the custom tooltip while suppressing
+      // Plotly's own SVG label (see components/PlotTooltip.tsx).
+      hoverinfo: 'none' as const,
     },
   ];
 

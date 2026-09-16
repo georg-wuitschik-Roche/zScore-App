@@ -1,8 +1,8 @@
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import Plot from './Plot';
 import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
-import { useZoomReset } from './DistributionView';
+import { usePlotChrome } from '../hooks/usePlotChrome';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 
 const PLOT_CONFIG = { responsive: true, displayModeBar: false } as const;
@@ -21,8 +21,6 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
   const reactionTypes = useFilterStore((s) => s.reactionTypes);
   const isDark = useFilterStore((s) => s.theme) === 'dark';
 
-  const { isZoomed, setIsZoomed, handleInit, resetZoom } = useZoomReset();
-
   const config = useMemo(
     () => rows.length > 0 && reactantTypes.length >= 2
       ? createHeatmapConfig(rows, reactantTypes, presentationMode, axisRankMaps, isDark, comparisonInfo)
@@ -30,7 +28,7 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
     [rows, reactantTypes, presentationMode, axisRankMaps, isDark, comparisonInfo],
   );
 
-  useEffect(() => { setIsZoomed(false); }, [config, setIsZoomed]);
+  const { containerRef, isZoomed, resetZoom, onInitialized, tooltipNode } = usePlotChrome(config);
 
   if (reactionTypes.length === 0 || reactantTypes.length < 2) {
     const missing: string[] = [];
@@ -57,7 +55,7 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
   }
 
   return (
-    <div className="plot-container plot-container--zoomable">
+    <div className="plot-container plot-container--zoomable" ref={containerRef}>
       {isZoomed && (
         <button className="reset-zoom-btn" onClick={resetZoom} title="Reset zoom">
           Reset Zoom
@@ -69,8 +67,9 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
         config={PLOT_CONFIG}
         style={PLOT_STYLE}
         useResizeHandler
-        onInitialized={handleInit}
+        onInitialized={onInitialized}
       />
+      {tooltipNode}
     </div>
   );
 });

@@ -17,6 +17,7 @@ boxplot.ts  → calls buildDistributionConfig() with box trace builder
 violin.ts   → calls prepareDistributionData() + adds KDE-bounded median lines
 heatmap.ts  → standalone: builds z-matrix from rows (no shared builder)
 colors.ts   → ELN density → interpolated color
+tooltip.ts  → TooltipSource payload + buildTooltipModel() for the custom hover tooltip
 ```
 
 ## Generic Builder Pattern
@@ -27,20 +28,49 @@ When adding a new distribution plot type, implement a trace builder function and
 ## Color Mapping
 Use `colors.ts` for ELN density-based color interpolation. Never hardcode colors in plot configs. The density is based on unique ELN count per category.
 
-## Hover Templates
-Use `customdata` + `hovertemplate` pattern for rich hover info. Never use `text` + `hoverinfo`.
+## Hover Tooltips
+Plotly's native SVG hover label is **disabled** on all data traces — it is non-interactive
+and vanishes on unhover, so values could not be selected or copied. A custom HTML tooltip
+(`components/PlotTooltip.tsx` + `hooks/usePlotTooltip.ts`) renders instead, and stays open
+while the cursor is over it.
+
+`buildDistributionConfig()` applies the hover contract itself, so boxplot/violin trace
+builders return **geometry only** — never set `hoverinfo`, `customdata` or `hovertemplate`
+there. Standalone builders (heatmap) apply it directly:
 
 ```ts
-// Good — customdata array built per-row in prepareDistributionData
-hovertemplate: "<b>%{customdata[0]}</b><br>z-Score: %{x:.2f}<extra></extra>"
+// 'none', NOT 'skip'. 'skip' removes the trace from the hover search entirely, so
+// plotly_hover never fires. 'none' fires the event and suppresses the label.
+hoverinfo: 'none' as const,
+customdata: asCustomdata(cells),   // TooltipSource[] — [][] for heatmap
+// Never set hovertemplate: a set hovertemplate renders a label regardless of hoverinfo.
 ```
+
+`customdata` carries a `TooltipSource` per point (`plots/tooltip.ts`), not display strings.
+`buildTooltipModel()` expands it into label/value rows lazily on hover — don't build the
+display model at prepare time, that runs in the filter-hot path. **Row values must be plain
+text**: each is copied verbatim to the clipboard on click, so no HTML markup.
+
+`tooltip.ts` owns both ends of the Plotly type override: `asCustomdata()` going in,
+`readTooltipHover()` coming back out of a hover event. Don't cast `customdata` elsewhere.
+
+For distribution traces `customdata` must stay index-aligned with `zScores`, because Plotly
+maps a hovered box/violin point back to its *original input index*.
+
+Bind Plotly events with `bindPlotlyEvent()` from `components/Plot.tsx`, called from
+`onInitialized` — react-plotly.js's `onHover`/`onUnhover`/`onRelayout` props do not work
+here. `usePlotChrome()` already wires zoom tracking and the tooltip for both plot views.
+
+Rank badge annotations are the one exception — they keep Plotly's native label via the
+module-private `getHoverLabelStyle()` in `helpers.ts`.
 
 ## Dark Mode
 All plot configs receive an `isDark` boolean. Use it for:
 - Grid/axis colors, text colors, background
 - Colorbar styling
-- Hover label backgrounds (`getHoverLabelStyle(isDark)`)
-- Rank badge colors (`rankBadgeColor()`)
+- Rank badge colors (`rankBadgeColor()`) and their native hover label
+
+The hover tooltip is exempt — it is HTML and picks up dark mode from CSS custom properties.
 
 ## Adaptive Height
 `max(800, numCategories * 110)` — computed in `prepareDistributionData()`. Presentation mode adds larger fonts (title, axes).

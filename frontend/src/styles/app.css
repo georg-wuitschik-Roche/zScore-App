@@ -1963,6 +1963,149 @@ button:hover {
     background: var(--color-bg-hover);
 }
 
+/* ---- Hover tooltip (replaces Plotly's native SVG hover label) ---- */
+/* Positioned absolutely inside .plot-container--zoomable, which is the
+   coordinate space Plotly reports its hover bbox in. Stays open while hovered
+   so values can be selected or click-copied. */
+.plot-tooltip {
+    position: absolute;
+    /* Hidden until the layout effect has measured and positioned it. */
+    visibility: hidden;
+    left: 0;
+    top: 0;
+    /* Above .reset-zoom-btn (10), below .multi-select-dropdown (100) and modals. */
+    z-index: 20;
+    min-width: 220px;
+    max-width: 380px;
+    padding: 10px 12px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    cursor: default;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+/* Invisible bridge so the cursor can cross the gap from point to tooltip
+   without the tooltip seeing a mouseleave. */
+.plot-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: -18px;
+    width: 18px;
+}
+.plot-tooltip--left::before {
+    left: auto;
+    right: -18px;
+}
+@media (hover: none) {
+    .plot-tooltip::before { display: none; }
+}
+
+.plot-tooltip-head {
+    margin-bottom: 8px;
+}
+.plot-tooltip-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+.plot-tooltip-subtitle {
+    margin-left: 6px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.plot-tooltip-body {
+    max-height: min(420px, 60vh);
+    overflow-y: auto;
+    /* overflow-y: auto makes overflow-x compute to auto as well, so the rows'
+       negative margin would raise a horizontal scrollbar. Absorb it here. */
+    overflow-x: hidden;
+    padding: 0 4px;
+    margin: 0 -4px;
+    overscroll-behavior: contain;
+}
+
+.plot-tooltip-heading {
+    margin: 10px 0 2px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+}
+.plot-tooltip-section:first-child .plot-tooltip-heading {
+    margin-top: 0;
+}
+
+.plot-tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 -4px;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+    perspective: 400px;
+    transition: background 0.12s;
+}
+.plot-tooltip-row:hover {
+    background: var(--color-bg-hover);
+}
+
+.plot-tooltip-label {
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+/* Clicking a row flips just its value over to "Copied", then back. */
+.plot-tooltip-flip {
+    position: relative;
+    display: block;
+    /* Reserve enough width for "Copied" so it can never collide with the label,
+       and let long values shrink and wrap (flex items won't below min-width:auto). */
+    min-width: 4.4em;
+    transform-style: preserve-3d;
+    transition: transform 0.6s ease;
+}
+.plot-tooltip-row--copied .plot-tooltip-flip {
+    transform: rotateX(180deg);
+}
+
+.plot-tooltip-face {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+.plot-tooltip-value {
+    display: block;
+    font-weight: 500;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+.plot-tooltip-face--back {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    transform: rotateX(180deg);
+    color: var(--color-success-text);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    /* Never let a drag-selection across the row pick up the word "Copied". */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .plot-tooltip-flip { transition: none; }
+}
+
 .empty-state {
     display: flex;
     flex-direction: column;

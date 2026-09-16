@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createBoxplotConfig } from '../plots/boxplot';
+import { buildTooltipModel, type TooltipSource } from '../plots/tooltip';
 import type { Row } from '../data/types';
 import type { BoxPlotData } from 'plotly.js';
 
@@ -174,22 +175,55 @@ describe('createBoxplotConfig', () => {
       }
     });
 
-    it('hover customdata contains z-Score value and hovertemplate references it', () => {
+    it('hover customdata carries a tooltip source aligned with x', () => {
       const config = createBoxplotConfig(FIXTURE, ['Catalyst']);
       const boxTraces = config.data.filter(
         (d) => (d as Record<string, unknown>).type === 'box',
       );
+      expect(boxTraces.length).toBeGreaterThan(0);
+
       for (const trace of boxTraces) {
         const rec = trace as Record<string, unknown>;
-        const customdata = rec.customdata as string[][];
-        expect(Array.isArray(customdata)).toBe(true);
-        for (const row of customdata) {
-          // Index 3 is the formatted z-Score value
-          expect(row[3]).toMatch(/^-?\d+\.\d{3}$/);
-        }
-        expect(typeof rec.hovertemplate).toBe('string');
-        expect(rec.hovertemplate as string).toContain('z-Score');
+
+        // Native label is disabled — 'none' rather than 'skip' so plotly_hover
+        // still fires for the custom tooltip.
+        expect(rec.hoverinfo).toBe('none');
+        expect(rec.hovertemplate).toBeUndefined();
+        expect(rec.hoverlabel).toBeUndefined();
+
+        const customdata = rec.customdata as unknown as TooltipSource[];
+        const x = (trace as BoxPlotData).x as number[];
+        expect(customdata).toHaveLength(x.length);
+
+        customdata.forEach((src, i) => {
+          expect(src.kind).toBe('point');
+          if (src.kind !== 'point') return;
+          // Plotly maps a hovered box point back to its original input index, so
+          // customdata[i] must describe the same experiment as x[i].
+          expect(src.row['z-Score']).toBe(x[i]);
+          expect(buildTooltipModel(src).title).toBe(src.row.ELN_ID);
+        });
       }
+    });
+
+    it('keeps customdata aligned with x when input rows are not z-sorted', () => {
+      // x is emitted in ascending z order; if customdata were built from the
+      // unsorted input the hover payload would describe the wrong experiment.
+      const unsorted: Row[] = [
+        makeRow({ ELN_ID: 'HIGH', Catalyst: 'A', 'z-Score': 9.0 }),
+        makeRow({ ELN_ID: 'LOW', Catalyst: 'A', 'z-Score': -4.0 }),
+        makeRow({ ELN_ID: 'MID', Catalyst: 'A', 'z-Score': 2.0 }),
+      ];
+      const config = createBoxplotConfig(unsorted, ['Catalyst']);
+      const trace = config.data.find(
+        (d) => (d as Record<string, unknown>).type === 'box',
+      ) as BoxPlotData;
+
+      expect(trace.x).toEqual([-4.0, 2.0, 9.0]);
+      const customdata = trace.customdata as unknown as TooltipSource[];
+      expect(
+        customdata.map((src) => (src.kind === 'point' ? src.row.ELN_ID : null)),
+      ).toEqual(['LOW', 'MID', 'HIGH']);
     });
 
     it('each category produces a box trace and a median scatter trace', () => {

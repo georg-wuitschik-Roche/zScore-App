@@ -14,5 +14,8 @@ const createPlotlyComponent =
     : (_createPlotlyComponent as { default: typeof _createPlotlyComponent }).default;
 
 const Plot = createPlotlyComponent(Plotly);
+
+// Plotly events are bound via bindPlotlyEvent() in plots/plotlyEvents.ts — the
+// library's onHover/onUnhover/onRelayout props do not work here.
 export { Plotly };
 export default Plot;

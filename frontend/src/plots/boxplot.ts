@@ -7,7 +7,7 @@
 
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { PlotConfig } from './types';
-import { buildDistributionConfig, getHoverLabelStyle } from './helpers';
+import { buildDistributionConfig } from './helpers';
 
 /**
  * Build Plotly boxplot config from filtered rows.
@@ -39,9 +39,6 @@ export function createBoxplotConfig(
     line: { color: '#333', width: 1.5 },
     fillcolor: group.color,
     showlegend: false,
-    customdata: group.customdata,
-    hovertemplate: group.hovertemplate,
     hoveron: 'points' as const,
-    hoverlabel: getHoverLabelStyle(isDark),
   }), rankMap, isDark, comparisonInfo, showElnLegend);
 }

@@ -7,7 +7,7 @@
 
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import type { PlotConfig } from './types';
-import { buildDistributionConfig, getHoverLabelStyle } from './helpers';
+import { buildDistributionConfig } from './helpers';
 
 /** Silverman's rule-of-thumb bandwidth (matches Plotly's default KDE) */
 function silvermanBandwidth(data: number[]): number {
@@ -78,10 +78,7 @@ export function createViolinConfig(
     line: { color: '#333', width: 1.5 },
     fillcolor: group.color,
     showlegend: false,
-    customdata: group.customdata,
-    hovertemplate: group.hovertemplate,
     hoveron: 'points' as const,
-    hoverlabel: getHoverLabelStyle(isDark),
   }), rankMap, isDark, comparisonInfo, showElnLegend, (prepared) => {
     // Dashed median lines bounded by violin outline
     const MAX_HALF_WIDTH = 0.4;
