@@ -45,6 +45,10 @@
     --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
 
+    /* Soft wash outside the keyboard focus ring. The ring itself just uses
+       --color-primary. */
+    --focus-halo: 0 0 0 5px rgba(17, 17, 17, 0.08);
+
     /* Presentation-mode accent */
     --color-pres-accent: #333;
 
@@ -88,6 +92,8 @@
     --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.4);
 
     --color-pres-accent: #aaa;
+
+    --focus-halo: 0 0 0 5px rgba(229, 229, 229, 0.14);
 
     --stats-positive: #66bb6a;
     --stats-negative: #ef5350;
@@ -381,6 +387,18 @@ button {
 button:hover {
     background: var(--color-bg-hover);
     box-shadow: var(--shadow-lg);
+}
+
+/* Keyboard-only focus ring. Uses outline rather than box-shadow so it composes
+   with the elevation shadows buttons already carry; controls that relocate or
+   restyle the ring do so on the element that reads as the control. */
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 /* ================================================================== */
@@ -1191,26 +1209,36 @@ button:hover {
     align-items: flex-start;
 }
 
+/* Grid, not a column flex, so the split toggle can be painted onto the label
+   row while following the dropdown in the DOM. Grid placement ignores DOM
+   order; Tab order doesn't — see SplitToggle in FilterControls.tsx. */
 .control-col {
     flex: 1 1 0;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.control-col-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        "label  toggle"
+        "select select"
+        "badge  badge";
+    /* Fixed first row so every column's dropdown starts at the same y whether
+       or not it has a toggle. Later rows fall back to grid-auto-rows. */
+    grid-template-rows: minmax(32px, auto);
+    align-content: start;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    min-height: 32px;
+    row-gap: 6px;
 }
 
-.control-col-header label {
-    margin-bottom: 0;
-}
+/* Anything without an area spans the full width and lands on its own row,
+   rather than being auto-placed into the empty toggle cell beside the label. */
+.control-col > * { grid-column: 1 / -1; }
 
-.control-col label {
+.control-col > .multi-select { grid-area: select; }
+.control-col > .split-toggle { grid-area: toggle; justify-self: end; }
+.control-col > .stats-badge { grid-area: badge; margin-top: 0; }
+
+.control-col > label {
+    grid-area: label;
     font-size: 14px;
     font-weight: 500;
     color: var(--color-text-muted);
@@ -1272,6 +1300,15 @@ button:hover {
 .multi-select-control:focus-within {
     border-color: var(--color-primary);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* The input has no chrome of its own, so the ring goes on the box the user
+   reads as the control. Mouse clicks land here too, but :focus-visible on the
+   inner input keeps it keyboard-only. */
+.multi-select-control:has(:focus-visible) {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    box-shadow: var(--focus-halo);
 }
 
 .multi-select-pill {
@@ -1480,6 +1517,16 @@ button:hover {
     box-shadow: var(--shadow-sm);
 }
 
+/* Segments sit 3px inside the group chrome, so an offset outline would collide
+   with it. A gap ring in the group's own background colour punches through the
+   border instead, and stays legible on the black active segment. */
+.split-toggle-btn:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 2px var(--color-bg),
+        0 0 0 4px var(--color-primary);
+}
+
 /* ------------------------------------------------------------------ */
 /* Split grid layout                                                   */
 /* ------------------------------------------------------------------ */
@@ -1607,7 +1654,6 @@ button:hover {
     background: var(--color-bg);
     color: var(--color-text);
     font-family: inherit;
-    outline: none;
 }
 /* Hide spinner arrows on number input */
 .slider-value-input::-webkit-inner-spin-button,
@@ -1765,6 +1811,13 @@ button:hover {
     transform: scale(1.2);
 }
 
+/* Ring the thumb, not the track — the track spans the whole panel width and a
+   box around it reads as a layout error. Vendor pseudo-elements can't be
+   grouped: an unknown one invalidates the whole selector. */
+.filter-panel input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 2px var(--color-primary), var(--focus-halo);
+}
+
 .filter-panel input[type="range"]::-moz-range-thumb {
     width: 16px;
     height: 16px;
@@ -1774,6 +1827,10 @@ button:hover {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: transform 0.15s ease;
+}
+
+.filter-panel input[type="range"]:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 2px var(--color-primary), var(--focus-halo);
 }
 
 .filter-panel input[type="range"]::-moz-range-track {
@@ -2377,12 +2434,13 @@ label.tutorial-highlight {
 /* 15. PRESENTATION MODE                                              */
 /* ================================================================== */
 
+/* No margin-bottom: .control-col spaces its rows with row-gap, and
+   .dropdown-col label already carries 6px from its base rule. */
 .app-container.presentation-mode .control-col label,
 .app-container.presentation-mode .dropdown-col label {
     font-size: 15px !important;
     font-weight: 500 !important;
     color: var(--color-text-secondary) !important;
-    margin-bottom: 6px !important;
 }
 
 .app-container.presentation-mode .multi-select-control {
@@ -2416,15 +2474,8 @@ label.tutorial-highlight {
     align-items: stretch !important;
 }
 
-.app-container.presentation-mode .control-col-header {
-    min-height: 40px !important;
-}
-
-.app-container.presentation-mode .control-col label {
-    font-size: 15px !important;
-    font-weight: 500 !important;
-    color: var(--color-text-secondary) !important;
-    margin-bottom: 6px !important;
+.app-container.presentation-mode .control-col {
+    grid-template-rows: minmax(40px, auto) !important;
 }
 
 .app-container.presentation-mode .navbar {

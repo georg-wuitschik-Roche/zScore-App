@@ -12,6 +12,11 @@ import { useDropdownCounts } from '../hooks/useDropdownCounts';
 import { MultiSelect } from './MultiSelect';
 import type { SplitSelector } from '../data/types';
 
+/**
+ * One tab stop, not two: it's a radio group, so Tab lands on the selected
+ * option and Arrow/Home/End move between them. Two stops would double the Tab
+ * distance to the next dropdown every time a selector goes multi-value.
+ */
 function SplitToggle({ selectorKey, values, id }: { selectorKey: SplitSelector; values: string[]; id?: string }) {
   const splitSelector = useFilterStore((s) => s.splitSelector);
   const setSplitSelector = useFilterStore((s) => s.setSplitSelector);
@@ -20,17 +25,44 @@ function SplitToggle({ selectorKey, values, id }: { selectorKey: SplitSelector; 
 
   const isActive = splitSelector === selectorKey;
 
+  // Arrows move focus only; Enter/Space commits. Selection-follows-focus would
+  // rebuild every plot on each arrow press.
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const btns = [...e.currentTarget.querySelectorAll('button')];
+    const from = btns.indexOf(document.activeElement as HTMLButtonElement);
+    const to =
+      e.key === 'Home' ? 0
+      : e.key === 'End' ? btns.length - 1
+      : e.key.startsWith('Arrow') ? (from === 0 ? 1 : 0)
+      : null;
+    if (to === null) return;
+    e.preventDefault();
+    btns[to]?.focus();
+  }
+
   return (
-    <div className="split-toggle" id={id}>
+    <div
+      className="split-toggle"
+      id={id}
+      role="radiogroup"
+      aria-label="Panel layout"
+      onKeyDown={handleKeyDown}
+    >
       <button
         className={`split-toggle-btn${!isActive ? ' active' : ''}`}
+        role="radio"
+        aria-checked={!isActive}
+        tabIndex={!isActive ? 0 : -1}
         onClick={() => setSplitSelector(null)}
       >
         Combined
       </button>
       <button
         className={`split-toggle-btn${isActive ? ' active' : ''}`}
-        onClick={() => setSplitSelector(isActive ? null : selectorKey)}
+        role="radio"
+        aria-checked={isActive}
+        tabIndex={isActive ? 0 : -1}
+        onClick={() => setSplitSelector(selectorKey)}
       >
         Split
       </button>
@@ -76,10 +108,7 @@ export function FilterControls() {
     <div className="controls-row">
       {/* Reaction Type(s) */}
       <div className="control-col" id="reaction-type-dropdown">
-        <div className="control-col-header">
-          <label>Reaction Type(s):</label>
-          <SplitToggle selectorKey="reactionTypes" values={reactionTypes} />
-        </div>
+        <label>Reaction Type(s):</label>
         <MultiSelect
           options={reactionTypeOptions}
           value={reactionTypes}
@@ -89,6 +118,7 @@ export function FilterControls() {
           placeholder="Select reaction types..."
           autoClose
         />
+        <SplitToggle selectorKey="reactionTypes" values={reactionTypes} />
         <div className="stats-badge">
           <div className="stats-badge-content">
             ELNs: {stats.wholeDataset?.elns ?? '--'}
@@ -98,10 +128,7 @@ export function FilterControls() {
 
       {/* Functional Group(s) A */}
       <div className="control-col" id="fg-a-dropdown">
-        <div className="control-col-header">
-          <label>Functional Group(s) A:</label>
-          <SplitToggle selectorKey="fgA" values={fgA} />
-        </div>
+        <label>Functional Group(s) A:</label>
         <MultiSelect
           options={fgAOptions}
           value={fgA}
@@ -112,6 +139,7 @@ export function FilterControls() {
           placeholder="All (no filter)"
           className="fg-dropdown"
         />
+        <SplitToggle selectorKey="fgA" values={fgA} />
         <div className="stats-badge">
           <div className="stats-badge-content">
             ELNs: {stats.afterFgA?.elns ?? '--'}
@@ -121,10 +149,7 @@ export function FilterControls() {
 
       {/* Functional Group(s) B */}
       <div className="control-col" id="fg-b-dropdown">
-        <div className="control-col-header">
-          <label>Functional Group(s) B:</label>
-          <SplitToggle selectorKey="fgB" values={fgB} />
-        </div>
+        <label>Functional Group(s) B:</label>
         <MultiSelect
           options={fgBOptions}
           value={fgB}
@@ -135,6 +160,7 @@ export function FilterControls() {
           placeholder="All (no filter)"
           className="fg-dropdown"
         />
+        <SplitToggle selectorKey="fgB" values={fgB} />
         <div className="stats-badge">
           <div className="stats-badge-content">
             ELNs: {stats.afterFgB?.elns ?? '--'}
@@ -144,10 +170,7 @@ export function FilterControls() {
 
       {/* Reactant Type(s) */}
       <div className="control-col" id="reactant-types-dropdown">
-        <div className="control-col-header">
-          <label>Reactant Type(s):</label>
-          <SplitToggle selectorKey="reactantTypes" values={reactantTypes} id="split-toggle" />
-        </div>
+        <label>Reactant Type(s):</label>
         <MultiSelect
           options={reactantTypeOptions}
           value={reactantTypes}
@@ -157,6 +180,7 @@ export function FilterControls() {
           placeholder="Select reactant types..."
           autoClose
         />
+        <SplitToggle selectorKey="reactantTypes" values={reactantTypes} id="split-toggle" />
       </div>
     </div>
   );

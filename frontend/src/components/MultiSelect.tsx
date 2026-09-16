@@ -136,6 +136,10 @@ export function MultiSelect({
               {v}
               <button
                 type="button"
+                // Not a tab stop — one per pill would push the input further
+                // out of reach with every selection. Backspace on an empty
+                // search removes the last pill for keyboard users.
+                tabIndex={-1}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleRemove(v);
@@ -162,7 +166,15 @@ export function MultiSelect({
       </div>
 
       {isOpen && filtered.length > 0 && (
-        <div className="multi-select-dropdown" ref={dropdownRef}>
+        // tabIndex opts a long, scrolling list out of Chrome's focusable-
+        // scroller heuristic: Tab used to land here, the blur unmounted the
+        // list, and focus fell back to <body> — costing a phantom Tab press.
+        <div
+          className="multi-select-dropdown"
+          ref={dropdownRef}
+          role="listbox"
+          tabIndex={-1}
+        >
           {filtered.map((opt, i) => {
             // Match on the label, not index — search can filter out clearOption
             const count =
