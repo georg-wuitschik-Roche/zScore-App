@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useId } from 'react';
 
 interface MultiSelectProps {
   options: string[];
@@ -20,6 +20,11 @@ interface MultiSelectProps {
   counts?: Record<string, number>;
   /** Unit for the count tooltip, e.g. "ELNs". */
   countLabel?: string;
+  /**
+   * Id for the text input, so a visible <label htmlFor> can name the combobox.
+   * Without it the control announces as an unnamed combobox.
+   */
+  inputId?: string;
 }
 
 export function MultiSelect({
@@ -32,6 +37,7 @@ export function MultiSelect({
   clearOption,
   counts,
   countLabel,
+  inputId,
 }: MultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -39,6 +45,8 @@ export function MultiSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
+  const optionId = (i: number) => `${listboxId}-opt-${i}`;
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (
@@ -68,6 +76,10 @@ export function MultiSelect({
   useEffect(() => {
     setHighlightIndex(-1);
   }, [search, filtered.length]);
+
+  // Drives both the popup and the combobox's aria-expanded, so the two can't
+  // disagree about whether there's a listbox to point at.
+  const expanded = isOpen && filtered.length > 0;
 
   function handleRemove(item: string) {
     onChange(value.filter((v) => v !== item));
@@ -152,8 +164,19 @@ export function MultiSelect({
           ))}
           <input
             ref={inputRef}
+            id={inputId}
             type="text"
             className="multi-select-input"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={expanded}
+            // Only while the listbox exists — a dangling IDREF names nothing.
+            aria-controls={expanded ? listboxId : undefined}
+            // Arrow keys move a visual highlight rather than DOM focus, so this
+            // is what tells a screen reader which option is current.
+            aria-activedescendant={
+              expanded && highlightIndex >= 0 ? optionId(highlightIndex) : undefined
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onFocus={handleInputFocus}
@@ -165,11 +188,12 @@ export function MultiSelect({
         </div>
       </div>
 
-      {isOpen && filtered.length > 0 && (
+      {expanded && (
         // tabIndex opts a long, scrolling list out of Chrome's focusable-
         // scroller heuristic: Tab used to land here, the blur unmounted the
         // list, and focus fell back to <body> — costing a phantom Tab press.
         <div
+          id={listboxId}
           className="multi-select-dropdown"
           ref={dropdownRef}
           role="listbox"
@@ -182,6 +206,7 @@ export function MultiSelect({
             return (
               <div
                 key={opt}
+                id={optionId(i)}
                 className={`multi-select-option${i === highlightIndex ? ' highlighted' : ''}`}
                 onMouseDown={(e) => { e.preventDefault(); handleAdd(opt); }}
                 onMouseEnter={() => setHighlightIndex(i)}

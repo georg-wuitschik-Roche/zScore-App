@@ -108,11 +108,12 @@ export function FilterControls() {
     <div className="controls-row">
       {/* Reaction Type(s) */}
       <div className="control-col" id="reaction-type-dropdown">
-        <label>Reaction Type(s):</label>
+        <label htmlFor="filter-reaction-types">Reaction Type(s):</label>
         <MultiSelect
           options={reactionTypeOptions}
           value={reactionTypes}
           onChange={setReactionTypes}
+          inputId="filter-reaction-types"
           counts={counts.reactionTypes}
           countLabel="ELNs"
           placeholder="Select reaction types..."
@@ -128,11 +129,12 @@ export function FilterControls() {
 
       {/* Functional Group(s) A */}
       <div className="control-col" id="fg-a-dropdown">
-        <label>Functional Group(s) A:</label>
+        <label htmlFor="filter-fg-a">Functional Group(s) A:</label>
         <MultiSelect
           options={fgAOptions}
           value={fgA}
           onChange={setFgA}
+          inputId="filter-fg-a"
           counts={counts.fgA}
           countLabel="ELNs"
           clearOption="All"
@@ -149,11 +151,12 @@ export function FilterControls() {
 
       {/* Functional Group(s) B */}
       <div className="control-col" id="fg-b-dropdown">
-        <label>Functional Group(s) B:</label>
+        <label htmlFor="filter-fg-b">Functional Group(s) B:</label>
         <MultiSelect
           options={fgBOptions}
           value={fgB}
           onChange={setFgB}
+          inputId="filter-fg-b"
           counts={counts.fgB}
           countLabel="ELNs"
           clearOption="All"
@@ -170,11 +173,12 @@ export function FilterControls() {
 
       {/* Reactant Type(s) */}
       <div className="control-col" id="reactant-types-dropdown">
-        <label>Reactant Type(s):</label>
+        <label htmlFor="filter-reactant-types">Reactant Type(s):</label>
         <MultiSelect
           options={reactantTypeOptions}
           value={reactantTypes}
           onChange={setReactantTypes}
+          inputId="filter-reactant-types"
           counts={counts.reactantTypes}
           countLabel="ELNs"
           placeholder="Select reactant types..."

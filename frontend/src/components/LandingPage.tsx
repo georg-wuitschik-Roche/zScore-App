@@ -132,11 +132,12 @@ export function LandingPage() {
       <div className="landing-filters">
         <div className="landing-filter-row">
           <div className="landing-filter-col landing-filter-col-wide">
-            <label>Reaction Type(s):</label>
+            <label htmlFor="landing-reaction-types">Reaction Type(s):</label>
             <MultiSelect
               options={reactionTypeOptions}
               value={reactionTypes}
               onChange={setReactionTypes}
+              inputId="landing-reaction-types"
               placeholder="Search by reaction type..."
               autoClose
             />
@@ -147,21 +148,23 @@ export function LandingPage() {
           <>
             <div className="landing-filter-row">
               <div className="landing-filter-col">
-                <label>Functional Group(s) A:</label>
+                <label htmlFor="landing-fg-a">Functional Group(s) A:</label>
                 <MultiSelect
                   options={fgAOptions}
                   value={fgA}
                   onChange={setFgA}
+                  inputId="landing-fg-a"
                   clearOption="All"
                   placeholder="All (no filter)"
                 />
               </div>
               <div className="landing-filter-col">
-                <label>Functional Group(s) B:</label>
+                <label htmlFor="landing-fg-b">Functional Group(s) B:</label>
                 <MultiSelect
                   options={fgBOptions}
                   value={fgB}
                   onChange={setFgB}
+                  inputId="landing-fg-b"
                   clearOption="All"
                   placeholder="All (no filter)"
                 />
@@ -169,11 +172,12 @@ export function LandingPage() {
             </div>
             <div className="landing-filter-row">
               <div className="landing-filter-col">
-                <label>Reactant Type(s):</label>
+                <label htmlFor="landing-reactant-types">Reactant Type(s):</label>
                 <MultiSelect
                   options={reactantTypeOptions}
                   value={reactantTypes}
                   onChange={setReactantTypes}
+                  inputId="landing-reactant-types"
                   placeholder="Select reactant types..."
                   autoClose
                 />
