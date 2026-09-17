@@ -24,3 +24,11 @@ export function downloadTextFile(filename: string, content: string, mime = 'text
 export function downloadDataUrl(filename: string, dataUrl: string) {
   triggerDownload(filename, dataUrl);
 }
+
+/** Trigger a browser download of binary data, e.g. from canvas.toBlob().
+ *  Preferred over downloadDataUrl for large images — no base64 copy. */
+export function downloadBlob(filename: string, blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  triggerDownload(filename, url);
+  URL.revokeObjectURL(url);
+}

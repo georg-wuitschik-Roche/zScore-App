@@ -137,7 +137,9 @@ export function TutorialOverlay() {
   const isSettingsStep = SETTINGS_STEPS.has(step);
   useEffect(() => {
     if (!active || !isSettingsStep) return;
-    if (!document.querySelector('.settings-modal')) {
+    // Match on the id, not .settings-modal — that class is shared with other
+    // dialogs, so an open ExportDialog would read as "settings already open".
+    if (!document.getElementById('settings-modal')) {
       document.getElementById('settings-toggle')?.click();
     }
   }, [active, isSettingsStep]);
@@ -145,7 +147,7 @@ export function TutorialOverlay() {
   // Close settings when leaving settings range or tutorial ends
   useEffect(() => {
     if (!active || !isSettingsStep) {
-      const closeBtn = document.querySelector('.settings-modal-close') as HTMLButtonElement | null;
+      const closeBtn = document.querySelector('#settings-modal .settings-modal-close') as HTMLButtonElement | null;
       closeBtn?.click();
     }
   }, [active, isSettingsStep]);

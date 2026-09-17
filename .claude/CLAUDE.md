@@ -31,7 +31,7 @@ Browser
   ├── Plotly.js → boxplots, violins, heatmaps, stats table
   ├── Version comparison across datasets
   ├── URL state (React Router search params) → deep linking
-  └── PNG export via Plotly.toImage()
+  └── PNG + SVG export via Plotly.toImage() (aspect ratio + font size dialog)
 ```
 
 ## Repository Structure
@@ -58,6 +58,7 @@ zScore-App/
 │   │   │   ├── helpers.ts       # Data grouping, median traces, rank annotations
 │   │   │   ├── colors.ts        # ELN density color mapping
 │   │   │   ├── tooltip.ts       # Hover tooltip payload + display model
+│   │   │   ├── export.ts        # PNG/SVG export + split-panel compositor
 │   │   │   └── types.ts         # PlotConfig interface
 │   │   ├── components/
 │   │   │   ├── LandingPage.tsx  # Reaction type search + filter setup
@@ -74,6 +75,7 @@ zScore-App/
 │   │   │   ├── TutorialOverlay.tsx  # Guided tour overlay
 │   │   │   ├── Plot.tsx         # Plotly wrapper (dist-min bundle)
 │   │   │   ├── PlotTooltip.tsx  # Custom hover tooltip (selectable + click-to-copy)
+│   │   │   ├── ExportDialog.tsx # Download Plots dialog (format/ratio/font size)
 │   │   │   └── Footer.tsx       # Paper citation
 │   │   ├── hooks/
 │   │   │   ├── useFilteredData.ts     # useMemo wrapper for filter chain

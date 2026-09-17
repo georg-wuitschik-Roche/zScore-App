@@ -103,7 +103,7 @@ export function buildRankAnnotation(
 
 // ── ELN density colorbar ─────────────────────────────────────────────
 
-const MONO_FONT = '"JetBrains Mono", "Fira Code", monospace';
+export const MONO_FONT = '"JetBrains Mono", "Fira Code", monospace';
 
 /** "ELN Count" label annotation positioned to the left of the colorbar. */
 function buildElnLabel(presentationMode: boolean, axisColor?: string) {

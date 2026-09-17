@@ -16,6 +16,7 @@ import {
   fetchVersionsManifest,
 } from '../data/loader';
 import { saveUpload, loadUpload, clearUpload as clearStoredUpload } from '../data/uploadStorage';
+import { ASPECT_RATIOS, FONT_SCALES, type ExportFormat, type AspectRatio } from '../plots/export';
 
 
 export interface FilterState {
@@ -69,6 +70,11 @@ export interface FilterState {
   uploadError: string | null;
   uploadFileName: string | null;
 
+  // Image export preferences (apply to the exported file only, not the screen)
+  exportFormat: ExportFormat;
+  exportAspectRatio: AspectRatio;
+  exportFontScale: number;
+
   // Actions
   setReactionTypes: (types: string[]) => void;
   setReactantTypes: (types: string[]) => void;
@@ -88,6 +94,9 @@ export interface FilterState {
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
   toggleElnLegend: () => void;
+  setExportFormat: (format: ExportFormat) => void;
+  setExportAspectRatio: (ratio: AspectRatio) => void;
+  setExportFontScale: (scale: number) => void;
   resetFilters: () => void;
   clearUploadError: () => void;
   loadDataset: () => Promise<void>;
@@ -131,11 +140,32 @@ function resolveTheme(pref: 'light' | 'dark' | 'auto'): 'light' | 'dark' {
   return pref === 'auto' ? getSystemTheme() : pref;
 }
 
-const storedThemePref = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-theme') as 'light' | 'dark' | 'auto' | null) || 'auto';
-const storedTab = (typeof localStorage !== 'undefined' && localStorage.getItem('zscore-tab')) || null;
+/** localStorage is absent under SSR and can throw when storage is blocked. */
+function readStored(key: string): string | null {
+  return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+}
+
+function writeStored(key: string, value: string) {
+  try { localStorage.setItem(key, value); } catch { /* ignore */ }
+}
+
+/** Narrow a persisted value back to one of the offered options. */
+function pickStored<T>(options: readonly { value: T }[], stored: unknown, fallback: T): T {
+  return options.some((o) => o.value === stored) ? (stored as T) : fallback;
+}
+
+const storedThemePref = (readStored('zscore-theme') as 'light' | 'dark' | 'auto' | null) || 'auto';
+const storedTab = readStored('zscore-tab');
 const initialTab: TabId = storedTab && isTabId(storedTab) ? storedTab : 'violin';
-const storedElnLegend = typeof localStorage !== 'undefined' && localStorage.getItem('zscore-eln-legend');
+const storedElnLegend = readStored('zscore-eln-legend');
 const initialElnLegend = storedElnLegend !== null ? storedElnLegend !== '0' : true;
+
+const storedFormat = readStored('zscore-export-format');
+const initialExportFormat: ExportFormat = storedFormat === 'svg' ? 'svg' : 'png';
+const initialExportRatio = pickStored(ASPECT_RATIOS, readStored('zscore-export-ratio'), 'auto');
+// Validated against the offered scales — an unrecognised value would leave no
+// pill highlighted in the export dialog.
+const initialExportFontScale = pickStored(FONT_SCALES, Number(readStored('zscore-export-font-scale')), 1);
 
 export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
@@ -185,6 +215,11 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   theme: resolveTheme(storedThemePref),
   uploadError: null,
   uploadFileName: null,
+
+  // Image export preferences
+  exportFormat: initialExportFormat,
+  exportAspectRatio: initialExportRatio,
+  exportFontScale: initialExportFontScale,
 
   // Actions
   setReactionTypes: (types) =>
@@ -258,7 +293,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   clearCrossFilters: () => set({ crossFilterSelections: {}, crossFilterOrder: [] }),
   setActiveTab: (tab) => {
     if (tab === get().activeTab) return;
-    try { localStorage.setItem('zscore-tab', tab); } catch { /* ignore */ }
+    writeStored('zscore-tab', tab);
     set({ activeTab: tab });
   },
   togglePresentationMode: () =>
@@ -267,13 +302,26 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     set((s) => ({ optionsPanelOpen: !s.optionsPanelOpen })),
   toggleElnLegend: () => {
     const next = !get().showElnLegend;
-    try { localStorage.setItem('zscore-eln-legend', next ? '1' : '0'); } catch { /* ignore */ }
+    writeStored('zscore-eln-legend', next ? '1' : '0');
     set({ showElnLegend: next });
   },
+  setExportFormat: (format) => {
+    writeStored('zscore-export-format', format);
+    set({ exportFormat: format });
+  },
+  setExportAspectRatio: (ratio) => {
+    writeStored('zscore-export-ratio', ratio);
+    set({ exportAspectRatio: ratio });
+  },
+  setExportFontScale: (scale) => {
+    writeStored('zscore-export-font-scale', String(scale));
+    set({ exportFontScale: scale });
+  },
+
   setTheme: (pref) => {
     const resolved = resolveTheme(pref);
     document.documentElement.setAttribute('data-theme', resolved);
-    try { localStorage.setItem('zscore-theme', pref); } catch { /* ignore */ }
+    writeStored('zscore-theme', pref);
     set({ themePreference: pref, theme: resolved });
   },
 

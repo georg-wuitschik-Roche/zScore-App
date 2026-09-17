@@ -95,7 +95,14 @@ export interface TooltipAnchor {
  * This module owns both ends of that round trip: `asCustomdata` on the way into a
  * trace, `readTooltipHover` on the way back out of a hover event. Those are the
  * only two places the Plotly typings are overridden.
+ *
+ * Overloaded to keep the rank narrow. Several members of Plotly's `Data` union
+ * type `customdata` as `Datum[]` alone, so returning the wider
+ * `Datum[] | Datum[][]` for a 1-D payload makes the whole trace unassignable to
+ * `Data` — which is what broke `buildDistributionConfig` under `tsc -b`.
  */
+export function asCustomdata(src: TooltipSource[]): Datum[];
+export function asCustomdata(src: TooltipSource[][]): Datum[][];
 export function asCustomdata(src: TooltipSource[] | TooltipSource[][]): Datum[] | Datum[][] {
   return src as unknown as Datum[] | Datum[][];
 }

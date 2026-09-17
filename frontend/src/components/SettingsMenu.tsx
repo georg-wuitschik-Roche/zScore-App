@@ -73,7 +73,9 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
       {/* Settings modal */}
       {open && (
         <div className="settings-modal-backdrop" onClick={() => setOpen(false)}>
-          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+          {/* id, not the class: the class is shared with other dialogs (ExportDialog),
+              while the tutorial needs to target this modal specifically. */}
+          <div className="settings-modal" id="settings-modal" onClick={(e) => e.stopPropagation()}>
             <div className="settings-modal-header">
               <h2>Settings</h2>
               <button className="settings-modal-close" onClick={() => setOpen(false)}>&times;</button>

@@ -79,4 +79,26 @@ The hover tooltip is exempt — it is HTML and picks up dark mode from CSS custo
 When comparison mode is active, `buildRankAnnotation()` adds badges next to each y-axis category showing rank change (NEW, up, down, unchanged). These are Plotly annotation objects with hover text showing detailed comparison info.
 
 ## Export
-PNG export via `Plotly.toImage()` at high resolution. Strip unnecessary annotations for clean exports.
+`plots/export.ts` owns PNG (4x raster) and SVG (vector) export, driven by the
+Download Plots dialog (`components/ExportDialog.tsx`).
+
+It does **not** rebuild configs. It reads the live figure off the graph div
+(`gd.data` / `gd.layout`) and hands a transformed copy to `Plotly.toImage()`,
+which accepts a `{data, layout}` figure object as well as a div. `customdata` is
+dropped from that copy — it holds a whole `Row` per point and a static image
+never reads it.
+
+Export font scaling is deliberately a post-hoc transform (`scaleFonts`), *not* a
+parameter threaded through the builders. Don't "fix" it by adding a scale
+argument alongside `presentationMode`: that mode is a hand-tuned per-element
+lookup (14→18, 13→16, 20→28), not a uniform multiplier, and export must not
+change what's on screen. `scaleFonts` only rescales `size` inside keys named in
+`FONT_KEYS`, which is what keeps `marker.size` and `line.width` intact.
+
+Split mode composites panels on a 3-column grid. Each panel's height is resolved
+against the **panel** width, not `EXPORT_WIDTH`, or every panel comes out
+stretched by the column count. The panel heading is drawn by the compositor,
+since it lives between panels rather than inside any figure. Merging panel SVGs
+requires `namespaceSvgIds` — note Plotly references clip paths as `url(#id)` but
+colorbar gradients as `style="fill: url('#id')"`, and missing the quoted form
+silently blanks the ELN legend.

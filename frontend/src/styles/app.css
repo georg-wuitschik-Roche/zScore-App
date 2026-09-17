@@ -1099,6 +1099,56 @@ button:hover {
     margin: 8px 0;
 }
 
+/* ── Export ("Download Plots") dialog ───────────────────────────────── */
+
+.export-dialog {
+    max-width: 560px;
+}
+
+/* Five aspect-ratio pills need to wrap on narrow screens. */
+.export-dialog .settings-pills {
+    flex-wrap: wrap;
+}
+
+.export-dialog-hint {
+    margin: -6px 0 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+.export-dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 4px;
+}
+
+.export-dialog-size {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+.export-dialog-download {
+    background: var(--color-text);
+    border-color: var(--color-text);
+    color: var(--color-bg);
+    font-weight: 600;
+}
+
+.export-dialog-download:hover:not(:disabled) {
+    background: var(--color-text);
+    color: var(--color-bg);
+    opacity: 0.85;
+}
+
+.export-dialog-download:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 /* ---- CSV format help (settings upload row + upload error modal) ---- */
 
 .csv-help {
