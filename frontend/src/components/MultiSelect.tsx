@@ -178,7 +178,13 @@ export function MultiSelect({
               expanded && highlightIndex >= 0 ? optionId(highlightIndex) : undefined
             }
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            // Typing always reopens the list: after an autoClose selection, a
+            // clearOption pick, or Escape, the input keeps focus with isOpen
+            // false, and nothing else would bring the suggestions back.
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setIsOpen(true);
+            }}
             onFocus={handleInputFocus}
             onBlur={() => { setIsOpen(false); setSearch(''); }}
             onKeyDown={handleKeyDown}
