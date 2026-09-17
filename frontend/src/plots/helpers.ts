@@ -196,7 +196,7 @@ export function wrapTickLabel(label: string, maxLen = 18): string {
   }
 
   // No spaces — break after closing bracket nearest to the middle
-  const breakPattern = /[\]\)]/g;
+  const breakPattern = /[\])]/g;
   let bestBreak = -1;
   let match;
   while ((match = breakPattern.exec(label)) !== null) {

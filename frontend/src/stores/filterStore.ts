@@ -16,7 +16,7 @@ import {
   fetchVersionsManifest,
 } from '../data/loader';
 import { saveUpload, loadUpload, clearUpload as clearStoredUpload } from '../data/uploadStorage';
-import { ASPECT_RATIOS, FONT_SCALES, type ExportFormat, type AspectRatio } from '../plots/export';
+import { ASPECT_RATIOS, FONT_SCALES, type ExportSettings } from '../plots/export';
 
 
 export interface FilterState {
@@ -70,10 +70,10 @@ export interface FilterState {
   uploadError: string | null;
   uploadFileName: string | null;
 
-  // Image export preferences (apply to the exported file only, not the screen)
-  exportFormat: ExportFormat;
-  exportAspectRatio: AspectRatio;
-  exportFontScale: number;
+  // Image export preferences (apply to the exported file only, not the screen).
+  // Grouped rather than flattened: they are always read together, and this is
+  // the exact shape exportPlots() takes.
+  exportSettings: ExportSettings;
 
   // Actions
   setReactionTypes: (types: string[]) => void;
@@ -94,9 +94,8 @@ export interface FilterState {
   togglePresentationMode: () => void;
   toggleOptionsPanel: () => void;
   toggleElnLegend: () => void;
-  setExportFormat: (format: ExportFormat) => void;
-  setExportAspectRatio: (ratio: AspectRatio) => void;
-  setExportFontScale: (scale: number) => void;
+  /** Patch one or more export settings; unspecified keys keep their value. */
+  setExportSettings: (patch: Partial<ExportSettings>) => void;
   resetFilters: () => void;
   clearUploadError: () => void;
   loadDataset: () => Promise<void>;
@@ -160,12 +159,21 @@ const initialTab: TabId = storedTab && isTabId(storedTab) ? storedTab : 'violin'
 const storedElnLegend = readStored('zscore-eln-legend');
 const initialElnLegend = storedElnLegend !== null ? storedElnLegend !== '0' : true;
 
-const storedFormat = readStored('zscore-export-format');
-const initialExportFormat: ExportFormat = storedFormat === 'svg' ? 'svg' : 'png';
-const initialExportRatio = pickStored(ASPECT_RATIOS, readStored('zscore-export-ratio'), 'auto');
-// Validated against the offered scales — an unrecognised value would leave no
-// pill highlighted in the export dialog.
-const initialExportFontScale = pickStored(FONT_SCALES, Number(readStored('zscore-export-font-scale')), 1);
+const EXPORT_SETTINGS_KEY = 'zscore-export-settings';
+
+/** Every field is validated against the options actually on offer — an
+ *  unrecognised value would leave no pill highlighted in the export dialog. */
+function readExportSettings(): ExportSettings {
+  let stored: Partial<ExportSettings> = {};
+  try {
+    stored = JSON.parse(readStored(EXPORT_SETTINGS_KEY) ?? '{}') as Partial<ExportSettings>;
+  } catch { /* malformed — fall through to defaults */ }
+  return {
+    format: stored.format === 'svg' ? 'svg' : 'png',
+    aspectRatio: pickStored(ASPECT_RATIOS, stored.aspectRatio, 'auto'),
+    fontScale: pickStored(FONT_SCALES, stored.fontScale, 1),
+  };
+}
 
 export const useFilterStore = create<FilterState>((set, get) => ({
   // Data
@@ -217,9 +225,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   uploadFileName: null,
 
   // Image export preferences
-  exportFormat: initialExportFormat,
-  exportAspectRatio: initialExportRatio,
-  exportFontScale: initialExportFontScale,
+  exportSettings: readExportSettings(),
 
   // Actions
   setReactionTypes: (types) =>
@@ -305,17 +311,10 @@ export const useFilterStore = create<FilterState>((set, get) => ({
     writeStored('zscore-eln-legend', next ? '1' : '0');
     set({ showElnLegend: next });
   },
-  setExportFormat: (format) => {
-    writeStored('zscore-export-format', format);
-    set({ exportFormat: format });
-  },
-  setExportAspectRatio: (ratio) => {
-    writeStored('zscore-export-ratio', ratio);
-    set({ exportAspectRatio: ratio });
-  },
-  setExportFontScale: (scale) => {
-    writeStored('zscore-export-font-scale', String(scale));
-    set({ exportFontScale: scale });
+  setExportSettings: (patch) => {
+    const next = { ...get().exportSettings, ...patch };
+    writeStored(EXPORT_SETTINGS_KEY, JSON.stringify(next));
+    set({ exportSettings: next });
   },
 
   setTheme: (pref) => {

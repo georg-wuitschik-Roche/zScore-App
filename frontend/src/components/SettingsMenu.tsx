@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { resolveComparisonVersion } from '../data/comparison';
 import { CsvFormatHelp } from './CsvFormatHelp';
+import { Modal } from './Modal';
 import { MAX_UPLOAD_MB } from '../data/types';
 import type { UploadMode } from '../data/types';
 
@@ -70,205 +71,195 @@ export function SettingsMenu({ variant = 'dark' }: { variant?: 'dark' | 'light' 
         </svg>
       </button>
 
-      {/* Settings modal */}
+      {/* Settings modal. The id is what the tutorial targets — the classes are
+          shared with ExportDialog, so they can't identify this dialog. */}
       {open && (
-        <div className="settings-modal-backdrop" onClick={() => setOpen(false)}>
-          {/* id, not the class: the class is shared with other dialogs (ExportDialog),
-              while the tutorial needs to target this modal specifically. */}
-          <div className="settings-modal" id="settings-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal-header">
-              <h2>Settings</h2>
-              <button className="settings-modal-close" onClick={() => setOpen(false)}>&times;</button>
+        <Modal title="Settings" id="settings-modal" onClose={() => setOpen(false)}>
+          {/* DATA section */}
+          <div className="settings-section" id="settings-section-data">
+            <h3 className="settings-section-title">Data</h3>
+
+            {availableVersions.length > 1 && (
+              <div className="settings-row">
+                <span className="settings-row-label">Dataset</span>
+                <div className="settings-pills">
+                  {availableVersions.map((v) => (
+                    <button
+                      key={v.id}
+                      className={`settings-pill settings-pill-with-sub${v.id === activeVersion ? ' active' : ''}`}
+                      onClick={() => switchVersion(v.id)}
+                      disabled={isLoadingVersion}
+                    >
+                      {v.label}
+                      {v.date && <span className="settings-pill-date">{v.date}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="settings-row">
+              <span className="settings-row-label">Upload</span>
+              <div className="settings-upload-actions">
+                <button className="settings-action-btn" onClick={() => fileInputRef.current?.click()}>
+                  {uploadedDataset ? 'Replace Dataset' : 'Upload Dataset'}
+                </button>
+                <button
+                  className="settings-info-btn"
+                  onClick={() => setHelpOpen((v) => !v)}
+                  aria-expanded={helpOpen}
+                  title="Required columns, delimiters and a template CSV"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  What does my CSV need to look like?
+                </button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                style={{ display: 'none' }}
+                onChange={handleFileChange}
+              />
             </div>
 
-            <div className="settings-modal-body">
-              {/* DATA section */}
-              <div className="settings-section" id="settings-section-data">
-                <h3 className="settings-section-title">Data</h3>
+            {helpOpen && (
+              <div className="settings-row settings-row-full">
+                <CsvFormatHelp />
+              </div>
+            )}
 
-                {availableVersions.length > 1 && (
-                  <div className="settings-row">
-                    <span className="settings-row-label">Dataset</span>
-                    <div className="settings-pills">
-                      {availableVersions.map((v) => (
-                        <button
-                          key={v.id}
-                          className={`settings-pill settings-pill-with-sub${v.id === activeVersion ? ' active' : ''}`}
-                          onClick={() => switchVersion(v.id)}
-                          disabled={isLoadingVersion}
-                        >
-                          {v.label}
-                          {v.date && <span className="settings-pill-date">{v.date}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
+            {uploadedDataset && (
+              <>
                 <div className="settings-row">
-                  <span className="settings-row-label">Upload</span>
-                  <div className="settings-upload-actions">
-                    <button className="settings-action-btn" onClick={() => fileInputRef.current?.click()}>
-                      {uploadedDataset ? 'Replace Dataset' : 'Upload Dataset'}
+                  <span className="settings-row-label">Mode</span>
+                  <div className="settings-pills">
+                    <button
+                      className={`settings-pill${uploadMode === 'replace' ? ' active' : ''}`}
+                      onClick={() => setUploadMode('replace')}
+                    >
+                      My data
                     </button>
                     <button
-                      className="settings-info-btn"
-                      onClick={() => setHelpOpen((v) => !v)}
-                      aria-expanded={helpOpen}
-                      title="Required columns, delimiters and a template CSV"
+                      className={`settings-pill${uploadMode === 'combine' ? ' active' : ''}`}
+                      onClick={() => setUploadMode('combine')}
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
-                      What does my CSV need to look like?
+                      Combined
                     </button>
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv"
-                    style={{ display: 'none' }}
-                    onChange={handleFileChange}
-                  />
                 </div>
+                <div className="settings-row">
+                  <span className="settings-row-label" />
+                  <button className="settings-remove-btn" onClick={() => clearUploadData()}>
+                    Remove uploaded data
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
-                {helpOpen && (
-                  <div className="settings-row settings-row-full">
-                    <CsvFormatHelp />
-                  </div>
-                )}
+          {/* COMPARISON section */}
+          {(availableVersions.length > 1 || !!uploadedDataset) && (
+            <div className="settings-section" id="settings-section-comparison">
+              <h3 className="settings-section-title">
+                {uploadedDataset ? 'Compare with Built-in' : 'Version Comparison'}
+              </h3>
 
-                {uploadedDataset && (
-                  <>
-                    <div className="settings-row">
-                      <span className="settings-row-label">Mode</span>
-                      <div className="settings-pills">
-                        <button
-                          className={`settings-pill${uploadMode === 'replace' ? ' active' : ''}`}
-                          onClick={() => setUploadMode('replace')}
-                        >
-                          My data
-                        </button>
-                        <button
-                          className={`settings-pill${uploadMode === 'combine' ? ' active' : ''}`}
-                          onClick={() => setUploadMode('combine')}
-                        >
-                          Combined
-                        </button>
-                      </div>
-                    </div>
-                    <div className="settings-row">
-                      <span className="settings-row-label" />
-                      <button className="settings-remove-btn" onClick={() => clearUploadData()}>
-                        Remove uploaded data
-                      </button>
-                    </div>
-                  </>
-                )}
+              <div className="settings-row">
+                <span className="settings-row-label">Compare</span>
+                <div className="settings-pills">
+                  <button
+                    className={`settings-pill${!comparisonMode ? ' active' : ''}`}
+                    onClick={() => setComparisonMode(false)}
+                  >
+                    Off
+                  </button>
+                  <button
+                    className={`settings-pill${comparisonMode ? ' active' : ''}`}
+                    onClick={() => setComparisonMode(true)}
+                  >
+                    On
+                  </button>
+                </div>
               </div>
 
-              {/* COMPARISON section */}
-              {(availableVersions.length > 1 || !!uploadedDataset) && (
-                <div className="settings-section" id="settings-section-comparison">
-                  <h3 className="settings-section-title">
-                    {uploadedDataset ? 'Compare with Built-in' : 'Version Comparison'}
-                  </h3>
-
-                  <div className="settings-row">
-                    <span className="settings-row-label">Compare</span>
-                    <div className="settings-pills">
-                      <button
-                        className={`settings-pill${!comparisonMode ? ' active' : ''}`}
-                        onClick={() => setComparisonMode(false)}
-                      >
-                        Off
-                      </button>
-                      <button
-                        className={`settings-pill${comparisonMode ? ' active' : ''}`}
-                        onClick={() => setComparisonMode(true)}
-                      >
-                        On
-                      </button>
-                    </div>
+              {comparisonMode && (
+                <div className="settings-row">
+                  <span className="settings-row-label">Compare with</span>
+                  <div className="settings-pills">
+                    {availableVersions
+                      .filter((v) => !!uploadedDataset || v.id !== activeVersion)
+                      .map((v) => {
+                        const resolved = resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion, !!uploadedDataset);
+                        const isSelected = v.id === resolved;
+                        return (
+                          <button
+                            key={v.id}
+                            className={`settings-pill settings-pill-with-sub${isSelected ? ' active' : ''}`}
+                            onClick={() => setComparisonVersion(v.id)}
+                          >
+                            {v.label}
+                            {v.date && <span className="settings-pill-date">{v.date}</span>}
+                          </button>
+                        );
+                      })}
                   </div>
-
-                  {comparisonMode && (
-                    <div className="settings-row">
-                      <span className="settings-row-label">Compare with</span>
-                      <div className="settings-pills">
-                        {availableVersions
-                          .filter((v) => !!uploadedDataset || v.id !== activeVersion)
-                          .map((v) => {
-                            const resolved = resolveComparisonVersion(availableVersions, activeVersion, comparisonVersion, !!uploadedDataset);
-                            const isSelected = v.id === resolved;
-                            return (
-                              <button
-                                key={v.id}
-                                className={`settings-pill settings-pill-with-sub${isSelected ? ' active' : ''}`}
-                                onClick={() => setComparisonVersion(v.id)}
-                              >
-                                {v.label}
-                                {v.date && <span className="settings-pill-date">{v.date}</span>}
-                              </button>
-                            );
-                          })}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
+            </div>
+          )}
 
-              {/* APPEARANCE section */}
-              <div className="settings-section" id="settings-section-appearance">
-                <h3 className="settings-section-title">Appearance</h3>
+          {/* APPEARANCE section */}
+          <div className="settings-section" id="settings-section-appearance">
+            <h3 className="settings-section-title">Appearance</h3>
 
-                <div className="settings-row">
-                  <span className="settings-row-label">Theme</span>
-                  <div className="settings-pills">
-                    <button
-                      className={`settings-pill${themePreference === 'auto' ? ' active' : ''}`}
-                      onClick={() => setTheme('auto')}
-                    >
-                      Auto
-                    </button>
-                    <button
-                      className={`settings-pill${themePreference === 'light' ? ' active' : ''}`}
-                      onClick={() => setTheme('light')}
-                    >
-                      Light
-                    </button>
-                    <button
-                      className={`settings-pill${themePreference === 'dark' ? ' active' : ''}`}
-                      onClick={() => setTheme('dark')}
-                    >
-                      Dark
-                    </button>
-                  </div>
-                </div>
+            <div className="settings-row">
+              <span className="settings-row-label">Theme</span>
+              <div className="settings-pills">
+                <button
+                  className={`settings-pill${themePreference === 'auto' ? ' active' : ''}`}
+                  onClick={() => setTheme('auto')}
+                >
+                  Auto
+                </button>
+                <button
+                  className={`settings-pill${themePreference === 'light' ? ' active' : ''}`}
+                  onClick={() => setTheme('light')}
+                >
+                  Light
+                </button>
+                <button
+                  className={`settings-pill${themePreference === 'dark' ? ' active' : ''}`}
+                  onClick={() => setTheme('dark')}
+                >
+                  Dark
+                </button>
+              </div>
+            </div>
 
-                <div className="settings-row">
-                  <span className="settings-row-label">Presentation</span>
-                  <div className="settings-pills">
-                    <button
-                      className={`settings-pill${!presentationMode ? ' active' : ''}`}
-                      onClick={() => { if (presentationMode) togglePresentationMode(); }}
-                    >
-                      Off
-                    </button>
-                    <button
-                      className={`settings-pill${presentationMode ? ' active' : ''}`}
-                      onClick={() => { if (!presentationMode) togglePresentationMode(); }}
-                    >
-                      On
-                    </button>
-                  </div>
-                </div>
+            <div className="settings-row">
+              <span className="settings-row-label">Presentation</span>
+              <div className="settings-pills">
+                <button
+                  className={`settings-pill${!presentationMode ? ' active' : ''}`}
+                  onClick={() => { if (presentationMode) togglePresentationMode(); }}
+                >
+                  Off
+                </button>
+                <button
+                  className={`settings-pill${presentationMode ? ' active' : ''}`}
+                  onClick={() => { if (!presentationMode) togglePresentationMode(); }}
+                >
+                  On
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Upload mode selection modal */}

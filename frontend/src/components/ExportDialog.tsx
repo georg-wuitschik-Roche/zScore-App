@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import { exportPlots, previewExportSize, currentPlotElements, ASPECT_RATIOS, FONT_SCALES } from '../plots/export';
+import { Modal } from './Modal';
 import type { ExportFormat } from '../plots/export';
 
 const FORMATS: { value: ExportFormat; label: string; hint: string }[] = [
@@ -41,19 +42,15 @@ interface Props {
 /** Download settings popup: pick format, aspect ratio and font size, then export.
  *  Settings persist in the store, so they carry over to the next download. */
 export function ExportDialog({ open, onClose }: Props) {
-  const exportFormat = useFilterStore((s) => s.exportFormat);
-  const setExportFormat = useFilterStore((s) => s.setExportFormat);
-  const exportAspectRatio = useFilterStore((s) => s.exportAspectRatio);
-  const setExportAspectRatio = useFilterStore((s) => s.setExportAspectRatio);
-  const exportFontScale = useFilterStore((s) => s.exportFontScale);
-  const setExportFontScale = useFilterStore((s) => s.setExportFontScale);
+  const settings = useFilterStore((s) => s.exportSettings);
+  const setSettings = useFilterStore((s) => s.setExportSettings);
 
   const [busy, setBusy] = useState(false);
 
   // Measured while the dialog is open — the plots behind it are still mounted.
   const size = useMemo(
-    () => (open ? previewExportSize(currentPlotElements(), exportAspectRatio, exportFontScale) : null),
-    [open, exportAspectRatio, exportFontScale],
+    () => (open ? previewExportSize(currentPlotElements(), settings.aspectRatio, settings.fontScale) : null),
+    [open, settings.aspectRatio, settings.fontScale],
   );
 
   if (!open) return null;
@@ -61,11 +58,7 @@ export function ExportDialog({ open, onClose }: Props) {
   async function handleDownload() {
     setBusy(true);
     try {
-      await exportPlots(currentPlotElements(), {
-        format: exportFormat,
-        aspectRatio: exportAspectRatio,
-        fontScale: exportFontScale,
-      });
+      await exportPlots(currentPlotElements(), settings);
       onClose();
     } finally {
       setBusy(false);
@@ -73,31 +66,22 @@ export function ExportDialog({ open, onClose }: Props) {
   }
 
   return (
-    <div className="settings-modal-backdrop" onClick={onClose}>
-      <div className="settings-modal export-dialog" onClick={(e) => e.stopPropagation()}>
-        <div className="settings-modal-header">
-          <h2>Download Plots</h2>
-          <button className="settings-modal-close" onClick={onClose}>&times;</button>
-        </div>
-
-        <div className="settings-modal-body">
-          <div className="settings-section">
-            <PillRow label="Format" options={FORMATS} value={exportFormat} onChange={setExportFormat} />
-            <p className="export-dialog-hint">{FORMATS.find((f) => f.value === exportFormat)?.hint}</p>
-            <PillRow label="Aspect ratio" options={ASPECT_RATIOS} value={exportAspectRatio} onChange={setExportAspectRatio} />
-            <PillRow label="Font size" options={FONT_SCALES} value={exportFontScale} onChange={setExportFontScale} />
-          </div>
-
-          <div className="export-dialog-footer">
-            <span className="export-dialog-size">
-              {size ? `${size.width} × ${size.height} px` : 'No plot to export'}
-            </span>
-            <button className="options-btn export-dialog-download" onClick={handleDownload} disabled={!size || busy}>
-              {busy ? 'Preparing…' : `Download ${exportFormat.toUpperCase()}`}
-            </button>
-          </div>
-        </div>
+    <Modal title="Download Plots" className="export-dialog" onClose={onClose}>
+      <div className="settings-section">
+        <PillRow label="Format" options={FORMATS} value={settings.format} onChange={(format) => setSettings({ format })} />
+        <p className="export-dialog-hint">{FORMATS.find((f) => f.value === settings.format)?.hint}</p>
+        <PillRow label="Aspect ratio" options={ASPECT_RATIOS} value={settings.aspectRatio} onChange={(aspectRatio) => setSettings({ aspectRatio })} />
+        <PillRow label="Font size" options={FONT_SCALES} value={settings.fontScale} onChange={(fontScale) => setSettings({ fontScale })} />
       </div>
-    </div>
+
+      <div className="export-dialog-footer">
+        <span className="export-dialog-size">
+          {size ? `${size.width} × ${size.height} px` : 'No plot to export'}
+        </span>
+        <button className="options-btn export-dialog-download" onClick={handleDownload} disabled={!size || busy}>
+          {busy ? 'Preparing…' : `Download ${settings.format.toUpperCase()}`}
+        </button>
+      </div>
+    </Modal>
   );
 }
