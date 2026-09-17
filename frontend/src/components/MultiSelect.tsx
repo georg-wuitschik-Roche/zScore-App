@@ -192,6 +192,27 @@ export function MultiSelect({
             size={Math.max(1, search.length || (value.length === 0 ? placeholder.length : 1))}
           />
         </div>
+        {value.length > 0 && (
+          <button
+            type="button"
+            className="multi-select-clear"
+            // Not a tab stop — it would cost a second Tab press to leave any
+            // dropdown that has a selection. Backspace still clears by keyboard.
+            tabIndex={-1}
+            // Keeps focus on the input, so its onBlur doesn't reset the control
+            // out from under the click.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange([]);
+              setSearch('');
+              inputRef.current?.focus();
+            }}
+            aria-label="Clear all selections"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {expanded && (

@@ -167,7 +167,8 @@
 }
 
 /* Muted grey is too low-contrast on the dark background at 11px */
-[data-theme="dark"] .multi-select-option-count {
+[data-theme="dark"] .multi-select-option-count,
+[data-theme="dark"] .multi-select-clear {
     color: var(--color-text-secondary);
 }
 
@@ -1393,6 +1394,28 @@ button:hover {
     color: #fff;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
+}
+
+/* The auto margin pins it to the right edge; the pills take the rest of the row. */
+.multi-select-clear {
+    margin-left: auto;
+    padding: 3px 8px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.multi-select-clear:hover {
+    color: var(--color-text);
+    background: var(--color-bg-hover);
 }
 
 .multi-select-input {
@@ -2682,7 +2705,7 @@ label.tutorial-highlight {
     color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.app-container.presentation-mode button:not(.settings-toggle):not(.settings-pill):not(.settings-action-btn):not(.settings-remove-btn):not(.settings-modal-close):not(.settings-info-btn):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn) {
+.app-container.presentation-mode button:not(.settings-toggle):not(.settings-pill):not(.settings-action-btn):not(.settings-remove-btn):not(.settings-modal-close):not(.settings-info-btn):not(.reset-btn-subtle):not(.split-toggle-btn):not(.view-toggle-btn):not(.multi-select-clear) {
     font-size: 20px !important;
     padding: 16px 32px !important;
     font-weight: 600 !important;
@@ -2752,6 +2775,11 @@ label.tutorial-highlight {
 
 .app-container.presentation-mode .multi-select-pill button {
     padding: 0 6px !important;
+    font-size: 16px !important;
+}
+
+.app-container.presentation-mode .multi-select-clear {
+    padding: 4px 10px !important;
     font-size: 16px !important;
 }
 
