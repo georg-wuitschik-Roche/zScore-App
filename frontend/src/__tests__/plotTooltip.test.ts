@@ -79,7 +79,22 @@ describe('buildTooltipModel — point', () => {
   it('lists reagents in display order, excluding the FG columns', () => {
     const reagents = buildTooltipModel(POINT).sections.find((s) => s.heading === 'REAGENTS');
     expect(reagents?.rows.map((r) => r.label)).toEqual([
-      'Catalyst', 'Solvent', 'Base', 'Ligand', 'Additive',
+      'Ligand', 'Catalyst', 'Base', 'Solvent', 'Additive',
+    ]);
+  });
+
+  it('orders every reagent column, not just the ones the base fixture fills', () => {
+    // POINT leaves Coupling Reagent and Secondary Solvent null, so the case
+    // above silently skips them — fill all seven to pin the whole order.
+    const src: TooltipSource = {
+      kind: 'point',
+      row: makeRow({ 'Coupling Reagent': 'HATU', 'Secondary Solvent': 'H2O' }),
+      elnCount: 5,
+    };
+    const reagents = buildTooltipModel(src).sections.find((s) => s.heading === 'REAGENTS');
+    expect(reagents?.rows.map((r) => r.label)).toEqual([
+      'Ligand', 'Catalyst', 'Coupling Reagent', 'Base',
+      'Solvent', 'Secondary Solvent', 'Additive',
     ]);
   });
 

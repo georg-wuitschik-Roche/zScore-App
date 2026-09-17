@@ -128,13 +128,13 @@ export function readTooltipHover(
  *  silently dropping a row. FG A / FG B are deliberately absent — they lead the
  *  REACTION section. */
 const TOOLTIP_REAGENT_COLS = [
-  'Catalyst',
-  'Solvent',
-  'Base',
   'Ligand',
-  'Additive',
+  'Catalyst',
   'Coupling Reagent',
+  'Base',
+  'Solvent',
   'Secondary Solvent',
+  'Additive',
 ] as const satisfies readonly (typeof REAGENT_COLS)[number][];
 
 /** Append a label/value row, skipping empty values. */
