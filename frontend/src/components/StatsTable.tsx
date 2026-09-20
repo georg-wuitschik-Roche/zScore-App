@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { useFilterStore } from '../stores/filterStore';
 import type { Row, RankDelta } from '../data/types';
+import logoUrl from '../assets/logo.svg';
 
 interface StatsTableProps {
   rows: Row[];
@@ -109,7 +110,7 @@ export const StatsTable = memo(function StatsTable({ rows, reactantTypes, noData
     if (reactantTypes.length === 0) missing.push('reactant type');
     return (
       <div className="stats-container empty-state">
-        <img src="/assets/logo.svg" alt="" className="empty-state-logo" />
+        <img src={logoUrl} alt="" className="empty-state-logo" />
         <p className="no-data-message">
           Select a {missing.join(' and ')} to display stats.
         </p>

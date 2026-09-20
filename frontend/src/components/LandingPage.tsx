@@ -18,6 +18,8 @@ import { SettingsMenu } from './SettingsMenu';
 import { Footer } from './Footer';
 import { DEFAULTS, REPO_URL, SPLIT_URL_KEYS } from '../data/types';
 import type { SplitSelector } from '../data/types';
+import logoUrl from '../assets/logo.svg';
+import acsLogoUrl from '../assets/acs-logo.png';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -120,7 +122,7 @@ export function LandingPage() {
         <SettingsMenu variant="light" />
       </div>
       <img
-        src="/assets/logo.svg"
+        src={logoUrl}
         alt="Z-Score Dashboard"
         className="landing-logo"
       />
@@ -230,7 +232,7 @@ export function LandingPage() {
           rel="noopener noreferrer"
           className="landing-github-link"
         >
-          <img src="/assets/acs-logo.png" alt="ACS" width="20" height="20" />
+          <img src={acsLogoUrl} alt="ACS" width="20" height="20" />
           View on ACS Central Science
         </a>
       </div>

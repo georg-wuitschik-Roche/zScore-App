@@ -74,6 +74,22 @@ After a valid upload you choose how the data is used:
 
 The upload is kept in `localStorage`, so it survives a page reload until you remove it.
 
+## Deployment
+
+Live at **https://georg-wuitschik-Roche.github.io/zScore-App/**
+
+Every push to `main` triggers [`.github/workflows/pages.yml`](.github/workflows/pages.yml),
+which builds `frontend/` and publishes `frontend/dist` to GitHub Pages. The workflow can
+also be run manually from the Actions tab.
+
+Because it's a project page, the app is served from a sub-path — `base` is set to
+`/zScore-App/` in `vite.config.ts`, and runtime paths into `public/` are resolved through
+`publicUrl()` in `src/data/paths.ts`.
+
+The build does no data generation. Datasets must be committed as `.parquet` +
+matching `-dropdown-index.json` files under `frontend/public/data/`; use
+`python scripts/version_dataset.py` to add one.
+
 ## Tech Stack
 
 React 19, TypeScript, Vite, Plotly.js, Zustand, React Router, hyparquet

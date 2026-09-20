@@ -4,6 +4,7 @@ import { useFilterStore } from '../stores/filterStore';
 import { createHeatmapConfig } from '../plots/heatmap';
 import { usePlotChrome } from '../hooks/usePlotChrome';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
+import logoUrl from '../assets/logo.svg';
 
 const PLOT_CONFIG = { responsive: true, displayModeBar: false } as const;
 const PLOT_STYLE = { width: '100%' } as const;
@@ -36,7 +37,7 @@ export const HeatmapView = memo(function HeatmapView({ rows, reactantTypes, noDa
     if (reactantTypes.length < 2) missing.push('at least 2 reactant types');
     return (
       <div className="plot-container empty-state">
-        <img src="/assets/logo.svg" alt="" className="empty-state-logo" />
+        <img src={logoUrl} alt="" className="empty-state-logo" />
         <p className="no-data-message">
           Select {missing.join(' and ')} for heatmap view.
         </p>

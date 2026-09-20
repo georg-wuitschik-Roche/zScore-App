@@ -1,7 +1,9 @@
 name: Deploy to GitHub Pages
 
 on:
-  workflow_dispatch:  # Manual trigger only (auto-deploy disabled until GitHub Pages is configured)
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,11 +29,6 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
-
-      - name: Generate Parquet + dropdown index from CSV
-        run: |
-          pip install -r requirements.txt
-          python3 scripts/regenerate_from_csv.py
 
       - name: Build
         working-directory: frontend

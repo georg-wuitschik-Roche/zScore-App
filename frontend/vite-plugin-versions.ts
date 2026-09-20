@@ -104,7 +104,9 @@ export default function versionsPlugin(): Plugin {
     // In dev mode, serve versions.json dynamically so new files are picked up without restart
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (req.url === '/data/versions.json') {
+        // Pre-hooks run before Vite strips the base, so strip it here
+        const path = req.url?.split('?')[0].replace(server.config.base, '/');
+        if (path === '/data/versions.json') {
           const manifest = scanVersions(dataDir);
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(manifest, null, 2));

@@ -5,6 +5,7 @@ import type { PlotConfig } from '../plots/types';
 import type { Row, RankDelta, ComparisonInfo } from '../data/types';
 import { wrapTickLabel, RANK_BADGE_TICK_PAD } from '../plots/helpers';
 import { usePlotChrome } from '../hooks/usePlotChrome';
+import logoUrl from '../assets/logo.svg';
 
 const PLOT_CONFIG = { responsive: true, displayModeBar: false } as const;
 const PLOT_STYLE = { width: '100%' } as const;
@@ -197,7 +198,7 @@ export const DistributionView = memo(function DistributionView({ buildConfig, la
     if (reactantTypes.length === 0) missing.push('reactant type');
     return (
       <div className="plot-container empty-state">
-        <img src="/assets/logo.svg" alt="" className="empty-state-logo" />
+        <img src={logoUrl} alt="" className="empty-state-logo" />
         <p className="no-data-message">
           Select a {missing.join(' and ')} to display the {label}.
         </p>

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFilterStore } from '../stores/filterStore';
 import { useEffectiveDataset } from '../hooks/useEffectiveDataset';
 import { SettingsMenu } from './SettingsMenu';
+import hikerUrl from '../assets/hiker.png';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <img
-          src="/assets/hiker.png"
+          src={hikerUrl}
           alt="Home"
           className="logo"
           onClick={() => navigate('/')}

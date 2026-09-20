@@ -6,6 +6,7 @@
  */
 
 import type { Row, DropdownIndex, VersionsManifest } from './types';
+import { publicUrl } from './paths';
 
 /** Default Parquet URL — served from public/. */
 const DEFAULT_PARQUET_URL = '/data/z-score-peaks.parquet';
@@ -22,7 +23,7 @@ const VERSIONS_URL = '/data/versions.json';
  */
 export async function fetchVersionsManifest(): Promise<VersionsManifest> {
   try {
-    const response = await fetch(VERSIONS_URL);
+    const response = await fetch(publicUrl(VERSIONS_URL));
     if (!response.ok) throw new Error('not found');
     return response.json() as Promise<VersionsManifest>;
   } catch {
@@ -85,7 +86,7 @@ function cleanRow(raw: Record<string, unknown>): Row {
 export async function fetchDropdownIndex(
   url: string = DROPDOWN_INDEX_URL,
 ): Promise<DropdownIndex> {
-  const response = await fetch(url);
+  const response = await fetch(publicUrl(url));
   if (!response.ok) {
     throw new Error(`Failed to fetch dropdown index: ${response.status} ${response.statusText}`);
   }
@@ -98,7 +99,7 @@ export async function fetchDropdownIndex(
 export async function fetchParquetBuffer(
   url: string = DEFAULT_PARQUET_URL,
 ): Promise<ArrayBuffer> {
-  const response = await fetch(url);
+  const response = await fetch(publicUrl(url));
   if (!response.ok) {
     throw new Error(`Failed to fetch dataset: ${response.status} ${response.statusText}`);
   }

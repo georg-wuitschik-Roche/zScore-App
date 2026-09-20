@@ -102,7 +102,7 @@ zScore-App/
 ├── scripts/
 │   └── version_dataset.py       # Dataset versioning
 ├── .devcontainer/               # Dev container config + lifecycle scripts
-├── .github/workflows/           # CI/CD (deploy, pages)
+├── .github/workflows/           # CI/CD (GitHub Pages)
 ├── pyproject.toml               # Ruff config
 ├── .pre-commit-config.yaml
 └── LICENSE

@@ -5,6 +5,8 @@ import versionsPlugin from './vite-plugin-versions'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Served from https://georg-wuitschik-Roche.github.io/zScore-App/
+  base: '/zScore-App/',
   plugins: [react(), versionsPlugin()],
   resolve: {
     alias: {

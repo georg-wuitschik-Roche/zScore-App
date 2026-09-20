@@ -89,7 +89,7 @@ def _next_version_number(manifest: dict) -> int:
 
 
 def _prepare_dataframe(csv_path: Path) -> 'pd.DataFrame':
-    """Read CSV and apply same cleaning as regenerate_from_csv.py."""
+    """Read CSV, slim to used columns, and normalise decimal separators."""
     import pandas as pd
 
     df = pd.read_csv(csv_path, encoding='utf-8')
